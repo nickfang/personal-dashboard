@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import Dropdown from '../../components/Dropdown';
+import Image from "next/image"
 
 type WeatherData = {
   location: {
@@ -45,7 +44,7 @@ type WeatherData = {
 
 const getCurrentWeather = async():Promise<WeatherData> => {
   try {
-    const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=austin&dt=2023-12-02`);
+    const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=austin&dt=2024-01-03`);
 
     const data = await res.json();
     return data;
@@ -55,15 +54,28 @@ const getCurrentWeather = async():Promise<WeatherData> => {
   }
 }
 
-export default async function WeatherPage() {
-  const [system, setSystem] = useState<'imperial' | 'metric'>('imperial'); // ['imperial', 'metric'
+const WeatherPage = async () => {
   const data = await getCurrentWeather();
   return (
     <div>
       <h1>Weather</h1>
-      <Dropdown />
       <p>{process.env.WEATHER_API_KEY}</p>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      <div>
+        <h2>Location</h2>
+        <p>{data.location.name}</p>
+        <p>{data.location.region}</p>
+        <p>{data.location.country}</p>
+      </div>
+      <div>
+        <h2>Current</h2>
+        <p>{data.current.temp_f}</p>
+        <p>{data.current.condition.text}</p>
+        {/* <p>{data.current.condition.icon}</p> */}
+        <Image src={`https:${data.current.condition.icon}`} width="64" height="64" alt="Current Condition Icon."/>
+      </div>
+      {/* <pre>{JSON.stringify(data, null, 2)}</pre> */}
     </div>
   );
 }
+
+export default WeatherPage;
