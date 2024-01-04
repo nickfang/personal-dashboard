@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import Dropdown from '../../components/Dropdown';
+
 type WeatherData = {
   location: {
     name: string
@@ -53,10 +56,12 @@ const getCurrentWeather = async():Promise<WeatherData> => {
 }
 
 export default async function WeatherPage() {
+  const [system, setSystem] = useState<'imperial' | 'metric'>('imperial'); // ['imperial', 'metric'
   const data = await getCurrentWeather();
   return (
     <div>
       <h1>Weather</h1>
+      <Dropdown />
       <p>{process.env.WEATHER_API_KEY}</p>
       <pre>{JSON.stringify(data, null, 2)}</pre>
     </div>
