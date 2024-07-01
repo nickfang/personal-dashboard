@@ -1,4 +1,6 @@
 <script>
+  export let data;
+  console.log('data', data);
 </script>
 
 <main class="container py-6">
@@ -14,59 +16,26 @@
     <ul>
       <li><h3>Equations</h3></li>
       <ul>
-        <li>circumference = 2&pi; &times; r</li>
-        <li>area = &pi; r<sup>2</sup></li>
-        <li>
-          <details>
-            <summary>Other Equations...</summary>
-            <li>volume = &frac23; &pi; r<sup>3</sup></li>
-            <li>surface area = 4&pi; r<sup>2</sup></li>
-            <li>Pythagorean theorem: a<sup>2</sup> + b<sup>2</sup> = c<sup>2</sup></li>
+        {#each Object.entries(data.Lines) as [key, line]}
+          <li>{line.name}</li>
+          <ul>
             <li>
-              distance formula: d = &radic;(x<sub>2</sub> - x<sub>1</sub>)<sup>2</sup> + (y<sub
-                >2</sub
-              >
-              - y<sub>1</sub>)<sup>2</sup>
+              {#each Object.entries(line.equations) as [key, equation]}
+                <li>{key}: {equation}</li>
+              {/each}
             </li>
+          </ul>
+        {/each}
+        {#each Object.entries(data.Shapes) as [key, shape]}
+          <li>{shape.name}</li>
+          <ul>
             <li>
-              midpoint formula: (x<sub>1</sub> + x<sub>2</sub>) / 2, (y<sub>1</sub> + y<sub>2</sub>)
-              / 2
+              {#each Object.entries(shape.equations) as [key, equation]}
+                <li>{key}: {equation}</li>
+              {/each}
             </li>
-          </details>
-        </li>
-      </ul>
-      <li>
-        <h3>Shapes</h3>
-      </li>
-      <ul>
-        <li><strong>circle</strong></li>
-        <li><strong>triangle</strong></li>
-        <li><strong>square</strong></li>
-        <li><strong>rectangle</strong></li>
-        <li>
-          <details>
-            <summary>Other shapes...</summary>
-            <li>parallelogram</li>
-            <li>trapezoid</li>
-            <li>rhombus</li>
-            <li>pentagon</li>
-            <li>hexagon</li>
-            <li>heptagon</li>
-            <li>octagon</li>
-            <li>nonagon</li>
-            <li>decagon</li>
-            <li>dodecagon</li>
-            <li>ellipse</li>
-            <li>parabola</li>
-            <li>hyperbola</li>
-            <li>cone</li>
-            <li>cylinder</li>
-            <li>sphere</li>
-            <li>pyramid</li>
-            <li>prism</li>
-            <li>torus</li>
-          </details>
-        </li>
+          </ul>
+        {/each}
       </ul>
       <li>Terms</li>
       <ul>
