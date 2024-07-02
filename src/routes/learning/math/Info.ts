@@ -1,3 +1,15 @@
+interface Shape {
+  name: string;
+  description: string;
+  equations: {
+    [key: string]: string; // Flexible equation keys
+  };
+}
+
+type ShapesType = {
+  [key: string]: Shape; // Flexible shape names
+};
+
 const Shapes = {
   arc: {
     name: 'Arc',
@@ -232,3 +244,4 @@ const Terms = {
 };
 
 export { Shapes, Terms };
+export type { ShapesType };
