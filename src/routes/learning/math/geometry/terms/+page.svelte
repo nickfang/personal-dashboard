@@ -1,6 +1,6 @@
 <script>
   export let data;
-  const { Terms } = data;
+  const { terms } = data;
 </script>
 
 <main>
@@ -12,7 +12,7 @@
   </p>
   <p>Click on a term to learn more about it.</p>
   <ul>
-    {#each Object.entries(Terms) as [term, description]}
+    {#each Object.entries(terms) as [term, description]}
       <li>
         <strong>{term}</strong> - {description}
       </li>

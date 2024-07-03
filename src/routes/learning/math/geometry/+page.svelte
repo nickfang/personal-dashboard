@@ -1,5 +1,7 @@
 <script lang="ts">
+  import Dropdown from '$lib/components/Dropdown.svelte';
   export let data;
+  const { shapes, shapeOptions } = data;
   let activeItem = 'arc';
   let setActiveItem = (name: string) => {
     activeItem = name.toLowerCase();
@@ -19,17 +21,18 @@
     </div>
     <div class="container">
       <div class="sidebar">
-        {#each Object.entries(data.Shapes) as [key, shape]}
+        <Dropdown options={shapeOptions} />
+        {#each Object.entries(shapes) as [key, shape]}
           <button on:click={() => setActiveItem(shape.name)}>{shape.name}</button>
         {/each}
       </div>
       <div class="content">
         <div class="content-item">
           {#if activeItem}
-            <h2>{data.Shapes[activeItem].name}</h2>
-            <div>{data.Shapes[activeItem].description}</div>
+            <h2>{shapes[activeItem].name}</h2>
+            <div>{shapes[activeItem].description}</div>
             <div>Equations</div>
-            {#each Object.entries(data.Shapes[activeItem].equations) as [key, equation]}
+            {#each Object.entries(shapes[activeItem].equations) as [key, equation]}
               <div>{key}: {equation}</div>
             {/each}
           {/if}
@@ -48,19 +51,20 @@
 
   .container {
     display: flex;
+    flex: 1 3;
     flex-direction: row;
 
     gap: 2rem;
   }
   .sidebar {
-    width: 15vw;
+    /* width: 15vw; */
     margin: 0 32px;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    /* gap: 0.25rem; */
   }
   .content {
-    width: 30vw;
+    /* width: 30vw; */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -72,6 +76,7 @@
     padding-bottom: 64px;
   }
   button {
+    margin: 0;
     padding: 0.75rem 1rem;
     border: none;
     background-color: #f0f0f0;

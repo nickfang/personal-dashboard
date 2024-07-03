@@ -1,7 +1,16 @@
 import { error } from '@sveltejs/kit';
-import { Shapes } from '../Info.js';
+import { shapes } from '../Info.js';
 import type { ShapesType } from '../Info.js';
 
-export const load = (): { Shapes: ShapesType } => {
-  return { Shapes };
+interface ShapeOptionsType {
+  value: string;
+  label: string;
+}
+
+export const load = (): { shapes: ShapesType; shapeOptions: ShapeOptionsType[] } => {
+  const shapeOptions: ShapeOptionsType[] = Object.entries(shapes).map(([key, value]) => ({
+    value: key,
+    label: value.name,
+  }));
+  return { shapes, shapeOptions };
 };
