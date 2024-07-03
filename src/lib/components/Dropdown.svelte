@@ -1,41 +1,24 @@
 <script lang="ts">
-  export let options: any[] = [];
-  export let setOption = (item: any) => {
-    console.log(item);
-  };
+  interface Option {
+    label: string;
+    value: string; // Ensure values are strings for proper binding
+  }
+
+  const defaultOption: Option = { label: 'Select an option', value: '' };
+  export let options: Option[];
+  export let selectedOption: Option = defaultOption;
+
+  function handleSelectChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    selectedOption = options.find((option) => option.value === target.value) ?? defaultOption;
+  }
 </script>
 
-<div class="dropdown">
-  <button
-    class="btn btn-primary dropdown-toggle"
-    type="button"
-    id="dropdownMenuButton"
-    data-toggle="dropdown"
-    aria-haspopup="true"
-    aria-expanded="false"
-  >
-    Dropdown button
-  </button>
-  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-    {#each options as option}
-      <a class="dropdown-item" href={option.value}>{option.Label}</a>
-    {/each}
-  </div>
-</div>
-
-<style>
-  .dropdown {
-    position: relative;
-    display: inline-block;
-  }
-
-  .dropdown-menu {
-    display: none;
-    position: absolute;
-    z-index: 1;
-  }
-
-  .dropdown-menu.show {
-    display: block;
-  }
-</style>
+<select on:change={handleSelectChange} bind:value={selectedOption.value}>
+  <option value="" disabled={!selectedOption} selected={!selectedOption}> Select an option </option>
+  {#each options as option}
+    <option value={option.value} selected={selectedOption?.value === option.value}>
+      {option.label}
+    </option>
+  {/each}
+</select>

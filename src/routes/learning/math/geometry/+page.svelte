@@ -6,6 +6,7 @@
   let setActiveItem = (name: string) => {
     activeItem = name.toLowerCase();
   };
+  let selected: { label: string; value: string } = { label: '', value: '' };
 </script>
 
 <main>
@@ -21,7 +22,7 @@
     </div>
     <div class="container">
       <div class="sidebar">
-        <Dropdown options={shapeOptions} />
+        <Dropdown options={shapeOptions} bind:selectedOption={selected} />
         {#each Object.entries(shapes) as [key, shape]}
           <button on:click={() => setActiveItem(shape.name)}>{shape.name}</button>
         {/each}
