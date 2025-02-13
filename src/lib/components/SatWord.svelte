@@ -1,38 +1,53 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fullscreenStore } from '$lib/stores/fullscreen';
-  import { Maximize2, Minimize2, RefreshCw } from 'lucide-svelte';
+  import { Maximize2, RefreshCw } from 'lucide-svelte';
   import wordData from '$lib/data/sat-words.json';
+  import { goto } from '$app/navigation';
+  import { writable } from 'svelte/store';
 
   let words = Object.entries(wordData);
-  let word: string;
-  let definitions: any[];
+  const wordStore = writable<{ word: string; definitions: any[]; date: string } | null>(null);
 
   function getRandomWord() {
     const randomIndex = Math.floor(Math.random() * words.length);
-    [word, definitions] = words[randomIndex];
+    const [word, definitions] = words[randomIndex];
+    const today = new Date().toLocaleDateString();
+    wordStore.set({ word, definitions, date: today });
   }
 
-  // Initialize with a random word
-  getRandomWord();
+  onMount(() => {
+    // Check if we have a stored word and if it's from today
+    const today = new Date().toLocaleDateString();
+    const storedWord = localStorage.getItem('satWord');
+    
+    if (storedWord) {
+      const parsed = JSON.parse(storedWord);
+      if (parsed.date === today) {
+        wordStore.set(parsed);
+        return;
+      }
+    }
+    
+    // If no stored word or it's from a different day, get a new word
+    getRandomWord();
+  });
 
-  function toggleFullscreen() {
-    $fullscreenStore = $fullscreenStore === 'satword' ? false : 'satword';
+  // Subscribe to store changes to save to localStorage
+  $: if ($wordStore) {
+    localStorage.setItem('satWord', JSON.stringify($wordStore));
   }
 </script>
 
 <style>
   .word-container {
-    padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
+    padding: 1rem;
   }
 
   .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3rem;
+    margin-bottom: 1rem;
     border-bottom: 2px solid var(--teal-100);
     padding-bottom: 1rem;
   }
@@ -155,29 +170,27 @@
       <button class="refresh-btn" on:click={getRandomWord}>
         <RefreshCw size={20} color="var(--teal-600)" />
       </button>
-      <button class="toggle-btn" on:click={toggleFullscreen}>
-        {#if $fullscreenStore === 'satword'}
-          <Minimize2 size={20} color="var(--teal-600)" />
-        {:else}
-          <Maximize2 size={20} color="var(--teal-600)" />
-        {/if}
+      <button class="toggle-btn" on:click={() => goto('/fullscreen/sat-word')}>
+        <Maximize2 size={20} color="var(--teal-600)" />
       </button>
     </div>
   </div>
 
-  <div class="word-section">
-    <div class="word">{word}</div>
-  </div>
-  
-  {#each definitions as { type, definition, example }, i}
-    <div class="definition-block">
-      {#if definitions.length > 1}
-        <div class="type">({i + 1}. {type})</div>
-      {:else}
-        <div class="type">({type})</div>
-      {/if}
-      <div class="definition">{definition}</div>
-      <div class="example">"{example}"</div>
+  {#if $wordStore}
+    <div class="word-section">
+      <div class="word">{$wordStore.word}</div>
     </div>
-  {/each}
+    
+    {#each $wordStore.definitions as { type, definition, example }, i}
+      <div class="definition-block">
+        {#if $wordStore.definitions.length > 1}
+          <div class="type">({i + 1}. {type})</div>
+        {:else}
+          <div class="type">({type})</div>
+        {/if}
+        <div class="definition">{definition}</div>
+        <div class="example">"{example}"</div>
+      </div>
+    {/each}
+  {/if}
 </div> 

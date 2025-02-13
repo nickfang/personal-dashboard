@@ -1,25 +1,57 @@
 <script>
+  import { ArrowLeft } from 'lucide-svelte';
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
 
-  const activeClasses = 'underline text-indigo-600';
-  const inactiveClasses = 'text-gray-600';
+  $: isFullscreen = $page.url.pathname.includes('fullscreen');
 </script>
 
-<header class="flex justify-between container py-4 border-b border-b-slate-200">
-  <h1 class="font-bold text-gray-900 uppercase tracking-widest">Dashboard</h1>
+<style>
+  header {
+    background-color: white;
+    border-bottom: 1px solid var(--teal-100);
+    padding: 0.75rem 1.5rem;
+  }
 
-  <nav class="flex flex-nowrap gap-4">
-    <a href="/" class={$page.url.pathname === '/' ? activeClasses : inactiveClasses}>Home</a>
+  .header-content {
+    display: flex;
+    align-items: center;
+    max-width: 2000px;
+    margin: 0 auto;
+  }
 
-    <!-- <a href="/totals" class={$page.url.pathname === '/totals' ? activeClasses : inactiveClasses}>
-      Totals
-    </a>
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--teal-800);
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
 
-    <a
-      href="/transactions"
-      class={$page.url.pathname === '/transactions' ? activeClasses : inactiveClasses}
-    >
-      Transactions
-    </a> -->
-  </nav>
+  .back-btn {
+    padding: 0.5rem;
+    margin-right: 1rem;
+    border: none;
+    background: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+  }
+
+  .back-btn:hover {
+    background-color: var(--teal-50);
+  }
+</style>
+
+<header>
+  <div class="header-content">
+    {#if isFullscreen}
+      <button class="back-btn" on:click={() => goto('/dashboard')}>
+        <ArrowLeft size={20} color="var(--teal-600)" />
+      </button>
+    {/if}
+    <h1>Family Dashboard</h1>
+  </div>
 </header>

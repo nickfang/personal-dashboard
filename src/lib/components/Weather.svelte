@@ -1,12 +1,15 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import { onMount } from 'svelte';
-  import { fullscreenStore } from '$lib/stores/fullscreen';
-  import { Maximize2, Minimize2 } from 'lucide-svelte';
+  import PressureGraph from './PressureGraph.svelte';
+  import SectionHeader from './SectionHeader.svelte';
 
   let weather: any = null;
   let forecast: any = null;
   let loading = true;
   let error: string | null = null;
+
+  const dispatch = createEventDispatcher();
 
   async function fetchWeather() {
     try {
@@ -15,14 +18,11 @@
       weather = data.current;
       forecast = data.forecast;
       loading = false;
+      dispatch('weatherData', { forecast: data.forecast });
     } catch (e) {
       error = 'Failed to load weather data';
       loading = false;
     }
-  }
-
-  function toggleFullscreen() {
-    $fullscreenStore = $fullscreenStore === 'weather' ? false : 'weather';
   }
 
   $: forecastDays = forecast?.forecastday || [];
@@ -33,32 +33,6 @@
 <style>
   .weather-container {
     padding: 1.5rem;
-  }
-
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--teal-800);
-    margin: 0;
-  }
-
-  .toggle-btn {
-    padding: 0.5rem;
-    border: none;
-    background: none;
-    border-radius: 9999px;
-    cursor: pointer;
-  }
-
-  .toggle-btn:hover {
-    background-color: var(--teal-50);
   }
 
   .loading {
@@ -183,26 +157,13 @@
       transform: rotate(360deg);
     }
   }
-
-  .weather-grid.fullscreen {
-    grid-template-columns: 1fr;
-    align-items: center;
-    max-width: 1000px;
-    margin: 0 auto;
-  }
 </style>
 
 <div class="weather-container">
-  <div class="header">
-    <h2>Weather</h2>
-    <button class="toggle-btn" on:click={toggleFullscreen}>
-      {#if $fullscreenStore === 'weather'}
-        <Minimize2 size={20} color="var(--teal-600)" />
-      {:else}
-        <Maximize2 size={20} color="var(--teal-600)" />
-      {/if}
-    </button>
-  </div>
+  <SectionHeader 
+    title="Weather" 
+    fullscreenPath="/fullscreen/weather" 
+  />
 
   {#if loading}
     <div class="loading">
@@ -211,18 +172,12 @@
   {:else if error}
     <div class="error">{error}</div>
   {:else}
-    <div class="weather-grid" class:fullscreen={$fullscreenStore === 'weather'}>
+    <div class="weather-grid">
       <div class="current-weather">
         <div class="location">Austin, TX</div>
         <div class="temperature">{weather.temp_f}°F</div>
         <div class="condition">{weather.condition.text}</div>
         <div class="weather-details">
-          <span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2v20M2 12h20"/>
-            </svg>
-            {weather.pressure_in} inHg
-          </span>
           <span>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3v18M7 6l10 0M7 12l10 0M7 18l10 0"/>
@@ -250,7 +205,7 @@
         {#each forecastDays as day}
           <div class="forecast-card">
             <div class="forecast-day">
-              {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
+              {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
             </div>
             <img 
               src={day.day.condition.icon} 
@@ -263,12 +218,6 @@
             <div class="forecast-details">
               <span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2v20M2 12h20"/>
-                </svg>
-                {day.hour[12].pressure_in} inHg
-              </span>
-              <span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
                   <path d="M12 12v9"/>
                   <path d="m8 17 4 4 4-4"/>
@@ -279,6 +228,10 @@
           </div>
         {/each}
       </div>
+
+      {#if forecast}
+        <PressureGraph {forecast} />
+      {/if}
     </div>
   {/if}
 </div> 

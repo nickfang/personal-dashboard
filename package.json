@@ -38,6 +38,7 @@
   },
   "type": "module",
   "dependencies": {
+    "chart.js": "^4.4.7",
     "lucide-svelte": "^0.475.0"
   }
 }
