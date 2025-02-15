@@ -10,11 +10,7 @@
   $: if (forecast && canvas) {
     const pressureData = forecast.forecastday.flatMap((day: any) => 
       day.hour.filter((_: any, index: number) => index % 4 === 0).map((hour: any) => ({
-        time: new Date(hour.time).toLocaleString('en-US', { 
-          weekday: 'short',
-          hour: 'numeric',
-          hour12: true
-        }),
+        time: hour.time,
         pressure: hour.pressure_in
       }))
     );
@@ -26,24 +22,21 @@
     chart = new Chart(canvas, {
       type: 'line',
       data: {
-        labels: pressureData.map((d: { time: string }) => d.time),
+        labels: pressureData.map((d: { time: string }) => {
+          const date = new Date(d.time.replace(' ', 'T'));
+          return date.toLocaleDateString('en-US', { weekday: 'short' });
+        }),
         datasets: [{
           label: 'Pressure (mmHg)',
           data: pressureData.map((d: { pressure: number }) => d.pressure),
           borderColor: 'rgb(45, 212, 191)',
           backgroundColor: 'rgba(45, 212, 191, 0.1)',
-          tension: 0.3,
-          fill: true
+          tension: 0.4
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          }
-        },
         scales: {
           y: {
             beginAtZero: false,
@@ -56,11 +49,15 @@
               display: false
             },
             ticks: {
-              callback: function(val, index) {
-                const label = pressureData[index].time;
-                return label.includes('AM') || label.includes('PM') ? label : '';
-              }
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 3
             }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
           }
         }
       }

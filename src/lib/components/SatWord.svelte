@@ -40,7 +40,11 @@
 
 <style>
   .word-container {
-    padding: 1rem;
+    padding: 1.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
   }
 
   .header {
@@ -84,21 +88,26 @@
   }
 
   .word-section {
+    flex: 1;
     text-align: center;
-    margin-bottom: 3rem;
+    overflow: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 
   .word {
     font-size: 4rem;
     font-weight: 600;
     color: var(--teal-800);
-    margin-bottom: 0.5rem;
+    margin-bottom: 2rem;
     letter-spacing: -0.03em;
     line-height: 1;
   }
 
   .definition-block {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     padding: 2rem;
     background: var(--teal-50);
     border-radius: 1rem;

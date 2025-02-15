@@ -33,6 +33,10 @@
 <style>
   .weather-container {
     padding: 1.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
   }
 
   .loading {
@@ -57,76 +61,89 @@
   }
 
   .weather-grid {
+    flex: 1;
     display: grid;
-    gap: 1.5rem;
-    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    min-height: 0;
+    overflow: auto;
   }
 
   .current-weather {
     text-align: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+    align-items: center;
+    padding: 1rem 3rem;
+    background: var(--teal-50);
+    border-radius: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .current-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .temp-condition {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
   }
 
   .temperature {
-    font-size: 3.75rem;
+    font-size: 2.5rem;
     font-weight: 300;
     color: var(--teal-800);
-    margin-bottom: 0.5rem;
   }
 
   .condition {
     color: var(--teal-600);
-    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
   }
 
   .forecast-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
+    gap: 0.75rem;
     text-align: center;
   }
 
   .forecast-card {
     border: 1px solid var(--teal-100);
     border-radius: 0.5rem;
-    padding: 1rem;
+    padding: 0.75rem;
     background: rgba(255, 255, 255, 0.5);
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  .day-row {
+    display: flex;
+    align-items: center;
     justify-content: center;
+    margin-bottom: 0.5rem;
   }
 
   .forecast-day {
     color: var(--teal-600);
     font-size: 0.875rem;
-    margin-bottom: 0.5rem;
+    margin-right: 0.5rem;
   }
 
-  .weather-details {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin: 1rem 0;
-    color: var(--teal-600);
-    font-size: 0.875rem;
-  }
-
-  .weather-details span {
+  .temp-range {
     display: flex;
     align-items: center;
     gap: 0.5rem;
   }
 
-  .location {
-    color: var(--teal-600);
-    font-size: 1.125rem;
-    margin-bottom: 1rem;
-  }
-
   .forecast-details {
     font-size: 0.75rem;
     color: var(--teal-600);
-    margin-top: 0.5rem;
     display: grid;
     gap: 0.25rem;
   }
@@ -145,11 +162,26 @@
   .max-temp {
     color: var(--teal-800);
     font-weight: 500;
-    margin-top: 0.5rem;
   }
 
   .min-temp {
     color: var(--teal-600);
+    font-weight: 400;
+  }
+
+  .weather-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    color: var(--teal-600);
+    font-size: 0.875rem;
+  }
+
+  .location {
+    color: var(--teal-600);
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
   }
 
   @keyframes spin {
@@ -174,18 +206,28 @@
   {:else}
     <div class="weather-grid">
       <div class="current-weather">
-        <div class="location">Austin, TX</div>
-        <div class="temperature">{weather.temp_f}°F</div>
-        <div class="condition">{weather.condition.text}</div>
+        <img 
+          src={weather.condition.icon} 
+          alt={weather.condition.text}
+          width="48"
+          height="48"
+        />
+        <div class="current-main">
+          <div class="location">Austin, TX</div>
+          <div class="temp-condition">
+            <div class="temperature">{weather.temp_f}°F</div>
+            <div class="condition">{weather.condition.text}</div>
+          </div>
+        </div>
         <div class="weather-details">
           <span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3v18M7 6l10 0M7 12l10 0M7 18l10 0"/>
             </svg>
             {weather.humidity}%
           </span>
           <span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
               <path d="M12 12v9"/>
               <path d="m8 17 4 4 4-4"/>
@@ -193,28 +235,26 @@
             {weather.precip_in}" rain
           </span>
         </div>
-        <img 
-          src={weather.condition.icon} 
-          alt={weather.condition.text}
-          width="64"
-          height="64"
-        />
       </div>
 
       <div class="forecast-grid">
         {#each forecastDays as day}
           <div class="forecast-card">
-            <div class="forecast-day">
-              {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
+            <div class="day-row">
+              <div class="forecast-day">
+                {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
+              </div>
+              <img 
+                src={day.day.condition.icon} 
+                alt={day.day.condition.text}
+                width="32"
+                height="32"
+              />
             </div>
-            <img 
-              src={day.day.condition.icon} 
-              alt={day.day.condition.text}
-              width="40"
-              height="40"
-            />
-            <div class="max-temp">{day.day.maxtemp_f}°</div>
-            <div class="min-temp">{day.day.mintemp_f}°</div>
+            <div class="temp-range">
+              <span class="max-temp">{day.day.maxtemp_f}°</span>
+              <span class="min-temp">{day.day.mintemp_f}°</span>
+            </div>
             <div class="forecast-details">
               <span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -11,7 +11,6 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
   }
 
   .calendar-frame {
@@ -19,7 +18,6 @@
     flex: 1;
     border: none;
     min-height: 0;
-    margin-top: 0;
   }
 </style>
 
