@@ -82,6 +82,13 @@
     height: 150px;
     margin-top: 1rem;
   }
+
+  @media (max-width: 768px) {
+    .graph-container {
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+    }
+  }
 </style>
 
 <div class="graph-container">

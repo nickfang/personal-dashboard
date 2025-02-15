@@ -12,12 +12,17 @@
 
 <style>
   .dashboard-main {
-    height: calc(100vh - 48px); /* Shorter header height */
+    min-height: calc(100vh - 48px);
     overflow: hidden;
   }
 
   .main {
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-main {
+      overflow: auto;
+    }
   }
 </style>

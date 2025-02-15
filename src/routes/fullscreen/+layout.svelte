@@ -35,9 +35,10 @@
 
 <style>
   main {
-    height: calc(100vh - 136px); /* Adjusted for larger nav */
-    overflow: hidden;
+    min-height: calc(100vh - 136px);
+    overflow: auto;
     padding: 1.5rem;
+    margin-bottom: 88px;
   }
 
   nav {
@@ -47,6 +48,8 @@
     bottom: 0;
     left: 0;
     right: 0;
+    z-index: 10;
+    height: 88px;
   }
 
   .nav-content {
@@ -81,5 +84,35 @@
 
   .next {
     padding-left: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    main {
+      min-height: calc(100vh - 48px);
+      padding: 1rem;
+      margin-bottom: 64px;
+    }
+
+    nav {
+      height: 64px;
+    }
+
+    .nav-content {
+      padding: 0.75rem;
+    }
+
+    .nav-button {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      gap: 0.5rem;
+    }
+
+    .prev {
+      padding-right: 1.5rem;
+    }
+
+    .next {
+      padding-left: 1.5rem;
+    }
   }
 </style> 

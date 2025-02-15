@@ -94,14 +94,14 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    padding: 1rem 0;
   }
 
   .word {
     font-size: 4rem;
     font-weight: 600;
     color: var(--teal-800);
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     letter-spacing: -0.03em;
     line-height: 1;
   }
@@ -112,6 +112,9 @@
     background: var(--teal-50);
     border-radius: 1rem;
     border: 1px solid var(--teal-100);
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
@@ -157,17 +160,26 @@
     font-size: 1.1rem;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
     .word-container {
-      padding: 1.5rem;
+      padding: 1rem;
     }
 
     .word {
       font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .definition-block {
+      padding: 1rem;
+      margin-bottom: 1rem;
     }
 
     .definition {
       font-size: 1.25rem;
+    }
+    .example {
+      font-size: 1rem;
     }
   }
 </style>

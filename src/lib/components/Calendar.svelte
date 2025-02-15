@@ -19,6 +19,17 @@
     border: none;
     min-height: 0;
   }
+
+  :global(.fullscreen) .calendar-container {
+    height: calc(100vh - 48px - 88px - 3rem); /* Header (48px) + Nav (88px) + Padding (3rem) */
+  }
+
+  @media (max-width: 768px) {
+    :global(.fullscreen) .calendar-container {
+      height: calc(100vh - 48px - 64px - 2rem); /* Header (48px) + Nav (64px) + Padding (2rem) */
+      padding: 1rem;
+    }
+  }
 </style>
 
 <div class="calendar-container">

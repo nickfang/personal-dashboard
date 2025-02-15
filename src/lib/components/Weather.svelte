@@ -34,6 +34,9 @@
   .weather-container {
     padding: 1.5rem;
     height: 100%;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
     display: flex;
     flex-direction: column;
     overflow: auto;
@@ -187,6 +190,51 @@
   @keyframes spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .weather-container {
+      padding: 1rem;
+    }
+
+    .current-weather {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .current-main {
+      align-items: center;
+      text-align: center;
+      order: 2;
+    }
+
+    .current-weather img {
+      width: 64px;
+      height: 64px;
+      order: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .weather-details {
+      align-items: center;
+      flex-direction: row;
+      justify-content: center;
+      gap: 2rem;
+      order: 3;
+      margin: 0.5rem 0;
+    }
+
+    .forecast-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .graph-container {
+      margin: 0 0.5rem;
     }
   }
 </style>

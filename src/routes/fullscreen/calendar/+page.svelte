@@ -2,4 +2,6 @@
   import Calendar from '$lib/components/Calendar.svelte';
 </script>
 
-<Calendar /> 
+<div class="fullscreen">
+  <Calendar />
+</div> 
