@@ -6,11 +6,11 @@
   const sections = [
     { path: '/fullscreen/weather', title: 'Weather' },
     { path: '/fullscreen/calendar', title: 'Calendar' },
-    { path: '/fullscreen/sat-word', title: 'Word of the Day' }
+    { path: '/fullscreen/sat-word', title: 'Word of the Day' },
   ];
 
   $: currentPath = $page.url.pathname;
-  $: currentIndex = sections.findIndex(section => section.path === currentPath);
+  $: currentIndex = sections.findIndex((section) => section.path === currentPath);
   $: prevSection = sections[currentIndex - 1] || sections[sections.length - 1];
   $: nextSection = sections[currentIndex + 1] || sections[0];
 </script>
@@ -115,4 +115,4 @@
       padding-left: 1.5rem;
     }
   }
-</style> 
+</style>

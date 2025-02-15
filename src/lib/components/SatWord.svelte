@@ -19,7 +19,7 @@
     // Check if we have a stored word and if it's from today
     const today = new Date().toLocaleDateString();
     const storedWord = localStorage.getItem('satWord');
-    
+
     if (storedWord) {
       const parsed = JSON.parse(storedWord);
       if (parsed.date === today) {
@@ -27,7 +27,7 @@
         return;
       }
     }
-    
+
     // If no stored word or it's from a different day, get a new word
     getRandomWord();
   });
@@ -37,6 +37,38 @@
     localStorage.setItem('satWord', JSON.stringify($wordStore));
   }
 </script>
+
+<div class="word-container">
+  <div class="header">
+    <h2>Word of the Day</h2>
+    <div class="header-buttons">
+      <button class="refresh-btn" on:click={getRandomWord}>
+        <RefreshCw size={20} color="var(--teal-600)" />
+      </button>
+      <button class="toggle-btn" on:click={() => goto('/fullscreen/sat-word')}>
+        <Maximize2 size={20} color="var(--teal-600)" />
+      </button>
+    </div>
+  </div>
+
+  {#if $wordStore}
+    <div class="word-section">
+      <div class="word">{$wordStore.word}</div>
+    </div>
+
+    {#each $wordStore.definitions as { type, definition, example }, i}
+      <div class="definition-block">
+        {#if $wordStore.definitions.length > 1}
+          <div class="type">({i + 1}. {type})</div>
+        {:else}
+          <div class="type">({type})</div>
+        {/if}
+        <div class="definition">{definition}</div>
+        <div class="example">"{example}"</div>
+      </div>
+    {/each}
+  {/if}
+</div>
 
 <style>
   .word-container {
@@ -69,7 +101,8 @@
     gap: 0.75rem;
   }
 
-  .toggle-btn, .refresh-btn {
+  .toggle-btn,
+  .refresh-btn {
     padding: 0.625rem;
     border: none;
     background: none;
@@ -78,7 +111,8 @@
     transition: all 0.2s ease;
   }
 
-  .toggle-btn:hover, .refresh-btn:hover {
+  .toggle-btn:hover,
+  .refresh-btn:hover {
     background-color: var(--teal-50);
     transform: translateY(-1px);
   }
@@ -116,7 +150,9 @@
     margin-left: auto;
     margin-right: auto;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
   }
 
   .definition-block:hover {
@@ -183,35 +219,3 @@
     }
   }
 </style>
-
-<div class="word-container">
-  <div class="header">
-    <h2>Word of the Day</h2>
-    <div class="header-buttons">
-      <button class="refresh-btn" on:click={getRandomWord}>
-        <RefreshCw size={20} color="var(--teal-600)" />
-      </button>
-      <button class="toggle-btn" on:click={() => goto('/fullscreen/sat-word')}>
-        <Maximize2 size={20} color="var(--teal-600)" />
-      </button>
-    </div>
-  </div>
-
-  {#if $wordStore}
-    <div class="word-section">
-      <div class="word">{$wordStore.word}</div>
-    </div>
-    
-    {#each $wordStore.definitions as { type, definition, example }, i}
-      <div class="definition-block">
-        {#if $wordStore.definitions.length > 1}
-          <div class="type">({i + 1}. {type})</div>
-        {:else}
-          <div class="type">({type})</div>
-        {/if}
-        <div class="definition">{definition}</div>
-        <div class="example">"{example}"</div>
-      </div>
-    {/each}
-  {/if}
-</div> 

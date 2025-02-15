@@ -29,7 +29,9 @@
     grid-template-rows: 1fr 1fr;
   }
 
-  .weather-section, .word-section, .calendar-section {
+  .weather-section,
+  .word-section,
+  .calendar-section {
     overflow: auto;
     background: white;
     border-radius: 0.75rem;

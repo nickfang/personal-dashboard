@@ -6,6 +6,17 @@
   $: isFullscreen = $page.url.pathname.includes('fullscreen');
 </script>
 
+<header>
+  <div class="header-content">
+    {#if isFullscreen}
+      <button class="back-btn" on:click={() => goto('/dashboard')}>
+        <ArrowLeft size={20} color="var(--teal-600)" />
+      </button>
+    {/if}
+    <h1>Family Dashboard</h1>
+  </div>
+</header>
+
 <style>
   header {
     background-color: white;
@@ -44,14 +55,3 @@
     background-color: var(--teal-50);
   }
 </style>
-
-<header>
-  <div class="header-content">
-    {#if isFullscreen}
-      <button class="back-btn" on:click={() => goto('/dashboard')}>
-        <ArrowLeft size={20} color="var(--teal-600)" />
-      </button>
-    {/if}
-    <h1>Family Dashboard</h1>
-  </div>
-</header>

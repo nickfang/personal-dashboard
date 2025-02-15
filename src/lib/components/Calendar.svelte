@@ -5,6 +5,12 @@
   $: ({ calendarUrl } = $page.data);
 </script>
 
+<div class="calendar-container">
+  <SectionHeader title="Calendar" fullscreenPath="/fullscreen/calendar" />
+
+  <iframe title="Family Calendar" src={calendarUrl} class="calendar-frame" scrolling="no" />
+</div>
+
 <style>
   .calendar-container {
     padding: 1.5rem;
@@ -31,17 +37,3 @@
     }
   }
 </style>
-
-<div class="calendar-container">
-  <SectionHeader 
-    title="Calendar" 
-    fullscreenPath="/fullscreen/calendar" 
-  />
-
-  <iframe
-    title="Family Calendar"
-    src={calendarUrl}
-    class="calendar-frame"
-    scrolling="no"
-  />
-</div>  

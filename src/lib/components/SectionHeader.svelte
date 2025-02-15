@@ -9,6 +9,15 @@
   $: isFullscreen = $page.url.pathname.includes('fullscreen');
 </script>
 
+<div class="header">
+  <h2>{title}</h2>
+  {#if !isFullscreen}
+    <button class="toggle-btn" on:click={() => goto(fullscreenPath)}>
+      <Maximize2 size={20} color="var(--teal-600)" />
+    </button>
+  {/if}
+</div>
+
 <style>
   .header {
     display: flex;
@@ -42,12 +51,3 @@
     transform: translateY(-1px);
   }
 </style>
-
-<div class="header">
-  <h2>{title}</h2>
-  {#if !isFullscreen}
-    <button class="toggle-btn" on:click={() => goto(fullscreenPath)}>
-      <Maximize2 size={20} color="var(--teal-600)" />
-    </button>
-  {/if}
-</div> 

@@ -12,6 +12,8 @@ export const satWords: SatWord[] = [];
 // Function to get word of the day
 export function getWordOfDay(): SatWord {
   const today = new Date();
-  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+  const dayOfYear = Math.floor(
+    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
+  );
   return satWords[dayOfYear % satWords.length];
-} 
+}

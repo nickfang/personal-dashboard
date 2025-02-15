@@ -8,12 +8,11 @@ export const load: PageServerLoad = async () => {
     // Add more calendar IDs here
   ];
 
-  const calendarSources = [
-    GOOGLE_CALENDAR_ID,
-    ...additionalCalendars
-  ].map(id => `src=${encodeURIComponent(id)}`).join('&');
+  const calendarSources = [GOOGLE_CALENDAR_ID, ...additionalCalendars]
+    .map((id) => `src=${encodeURIComponent(id)}`)
+    .join('&');
 
   return {
-    calendarUrl: `https://calendar.google.com/calendar/embed?${calendarSources}&ctz=America%2FChicago&mode=WEEK`
+    calendarUrl: `https://calendar.google.com/calendar/embed?${calendarSources}&ctz=America%2FChicago&mode=WEEK`,
   };
-}; 
+};
