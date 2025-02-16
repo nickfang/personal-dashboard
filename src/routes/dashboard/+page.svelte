@@ -22,22 +22,24 @@
     gap: 2rem;
     padding: 1rem;
     grid-template-columns: 1fr 2fr;
-    min-height: calc(100vh - 80px);
-    max-width: 2000px;
+    height: calc(100vh - 80px);
     margin: 0 auto;
     box-sizing: border-box;
     grid-template-rows: 1fr 1fr;
+    width: min(calc(100vh - 80px) * 16/9, 100vw - 2rem);
+    height: min(calc((100vw - 2rem) * 9/16), calc(100vh - 80px));
   }
 
   .weather-section,
   .word-section,
   .calendar-section {
-    overflow: auto;
+    overflow: hidden;
     background: white;
     border-radius: 0.75rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
+    height: 100%;
   }
 
   .weather-section {
@@ -55,14 +57,20 @@
     grid-row: 2;
   }
 
+  .weather-section :global(.weather-container),
+  .word-section :global(.word-container) {
+    transform: scale(var(--scale, 1));
+    transform-origin: top center;
+  }
+
   @media (max-width: 768px) {
     .dashboard-grid {
       grid-template-columns: 1fr;
-      min-height: calc(100vh - 80px);
+      height: auto;
       padding: 1rem;
       gap: 1rem;
-      overflow: visible;
       grid-template-rows: auto;
+      width: 100%;
     }
 
     .weather-section {
