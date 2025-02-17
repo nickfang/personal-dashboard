@@ -82,19 +82,9 @@
 </div>
 
 <style>
-  .graph-container {
-    background: white;
-    padding: 1rem;
-    border-radius: 1rem;
-    border: 1px solid var(--teal-100);
-    height: 150px;
-    margin-top: 1rem;
-  }
+  
 
   @media (max-width: 768px) {
-    .graph-container {
-      border-radius: 0.75rem;
-      padding: 0.75rem;
-    }
+    
   }
 </style>

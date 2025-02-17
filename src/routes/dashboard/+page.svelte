@@ -17,17 +17,20 @@
 </div>
 
 <style>
+  /* Large (default) styles */
   .dashboard-grid {
     display: grid;
     gap: 2rem;
     padding: 1rem;
     grid-template-columns: 1fr 2fr;
-    height: calc(100vh - 80px);
-    margin: 0 auto;
+    height: 100vh;
     box-sizing: border-box;
     grid-template-rows: 1fr 1fr;
-    width: min(calc(100vh - 80px) * 16/9, 100vw - 2rem);
-    height: min(calc((100vw - 2rem) * 9/16), calc(100vh - 80px));
+    width: 100%;
+    position: absolute;
+    left: 0;
+    right: 0;
+    overflow: hidden;
   }
 
   .weather-section,
@@ -36,7 +39,7 @@
     overflow: hidden;
     background: white;
     border-radius: 0.75rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -63,6 +66,27 @@
     transform-origin: top center;
   }
 
+  :global(.fullscreen) {
+    overflow: hidden;
+  }
+
+  :global(.fullscreen) .dashboard-grid {
+    height: 100vh;
+    padding: 0.5rem;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  /* Medium (1360x768) styles */
+  @media (max-width: 1360px) and (max-height: 768px) {
+    .dashboard-grid {
+      gap: 1rem;
+      padding: 0.5rem;
+      width: 100%;
+    }
+  }
+
+  /* Small (mobile) styles */
   @media (max-width: 768px) {
     .dashboard-grid {
       grid-template-columns: 1fr;
@@ -71,6 +95,7 @@
       gap: 1rem;
       grid-template-rows: auto;
       width: 100%;
+      position: static;
     }
 
     .weather-section {

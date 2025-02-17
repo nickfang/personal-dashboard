@@ -1,9 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Maximize2, RefreshCw } from 'lucide-svelte';
   import wordData from '$lib/data/sat-words.json';
-  import { goto } from '$app/navigation';
   import { writable } from 'svelte/store';
+  import SectionHeader from './SectionHeader.svelte';
 
   let words = Object.entries(wordData);
   const wordStore = writable<{ word: string; definitions: any[]; date: string } | null>(null);
@@ -39,17 +38,11 @@
 </script>
 
 <div class="word-container">
-  <div class="header">
-    <h2>Word of the Day</h2>
-    <div class="header-buttons">
-      <button class="refresh-btn" on:click={getRandomWord}>
-        <RefreshCw size={20} color="var(--teal-600)" />
-      </button>
-      <button class="toggle-btn" on:click={() => goto('/fullscreen/sat-word')}>
-        <Maximize2 size={20} color="var(--teal-600)" />
-      </button>
-    </div>
-  </div>
+  <SectionHeader 
+    title="Word of the Day" 
+    fullscreenPath="/fullscreen/sat-word" 
+    onRefresh={getRandomWord}
+  />
 
   {#if $wordStore}
     <div class="word-section">
@@ -71,54 +64,13 @@
 </div>
 
 <style>
+  /* Large (default) styles */
   .word-container {
     padding: 1.5rem;
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: auto;
-  }
-
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    border-bottom: 2px solid var(--teal-100);
-    padding-bottom: 1rem;
-  }
-
-  h2 {
-    font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--teal-800);
-    margin: 0;
-    letter-spacing: -0.02em;
-  }
-
-  .header-buttons {
-    display: flex;
-    gap: 0.75rem;
-  }
-
-  .toggle-btn,
-  .refresh-btn {
-    padding: 0.625rem;
-    border: none;
-    background: none;
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .toggle-btn:hover,
-  .refresh-btn:hover {
-    background-color: var(--teal-50);
-    transform: translateY(-1px);
-  }
-
-  .refresh-btn:active {
-    transform: rotate(180deg);
   }
 
   .word-section {
@@ -132,27 +84,21 @@
   }
 
   .word {
-    font-size: 4rem;
+    font-size: 3rem;
     font-weight: 600;
     color: var(--teal-800);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
     letter-spacing: -0.03em;
     line-height: 1;
   }
 
   .definition-block {
-    margin-bottom: 1.5rem;
-    padding: 2rem;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
     background: var(--teal-50);
-    border-radius: 1rem;
+    border-radius: .75rem;
     border: 1px solid var(--teal-100);
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
   }
 
   .definition-block:hover {
@@ -196,6 +142,45 @@
     font-size: 1.1rem;
   }
 
+  /* Medium (1360x768) styles */
+  @media (max-width: 1360px) and (max-height: 768px) {
+    .word-container {
+      padding: 0.5rem;
+      overflow: hidden;
+    }
+
+    .word {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .definition-block {
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .type {
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      padding: 0.25rem 0.75rem;
+    }
+
+    .definition {
+      font-size: 1.125rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .example {
+      font-size: 0.875rem;
+      padding: 0.75rem;
+      line-height: 1.4;
+    }
+  }
+
+  /* Small (mobile) styles */
   @media (max-width: 768px) {
     .word-container {
       padding: 1rem;
@@ -214,6 +199,7 @@
     .definition {
       font-size: 1.25rem;
     }
+
     .example {
       font-size: 1rem;
     }

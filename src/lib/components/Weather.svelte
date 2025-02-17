@@ -131,7 +131,9 @@
       </div>
 
       {#if forecast}
+      <div class="graph-container">
         <PressureGraph {forecast} />
+      </div>
       {/if}
     </div>
   {/if}
@@ -140,9 +142,6 @@
 <style>
   .weather-container {
     padding: 1.5rem;
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -173,7 +172,8 @@
   .weather-grid {
     flex: 1;
     display: grid;
-    gap: 0.5rem;
+    gap: 1rem;
+    grid-template-rows: auto 1fr auto;
   }
 
   .current-weather {
@@ -182,21 +182,21 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
     align-items: center;
-    padding: 1rem;
+    padding: 1rem 3rem;
     background: var(--teal-50);
-    border-radius: 0.75rem;
+    border-radius: .75rem;
   }
 
   .current-main {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    text-align: left;
+    text-align: center;
   }
 
   .temp-condition {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 0.75rem;
   }
 
@@ -214,15 +214,16 @@
 
   .forecast-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.5rem;
     text-align: center;
+    align-self: center;
   }
 
   .forecast-card {
     border: 1px solid var(--teal-100);
-    border-radius: 0.5rem;
-    padding: 0.5rem;
+    border-radius: .75rem;
+    padding: 0.5rem 0.5rem 0.75rem 0.5rem;
     background: rgba(255, 255, 255, 0.5);
     display: flex;
     flex-direction: column;
@@ -290,7 +291,14 @@
     font-size: 1rem;
     margin-bottom: 0.25rem;
   }
-
+  .graph-container {
+    background: white;
+    padding: 1rem;
+    border-radius: .75rem;
+    border: 1px solid var(--teal-100);
+    height: 140px;
+    align-self: end;
+  }
   @keyframes spin {
     to {
       transform: rotate(360deg);
@@ -338,7 +346,42 @@
     }
 
     .graph-container {
-      margin: 0 0.5rem;
+      border-radius: .75rem;
+      padding: 0.75rem;
+    }
+  }
+
+  @media (max-width: 1360px) and (max-height: 768px) {
+    .weather-container {
+      padding: 0.5rem;
+    }
+    
+    .weather-grid {
+      gap: 0.5rem;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .current-weather {
+      grid-template-columns: auto 1fr auto;
+      gap: 1rem;
+      padding: 0.5rem;
+    }
+
+    .forecast-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .forecast-card {
+      padding: 0.375rem;
+    }
+
+    .temperature {
+      font-size: 2rem;
+    }
+
+    .graph-container {
+      height: 120px;
+      padding: 0.5rem;
     }
   }
 </style>
