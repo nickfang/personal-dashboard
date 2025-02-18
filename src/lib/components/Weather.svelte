@@ -8,6 +8,8 @@
   let forecast: any = null;
   let loading = true;
   let error: string | null = null;
+  let refreshInterval: NodeJS.Timeout;
+  let lastUpdated: Date | null = null;
 
   const dispatch = createEventDispatcher();
 
@@ -18,6 +20,7 @@
       weather = data.current;
       forecast = data.forecast;
       loading = false;
+      lastUpdated = new Date();
       dispatch('weatherData', { forecast: data.forecast });
     } catch (e) {
       error = 'Failed to load weather data';
@@ -26,6 +29,11 @@
   }
 
   $: forecastDays = forecast?.forecastday || [];
+  $: lastUpdatedTime = lastUpdated ? lastUpdated.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }) : '';
 
   onMount(fetchWeather);
 </script>
@@ -45,6 +53,9 @@
         <img src={weather.condition.icon} alt={weather.condition.text} width="48" height="48" />
         <div class="current-main">
           <div class="location">Austin, TX</div>
+          {#if lastUpdatedTime}
+            <div class="last-updated">Updated {lastUpdatedTime}</div>
+          {/if}
           <div class="temp-condition">
             <div class="temperature">{weather.temp_f}°F</div>
             <div class="condition">{weather.condition.text}</div>
@@ -411,5 +422,17 @@
     .forecast-details {
       font-size: 0.55rem;
     }
+
+    .last-updated {
+      font-size: 0.6rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  .last-updated {
+    color: var(--teal-600);
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
   }
 </style>

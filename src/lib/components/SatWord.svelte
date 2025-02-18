@@ -123,7 +123,6 @@
   }
 
   .word-section {
-    flex: 1;
     text-align: center;
     overflow: auto;
     min-height: 0;

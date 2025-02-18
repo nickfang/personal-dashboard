@@ -8,7 +8,14 @@
 <div class="calendar-container">
   <SectionHeader title="Calendar" fullscreenPath="/fullscreen/calendar" />
 
-  <iframe title="Family Calendar" src={calendarUrl} class="calendar-frame" scrolling="no" />
+  <iframe
+    src={calendarUrl + "&showDate=false&showPrint=false&showNav=false&showTabs=true&showCalendars=false"}
+    style="border-width:0"
+    width="100%"
+    height="100%"
+    frameborder="0"
+    scrolling="no"
+  />
 </div>
 
 <style>
@@ -20,12 +27,6 @@
     flex-direction: column;
   }
 
-  .calendar-frame {
-    width: 100%;
-    flex: 1;
-    border: none;
-    min-height: 0;
-  }
 
   :global(.fullscreen) .calendar-container {
     height: calc(100vh - 48px - 88px - 3rem); /* Header (48px) + Nav (88px) + Padding (3rem) */
