@@ -182,6 +182,7 @@
     grid-template-columns: 1fr 1fr 1fr;
     gap: 1rem;
     align-items: center;
+    justify-items: center;
     padding: 1rem 3rem;
     background: var(--teal-50);
     border-radius: .75rem;
@@ -278,6 +279,7 @@
   }
 
   .weather-details {
+    align-self: center;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -296,7 +298,7 @@
     padding: 1rem;
     border-radius: .75rem;
     border: 1px solid var(--teal-100);
-    height: 140px;
+    /* height: 140px; */
     align-self: end;
   }
   @keyframes spin {
@@ -357,31 +359,57 @@
     }
     
     .weather-grid {
-      gap: 0.5rem;
-      grid-template-rows: auto 1fr auto;
+      gap: 0.25rem;
+      grid-template-rows: auto auto auto;
+      height: 100%;
     }
 
     .current-weather {
-      grid-template-columns: auto 1fr auto;
-      gap: 1rem;
-      padding: 0.5rem;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+      padding: 0.25rem;
     }
 
     .forecast-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.25rem;
+      padding: 0.25rem 0;
     }
 
     .forecast-card {
       padding: 0.375rem;
     }
 
+    .day-row {
+      margin-bottom: 0.25rem;
+    }
     .temperature {
-      font-size: 2rem;
+      font-size: 1.5rem;
     }
 
     .graph-container {
-      height: 120px;
-      padding: 0.5rem;
+      /* height: 120px; */
+      padding: 0.25rem;
+    }
+
+    .location {
+      font-size: 0.75rem;
+    }
+
+    .condition {
+      font-size: 0.65rem;
+    }
+
+    .weather-details {
+      font-size: 0.65rem;
+    }
+
+    .forecast-day {
+      font-size: 0.65rem;
+    }
+
+    .forecast-details {
+      font-size: 0.55rem;
     }
   }
 </style>

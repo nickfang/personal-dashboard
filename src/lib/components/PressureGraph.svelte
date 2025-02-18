@@ -41,12 +41,26 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+          padding: {
+            top: 2,
+            right: 2,
+            bottom: 2,
+            left: 2
+          }
+        },
         scales: {
           y: {
-            beginAtZero: false,
+            min: 29.5,
+            max: 30.5,
             grid: {
               color: 'rgba(0, 0, 0, 0.05)',
             },
+            ticks: {
+              font: {
+                size: window.innerHeight <= 768 ? 8 : 12
+              }
+            }
           },
           x: {
             grid: {
@@ -56,6 +70,9 @@
               maxRotation: 0,
               autoSkip: true,
               maxTicksLimit: 3,
+              font: {
+                size: window.innerHeight <= 768 ? 8 : 12
+              }
             },
           },
         },
@@ -82,8 +99,6 @@
 </div>
 
 <style>
-  
-
   @media (max-width: 768px) {
     
   }

@@ -1,17 +1,50 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { fade, fly } from 'svelte/transition';
+  import { quintOut } from 'svelte/easing';
   import wordData from '$lib/data/sat-words.json';
   import { writable } from 'svelte/store';
   import SectionHeader from './SectionHeader.svelte';
 
   let words = Object.entries(wordData);
   const wordStore = writable<{ word: string; definitions: any[]; date: string } | null>(null);
+  let currentDefinitionIndex = 0;
+  let intervalId: NodeJS.Timeout;
+  let progress = 0;
+  let progressInterval: NodeJS.Timeout;
+
+  function setupInterval() {
+    // Clear any existing interval
+    if (intervalId) clearInterval(intervalId);
+    if (progressInterval) clearInterval(progressInterval);
+    
+    // Reset index and progress
+    currentDefinitionIndex = 0;
+    progress = 0;
+
+    // Start new interval if multiple definitions
+    if ($wordStore && $wordStore.definitions.length > 1) {
+      intervalId = setInterval(cycleDefinitions, 8000);
+      // Update progress every 80ms (100 steps over 8 seconds)
+      progressInterval = setInterval(() => {
+        progress = Math.min(100, progress + 1);
+      }, 80);
+    }
+  }
 
   function getRandomWord() {
     const randomIndex = Math.floor(Math.random() * words.length);
     const [word, definitions] = words[randomIndex];
     const today = new Date().toLocaleDateString();
     wordStore.set({ word, definitions, date: today });
+    setupInterval();
+  }
+
+  function cycleDefinitions() {
+    if ($wordStore && $wordStore.definitions.length > 1) {
+      currentDefinitionIndex = (currentDefinitionIndex + 1) % $wordStore.definitions.length;
+      progress = 0;
+    }
   }
 
   onMount(() => {
@@ -23,12 +56,18 @@
       const parsed = JSON.parse(storedWord);
       if (parsed.date === today) {
         wordStore.set(parsed);
+        setupInterval();
         return;
       }
     }
 
     // If no stored word or it's from a different day, get a new word
     getRandomWord();
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (progressInterval) clearInterval(progressInterval);
+    };
   });
 
   // Subscribe to store changes to save to localStorage
@@ -47,19 +86,29 @@
   {#if $wordStore}
     <div class="word-section">
       <div class="word">{$wordStore.word}</div>
+      {#if $wordStore.definitions.length > 1}
+        <div class="definition-counter">
+          {currentDefinitionIndex + 1} / {$wordStore.definitions.length}
+          <div class="progress-container">
+            <div class="progress-bar" style="width: {progress}%"></div>
+          </div>
+        </div>
+      {/if}
     </div>
 
-    {#each $wordStore.definitions as { type, definition, example }, i}
-      <div class="definition-block">
-        {#if $wordStore.definitions.length > 1}
-          <div class="type">({i + 1}. {type})</div>
-        {:else}
-          <div class="type">({type})</div>
-        {/if}
-        <div class="definition">{definition}</div>
-        <div class="example">"{example}"</div>
-      </div>
-    {/each}
+    {#key currentDefinitionIndex}
+      {#if $wordStore && $wordStore.definitions[currentDefinitionIndex]}
+        {@const currentDef = $wordStore.definitions[currentDefinitionIndex]}
+        <div class="definition-block"
+          in:fly={{ x: 300, duration: 600, easing: quintOut }}
+          out:fly={{ x: -300, duration: 600, easing: quintOut }}
+        >
+          <div class="type">({currentDef.type})</div>
+          <div class="definition">{currentDef.definition}</div>
+          <div class="example">"{currentDef.example}"</div>
+        </div>
+      {/if}
+    {/key}
   {/if}
 </div>
 
@@ -101,11 +150,6 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   }
 
-  .definition-block:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.1);
-  }
-
   .definition-block:last-child {
     margin-bottom: 0;
   }
@@ -142,6 +186,30 @@
     font-size: 1.1rem;
   }
 
+  .definition-counter {
+    font-size: 0.875rem;
+    color: var(--teal-600);
+    margin-top: -0.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .progress-container {
+    width: 100px;
+    height: 1px;
+    background: var(--teal-100);
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--teal-600);
+    transition: width 80ms linear;
+  }
+
   /* Medium (1360x768) styles */
   @media (max-width: 1360px) and (max-height: 768px) {
     .word-container {
@@ -163,20 +231,30 @@
 
     .type {
       margin-bottom: 0.5rem;
-      font-size: 0.875rem;
+      font-size: 0.75rem;
       padding: 0.25rem 0.75rem;
     }
 
     .definition {
-      font-size: 1.125rem;
-      margin-bottom: 0.75rem;
-      line-height: 1.4;
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
     }
 
     .example {
-      font-size: 0.875rem;
+      font-size: 1rem;
       padding: 0.75rem;
       line-height: 1.4;
+    }
+
+    .definition-counter {
+      font-size: 0.65rem;
+      margin-top: -0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .progress-container {
+      width: 60px;
     }
   }
 

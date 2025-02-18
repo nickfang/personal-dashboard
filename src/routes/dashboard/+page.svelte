@@ -83,7 +83,9 @@
       gap: 1rem;
       padding: 0.5rem;
       width: 100%;
+      grid-template-rows: auto auto;
     }
+
   }
 
   /* Small (mobile) styles */
