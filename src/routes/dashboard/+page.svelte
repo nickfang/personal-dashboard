@@ -84,8 +84,11 @@
       padding: 0.5rem;
       width: 100%;
       grid-template-rows: auto auto;
+      position: relative;
+      height: auto;
+      min-height: 100vh;
+      overflow: visible;
     }
-
   }
 
   /* Small (mobile) styles */
@@ -93,11 +96,13 @@
     .dashboard-grid {
       grid-template-columns: 1fr;
       height: auto;
+      min-height: 100vh;
       padding: 1rem;
       gap: 1rem;
       grid-template-rows: auto;
       width: 100%;
-      position: static;
+      position: relative;
+      overflow: visible;
     }
 
     .weather-section {
