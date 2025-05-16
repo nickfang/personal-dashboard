@@ -1,5 +1,9 @@
 <script>
+  import { isAuthenticated } from '$lib/authService';
+  import { redirect } from '@sveltejs/kit';
   import '../app.css';
+
+  isAuthenticated.subscribe((value) => {});
 </script>
 
 <svelte:head>
