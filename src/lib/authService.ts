@@ -1,6 +1,6 @@
 import { UserManager, User } from 'oidc-client-ts';
 import { authSettings } from './authConfig';
-import { writable, type Writable } from 'svelte/store';
+import { get, writable, type Writable } from 'svelte/store';
 
 export const user: Writable<User | null> = writable(null);
 export const isAuthenticated: Writable<boolean> = writable(false);
@@ -18,14 +18,18 @@ userManager.events.addUserUnloaded(() => {
 });
 
 export const startSignIn = async (): Promise<void> => {
+  console.log("Starting SignIn")
   await userManager.signinRedirect();
 };
 
 export const handleCallback = async (): Promise<User | null> => {
   try {
     const loadedUser = await userManager.signinRedirectCallback();
+    console.log("Loaded User: ", loadedUser)
     user.set(loadedUser);
     isAuthenticated.set(true);
+    const authenticated = get(isAuthenticated);
+    console.log("authenticated:", authenticated);
     return loadedUser;
   } catch (error) {
     console.error('Authentication callback error: ', error);

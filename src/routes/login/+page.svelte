@@ -5,7 +5,7 @@
   onMount(() => {
     // Optional: Subscribe to changes in authentication status
     isAuthenticated.subscribe((value) => {
-      console.log('Is authenticated:', value);
+      console.log('Login onMount, Is authenticated:', value);
     });
 
     user.subscribe((currentUser) => {
