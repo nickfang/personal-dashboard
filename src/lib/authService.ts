@@ -1,6 +1,6 @@
 import { UserManager, User } from 'oidc-client-ts';
 import { authSettings } from './authConfig';
-import { get, writable, type Writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
 
 export const user: Writable<User | null> = writable(null);
 export const isAuthenticated: Writable<boolean> = writable(false);

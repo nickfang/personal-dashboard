@@ -1,5 +1,4 @@
 import { redirect } from '@sveltejs/kit';
-import { get } from 'svelte/store';
 
 export const load = async ({ url, locals }) => {
   if (!locals.isAuthenticated) {

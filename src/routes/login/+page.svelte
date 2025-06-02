@@ -16,29 +16,6 @@
     });
     console.log('Environment:', import.meta.env.MODE);
   });
-
-  // This client-side redirect logic can be removed if the server-side redirect
-  // in `login/+page.server.ts` (which depends on `hooks.server.ts` correctly
-  // populating `locals.user`) is functioning.
-  // Keeping it might act as a fallback but ideally, the server handles this.
-  //
-  // $: if ($isAuthenticated && typeof window !== 'undefined') {
-  //   const redirectToParam = $page.url.searchParams.get('redirectTo');
-  //   let safeRedirectPath = '/dashboard'; // Default redirect path
-  //
-  //   if (redirectToParam) {
-  //     try {
-  //       const currentOrigin = window.location.origin;
-  //       const targetUrl = new URL(redirectToParam, currentOrigin);
-  //       if (targetUrl.origin === currentOrigin) {
-  //         safeRedirectPath = targetUrl.pathname + targetUrl.search + targetUrl.hash;
-  //       }
-  //     } catch (e) {
-  //       console.warn('Malformed redirectTo parameter, using default /dashboard:', redirectToParam, e);
-  //     }
-  //   }
-  //   goto(safeRedirectPath, { replaceState: true });
-  // }
 </script>
 
 <nav>
