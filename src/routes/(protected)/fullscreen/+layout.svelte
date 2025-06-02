@@ -1,5 +1,5 @@
 <script>
-  import Header from '../Header.svelte';
+  import Header from '../../Header.svelte';
   import { page } from '$app/stores';
   import { ArrowLeft, ArrowRight } from 'lucide-svelte';
 
