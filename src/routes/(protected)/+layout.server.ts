@@ -1,9 +1,10 @@
-import { isAuthenticated } from '$lib/authService';
 import { redirect } from '@sveltejs/kit';
 
-export const load = async ({ url }) => {
-  if (!isAuthenticated) {
+export const load = async ({ url, locals }) => {
+  console.log('[Protected Layout] Load function called with URL:', url.href);
+  console.log('[Protected Layout] Locals:', locals);
+  if (!locals.isAuthenticated) {
     throw redirect(302, `/login?redirectTo=${encodeURIComponent(url.href)}`);
   }
-  return { isAuthenticated };
+  return { isAuthenticated: locals.isAuthenticated, user: locals.user };
 };

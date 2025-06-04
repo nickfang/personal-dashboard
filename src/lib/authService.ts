@@ -18,14 +18,35 @@ userManager.events.addUserUnloaded(() => {
 });
 
 export const startSignIn = async (): Promise<void> => {
+  console.log('Starting SignIn');
   await userManager.signinRedirect();
 };
 
 export const handleCallback = async (): Promise<User | null> => {
   try {
     const loadedUser = await userManager.signinRedirectCallback();
+    console.log(
+      '[authService handleCallback] Loaded User from signinRedirectCallback:',
+      loadedUser
+    );
+    console.log('[authService handleCallback] User state from loadedUser:', loadedUser?.state);
     user.set(loadedUser);
     isAuthenticated.set(true);
+
+    if (loadedUser) {
+      try {
+        const response = await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(loadedUser),
+        });
+        if (!response.ok) {
+          console.error('Failed to create server session:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error calling session creation endpoint:', error);
+      }
+    }
     return loadedUser;
   } catch (error) {
     console.error('Authentication callback error: ', error);
@@ -35,7 +56,12 @@ export const handleCallback = async (): Promise<User | null> => {
   }
 };
 
-export const startSignOut = (): Promise<void> => {
+export const startSignOut = async (): Promise<void> => {
+  try {
+    await fetch('/api/auth/session', { method: 'DELETE' });
+  } catch (error) {
+    console.error('Error calling session deletion endpoint:', error);
+  }
   return userManager.signoutRedirect();
 };
 

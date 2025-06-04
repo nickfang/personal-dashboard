@@ -1,16 +1,20 @@
 <script lang="ts">
   import { isAuthenticated, startSignIn, startSignOut, user } from '$lib/authService';
+  // Client-side redirect is no longer needed here if server-side redirect is working
+  // import { goto } from '$app/navigation';
+  // import { page } from '$app/stores';
   import { onMount } from 'svelte';
 
   onMount(() => {
     // Optional: Subscribe to changes in authentication status
     isAuthenticated.subscribe((value) => {
-      console.log('Is authenticated:', value);
+      console.log('Login onMount, Is authenticated:', value);
     });
 
     user.subscribe((currentUser) => {
       console.log('Current user:', currentUser);
     });
+    console.log('Environment:', import.meta.env.MODE);
   });
 </script>
 

@@ -41,6 +41,7 @@
   "dependencies": {
     "@sveltejs/adapter-vercel": "^5.7.2",
     "chart.js": "^4.4.9",
+    "jsonwebtoken": "^9.0.2",
     "lucide-svelte": "^0.511.0",
     "oidc-client-ts": "^3.2.1"
   }

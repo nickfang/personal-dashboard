@@ -5,6 +5,9 @@
 </script>
 
 <div class="dashboard-grid">
+  <div class="nav">
+    Nav
+  </div>
   <div class="weather-section">
     <Weather />
   </div>
@@ -25,7 +28,7 @@
     grid-template-columns: 1fr 2fr;
     height: 100vh;
     box-sizing: border-box;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 72px 1fr 1fr;
     width: 100%;
     position: absolute;
     left: 0;
@@ -45,19 +48,24 @@
     height: 100%;
   }
 
-  .weather-section {
+  .nav {
     grid-column: 1;
     grid-row: 1;
   }
 
+  .weather-section {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
   .calendar-section {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 2 / span 2;
   }
 
   .word-section {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
   }
 
   .weather-section :global(.weather-container),
