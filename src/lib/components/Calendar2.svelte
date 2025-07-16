@@ -66,16 +66,16 @@
     return events.filter((event) => {
       if (!event.start) return false;
 
-      const startDate = new Date(event.start.dateTime || event.start.date);
-      const endDate = event.end ? new Date(event.end.dateTime || event.end.date) : startDate;
+      // Handle all-day events (those with start.date instead of start.dateTime)
+      if (event.start.date) {
+        const eventStartDate = event.start.date;
+        const eventEndDate = event.end?.date || event.start.date;
 
-      // For multi-day events, check if the day falls within the range
-      if (event.start.date && event.end?.date) {
-        const dayDate = new Date(dayString);
-        return dayDate >= startDate && dayDate <= endDate;
+        // For all-day events, compare date strings directly to avoid timezone issues
+        return dayString >= eventStartDate && dayString <= eventEndDate;
       } else {
-        // For single day events, match the exact day
-        const eventDateString = startDate.toISOString().split('T')[0];
+        // For timed events, use the existing logic
+        const eventDateString = new Date(event.start.dateTime).toISOString().split('T')[0];
         return eventDateString === dayString;
       }
     });

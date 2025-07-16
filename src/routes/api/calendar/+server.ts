@@ -2,11 +2,16 @@ import { GOOGLE_CALENDAR_ID, GOOGLE_CALENDAR_PRIVATE_URL } from '$env/static/pri
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async (event) => {
   console.log(
     'GOOGLE_CALENDAR_PRIVATE_URL:',
     GOOGLE_CALENDAR_PRIVATE_URL ? 'Available' : 'Not available'
   );
+
+  // Check authentication
+  if (!event.locals.user) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
     // Try public URL first
@@ -54,6 +59,7 @@ export const GET: RequestHandler = async () => {
 
     const events = parseICSData(data);
 
+    // Debug: Log basic calendar info
     console.log('Calendar Response:', {
       totalEvents: events.length,
       firstEvent: events[0],
@@ -99,7 +105,12 @@ function parseICSData(icsData: string) {
         }
         events.push(currentEvent);
       } else {
-        console.warn('Skipping event with missing required fields:', currentEvent);
+        console.warn('Skipping event with missing required fields:', {
+          summary: currentEvent.summary,
+          start: currentEvent.start,
+          hasDateTime: !!currentEvent.start?.dateTime,
+          hasDate: !!currentEvent.start?.date,
+        });
       }
     } else if (line.startsWith('SUMMARY:')) {
       currentEvent.summary = line.substring(8);
@@ -163,16 +174,29 @@ function parseICSData(icsData: string) {
   lastWeek.setDate(lastWeek.getDate() - 7);
   lastWeek.setHours(0, 0, 0, 0);
 
-  return events
-    .filter((e) => {
-      const eventDate = new Date(e.start.dateTime || e.start.date);
+  console.log('Filtering events. Cutoff date:', lastWeek.toISOString());
+
+  const filteredEvents = events.filter((e) => {
+    const eventDate = new Date(e.start.dateTime || e.start.date);
+
+    // For all-day events, compare just the date part to avoid timezone issues
+    if (e.start.date) {
+      const eventDateString = e.start.date;
+      const cutoffDateString = lastWeek.toISOString().split('T')[0];
+      return eventDateString >= cutoffDateString;
+    } else {
+      // For timed events, use the existing logic but be more lenient
       return eventDate >= lastWeek;
-    })
-    .sort((a, b) => {
-      const dateA = new Date(a.start.dateTime || a.start.date);
-      const dateB = new Date(b.start.dateTime || b.start.date);
-      return dateA.getTime() - dateB.getTime();
-    });
+    }
+  });
+
+  console.log('Total events after filtering:', filteredEvents.length);
+
+  return filteredEvents.sort((a, b) => {
+    const dateA = new Date(a.start.dateTime || a.start.date);
+    const dateB = new Date(b.start.dateTime || b.start.date);
+    return dateA.getTime() - dateB.getTime();
+  });
 }
 
 function parseICSDate(dateStr: string): Date {
