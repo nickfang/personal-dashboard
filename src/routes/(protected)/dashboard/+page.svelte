@@ -2,12 +2,12 @@
   import Weather from '$lib/components/Weather.svelte';
   import Calendar2 from '$lib/components/Calendar2.svelte';
   import SatWord from '$lib/components/SatWord.svelte';
-  import { isAuthenticated, startSignOut, user } from '$lib/authService';
+  import { isAuthenticated, startSignOutComplete, user } from '$lib/authService';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
 
   const handleSignOut = async () => {
-    await startSignOut();
+    await startSignOutComplete();
   };
 
   onMount(() => {

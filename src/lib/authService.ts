@@ -87,19 +87,67 @@ export const startSignOut = async (): Promise<void> => {
   isAuthenticated.set(false);
   
   try {
-    // Clear any stored tokens
-    await userManager.removeUser();
+    // Use OIDC client's built-in sign-out redirect for proper global logout
+    console.log('Initiating global sign-out redirect...');
+    await userManager.signoutRedirect();
   } catch (error) {
-    console.error('Error removing user:', error);
+    console.error('Error during sign-out redirect:', error);
+    
+    // Fallback: Clear local tokens and redirect to manual logout flow
+    try {
+      await userManager.removeUser();
+    } catch (removeError) {
+      console.error('Error removing user tokens:', removeError);
+    }
+    
+    // Multi-step logout: First Cognito, then Google
+    if (typeof window !== 'undefined') {
+      const logoutUrl = authSettings.post_logout_redirect_uri || window.location.origin + '/login';
+      const cognitoDomain = `https://${import.meta.env.VITE_COGNITO_DOMAIN}.auth.${import.meta.env.VITE_AWS_REGION}.amazoncognito.com`;
+      
+      // Add Google logout parameter to ensure Google session is cleared too
+      const signOutUrl = `${cognitoDomain}/logout?client_id=${import.meta.env.VITE_COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUrl)}&federated_signout=true`;
+      
+      console.log('Fallback: Redirecting to Cognito logout with federated signout:', signOutUrl);
+      window.location.href = signOutUrl;
+    }
+  }
+};
+
+export const startSignOutComplete = async (): Promise<void> => {
+  console.log('Starting complete sign-out (Cognito + Google)...');
+  
+  try {
+    // Clear the server session first
+    await fetch('/api/auth/session', { method: 'DELETE' });
+  } catch (error) {
+    console.error('Error calling session deletion endpoint:', error);
   }
   
-  // Redirect to Cognito logout endpoint for proper global sign-out
+  // Clear client-side state immediately
+  user.set(null);
+  isAuthenticated.set(false);
+  
+  // Clear all local tokens
+  try {
+    await userManager.removeUser();
+  } catch (error) {
+    console.error('Error removing user tokens:', error);
+  }
+  
   if (typeof window !== 'undefined') {
-    const logoutUrl = authSettings.post_logout_redirect_uri || '/login';
-    const cognitoDomain = `https://${import.meta.env.VITE_COGNITO_DOMAIN}.auth.${import.meta.env.VITE_AWS_REGION}.amazoncognito.com`;
-    const signOutUrl = `${cognitoDomain}/logout?client_id=${import.meta.env.VITE_COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUrl)}`;
+    // Clear all local storage and session storage
+    localStorage.clear();
+    sessionStorage.clear();
     
-    console.log('Redirecting to Cognito logout:', signOutUrl);
+    // Multi-step logout process
+    const logoutUrl = authSettings.post_logout_redirect_uri || window.location.origin + '/login';
+    const cognitoDomain = `https://${import.meta.env.VITE_COGNITO_DOMAIN}.auth.${import.meta.env.VITE_AWS_REGION}.amazoncognito.com`;
+    
+    // Sign out from Cognito with federated signout
+    const signOutUrl = `${cognitoDomain}/logout?client_id=${import.meta.env.VITE_COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUrl)}&federated_signout=true`;
+    
+    console.log('Complete sign-out: Redirecting to:', signOutUrl);
     window.location.href = signOutUrl;
   }
 };
