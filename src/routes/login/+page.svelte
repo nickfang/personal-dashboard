@@ -1,24 +1,49 @@
 <script lang="ts">
-  import { isAuthenticated, startSignIn, user } from '$lib/authService';
+  import { isAuthenticated, startSignIn, user, checkAuthStatus } from '$lib/authService';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { UserManager } from 'oidc-client-ts';
+  import { authSettings } from '$lib/authConfig';
 
   onMount(() => {
     let redirectTimeout: NodeJS.Timeout;
-    
+    const userManager = new UserManager(authSettings);
+
+    // Check if we need to clear stale auth state
+    const checkAndClearStaleAuth = async () => {
+      // If we have client-side auth but got redirected here, it means server-side auth failed
+      // This happens when JWT_SECRET was missing and session creation failed
+      if ($isAuthenticated && $page.url.searchParams.has('redirectTo')) {
+        console.log('Detected stale authentication state, clearing...');
+        // Clear the stale authentication state
+        user.set(null);
+        isAuthenticated.set(false);
+        // Clear stored tokens
+        try {
+          await userManager.removeUser();
+        } catch (error) {
+          console.error('Error clearing stale tokens:', error);
+        }
+        // Recheck auth status after clearing
+        checkAuthStatus();
+      }
+    };
+
+    checkAndClearStaleAuth();
+
     // If user is already authenticated, redirect to dashboard
     const unsubscribe = isAuthenticated.subscribe((value) => {
       console.log('Login page - Is authenticated:', value);
       if (value) {
         const redirectTo = $page.url.searchParams.get('redirectTo') || '/dashboard';
         console.log('Redirecting to:', redirectTo);
-        
+
         // Clear any existing timeout
         if (redirectTimeout) {
           clearTimeout(redirectTimeout);
         }
-        
+
         // Try immediate redirect
         goto(redirectTo, { replaceState: true }).catch((error) => {
           console.error('Redirect failed:', error);
@@ -34,7 +59,7 @@
       console.log('Current user:', currentUser);
     });
     console.log('Environment:', import.meta.env.MODE);
-    
+
     // Cleanup function
     return () => {
       unsubscribe();
