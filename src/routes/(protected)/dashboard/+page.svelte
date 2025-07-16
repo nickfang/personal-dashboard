@@ -130,7 +130,7 @@
     outline-offset: 2px;
   }
 
-  /* Large (default) styles */
+  /* General overflow fix for all resolutions */
   .dashboard-grid {
     display: grid;
     gap: 2rem;
@@ -140,9 +140,18 @@
     box-sizing: border-box;
     grid-template-rows: 72px 1fr 1fr;
     width: 100%;
-    position: absolute;
+    max-width: 1800px;
+    margin: 0 auto;
+    position: relative;
     left: 0;
     right: 0;
+    overflow: hidden;
+  }
+
+  /* Ensure all sections respect their container bounds */
+  .weather-section :global(.weather-grid),
+  .word-section :global(.word-container),
+  .calendar-section :global(.calendar-container) {
     overflow: hidden;
   }
 
@@ -156,6 +165,13 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0; /* Ensures proper flex shrinking */
+  }
+
+  .weather-section :global(*),
+  .word-section :global(*),
+  .calendar-section :global(*) {
+    box-sizing: border-box;
   }
 
   .nav {
@@ -192,20 +208,168 @@
     height: 100vh;
     padding: 0.5rem;
     gap: 0.5rem;
-    width: 100%;
+    max-width: 1800px;
+    margin: 0 auto;
   }
 
-  /* Medium (1360x768) styles */
-  @media (max-width: 1360px) and (max-height: 768px) {
+  /* Square-ish aspect ratios (4:3, 5:4) - more vertical space available */
+  @media (min-aspect-ratio: 1/1) and (max-aspect-ratio: 4/3) and (min-width: 769px) {
+    .dashboard-grid {
+      gap: 2.5rem;
+      padding: 2rem;
+      grid-template-rows: 100px 1fr 1fr;
+      height: 100vh;
+      overflow: hidden;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      padding: 2rem 3rem;
+    }
+
+    .dashboard-title {
+      font-size: 2rem;
+    }
+
+    .user-name {
+      font-size: 1rem;
+    }
+
+    .logout-button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+    }
+  }
+
+  /* Standard widescreen (16:10, 1920x1200) - balanced approach */
+  @media (min-aspect-ratio: 4/3) and (max-aspect-ratio: 8/5) and (min-width: 769px) {
+    .dashboard-grid {
+      gap: 2rem;
+      padding: 1.5rem;
+      grid-template-rows: 85px 1fr 1fr;
+      height: 100vh;
+      overflow: hidden;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      padding: 1.5rem 2.5rem;
+    }
+
+    .dashboard-title {
+      font-size: 1.75rem;
+    }
+
+    .user-name {
+      font-size: 0.95rem;
+    }
+
+    .logout-button {
+      padding: 0.6rem 1.2rem;
+      font-size: 0.9rem;
+    }
+  }
+
+  /* Widescreen 16:9 - less vertical space */
+  @media (min-aspect-ratio: 8/5) and (max-aspect-ratio: 16/9) and (min-width: 769px) {
+    .dashboard-grid {
+      gap: 1.5rem;
+      padding: 1rem;
+      grid-template-rows: 75px 1fr 1fr;
+      height: 100vh;
+      overflow: hidden;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      padding: 1.25rem 2rem;
+    }
+
+    .dashboard-title {
+      font-size: 1.5rem;
+    }
+
+    .user-name {
+      font-size: 0.875rem;
+    }
+
+    .logout-button {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Ultrawide aspect ratios (21:9, 2:1+) - very limited vertical space */
+  @media (min-aspect-ratio: 16/9) and (min-width: 769px) {
+    .dashboard-grid {
+      gap: 1rem;
+      padding: 0.75rem;
+      grid-template-rows: 65px 1fr 1fr;
+      height: 100vh;
+      overflow: hidden;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .weather-section,
+    .word-section,
+    .calendar-section {
+      overflow: hidden;
+    }
+
+    .weather-section :global(.weather-grid) {
+      overflow: hidden !important;
+    }
+
+    .nav {
+      padding: 1rem 1.5rem;
+    }
+
+    .dashboard-title {
+      font-size: 1.35rem;
+    }
+
+    .user-name {
+      font-size: 0.8rem;
+    }
+
+    .logout-button {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+    }
+  }
+
+  /* Medium height displays (like old laptops) */
+  @media (max-height: 768px) and (min-width: 769px) {
     .dashboard-grid {
       gap: 1rem;
       padding: 0.5rem;
       width: 100%;
-      grid-template-rows: auto auto;
-      position: relative;
-      height: auto;
-      min-height: 100vh;
-      overflow: visible;
+      grid-template-rows: 60px 1fr 1fr;
+      height: 100vh;
+      overflow: hidden;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      padding: 0.75rem 1.5rem;
+    }
+
+    .dashboard-title {
+      font-size: 1.25rem;
+    }
+
+    .user-name {
+      font-size: 0.8rem;
+    }
+
+    .logout-button {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
     }
   }
 
@@ -336,38 +500,15 @@
     }
   }
 
-  /* Large TV displays (1920px+) */
-  @media (min-width: 1920px) {
-    .dashboard-grid {
-      gap: 3rem;
-      padding: 2rem;
-      grid-template-rows: 100px 1fr 1fr;
-    }
-
-    .nav {
-      padding: 2rem 3rem;
-    }
-
-    .dashboard-title {
-      font-size: 2rem;
-    }
-
-    .user-name {
-      font-size: 1rem;
-    }
-
-    .logout-button {
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-    }
-  }
-
-  /* Extra large displays (4K and above) */
+  /* Extra large displays (4K and above) - maintain aspect ratio logic */
   @media (min-width: 3840px) {
+    /* Square-ish 4K displays */
     .dashboard-grid {
       gap: 4rem;
       padding: 3rem;
       grid-template-rows: 120px 1fr 1fr;
+      max-width: 1800px;
+      margin: 0 auto;
     }
 
     .nav {
@@ -385,6 +526,34 @@
     .logout-button {
       padding: 1rem 2rem;
       font-size: 1.125rem;
+    }
+  }
+
+  /* Ultrawide 4K+ displays */
+  @media (min-width: 3840px) and (min-aspect-ratio: 16/9) {
+    .dashboard-grid {
+      gap: 2.5rem;
+      padding: 2rem;
+      grid-template-rows: 90px 1fr 1fr;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    .nav {
+      padding: 2rem 3rem;
+    }
+
+    .dashboard-title {
+      font-size: 2rem;
+    }
+
+    .user-name {
+      font-size: 1rem;
+    }
+
+    .logout-button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
     }
   }
 </style>

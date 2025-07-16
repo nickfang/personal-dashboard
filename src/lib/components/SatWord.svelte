@@ -47,19 +47,39 @@
     const definitionCount = $wordStore.definitions.length;
     const isSmallScreen = window.innerWidth <= 768;
     const isMediumScreen = window.innerWidth <= 1360 && window.innerHeight <= 768;
+    const aspectRatio = window.innerWidth / window.innerHeight;
+    
+    // Categorize aspect ratios for different display behaviors
+    const isSquareish = aspectRatio >= 1.0 && aspectRatio <= 1.35; // 4:3 (1.33), 5:4 (1.25)
+    const isStandard = aspectRatio > 1.35 && aspectRatio <= 1.65; // 16:10 (1.6), 1920x1200 (1.6)
+    const isWidescreen = aspectRatio > 1.65 && aspectRatio <= 1.8; // 16:9 (1.78)
+    const isUltrawide = aspectRatio > 1.8; // 21:9 (2.33), 2:1 (2.0), etc.
 
-    // Show all definitions if:
-    // - 3 or fewer definitions on normal screens
-    // - 2 or fewer definitions on medium screens
-    // - 1 definition on small screens
-    // - Or if there's only 1 definition anyway
+    // Show all definitions based on aspect ratio and available space:
+    // - Square/4:3: More vertical space, can show more definitions
+    // - Standard 16:10: Balanced approach
+    // - Widescreen 16:9: Less vertical space, be more conservative
+    // - Ultrawide: Much less vertical space relative to width, be most conservative
     if (definitionCount === 1) {
       showAllDefinitions = true;
     } else if (isSmallScreen) {
       showAllDefinitions = definitionCount <= 1;
     } else if (isMediumScreen) {
       showAllDefinitions = definitionCount <= 2;
+    } else if (isSquareish) {
+      // 4:3, 5:4 - more vertical space available
+      showAllDefinitions = definitionCount <= 4;
+    } else if (isStandard) {
+      // 16:10, 1920x1200 - good balance
+      showAllDefinitions = definitionCount <= 3;
+    } else if (isWidescreen) {
+      // 16:9 - less vertical space
+      showAllDefinitions = definitionCount <= 2;
+    } else if (isUltrawide) {
+      // 21:9, 2:1+ - very wide, limited vertical space
+      showAllDefinitions = definitionCount <= 2;
     } else {
+      // Fallback for unusual aspect ratios
       showAllDefinitions = definitionCount <= 3;
     }
   }
@@ -423,6 +443,231 @@
 
     .progress-container {
       width: 60px;
+    }
+  }
+
+  /* Square-ish aspect ratios (4:3, 5:4) - more vertical space */
+  @media (min-aspect-ratio: 1/1) and (max-aspect-ratio: 4/3) {
+    .word-container {
+      padding: 1.25rem;
+    }
+
+    .word {
+      font-size: 3.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .all-definitions {
+      gap: 1rem;
+    }
+
+    .definition-block {
+      margin-bottom: 1rem;
+      padding: 1.25rem;
+    }
+
+    .definition-block.multiple {
+      padding: 1rem;
+    }
+
+    .type {
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      padding: 0.4rem 1rem;
+    }
+
+    .definition {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+
+    .example {
+      font-size: 1.2rem;
+      padding: 1rem;
+      line-height: 1.5;
+    }
+  }
+
+  /* Standard widescreen (16:10, 1920x1200) - balanced */
+  @media (min-aspect-ratio: 4/3) and (max-aspect-ratio: 8/5) {
+    .word-container {
+      padding: 1rem;
+    }
+
+    .word {
+      font-size: 3.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .all-definitions {
+      gap: 0.875rem;
+    }
+
+    .definition-block {
+      margin-bottom: 0.875rem;
+      padding: 1rem;
+    }
+
+    .definition-block.multiple {
+      padding: 0.8rem;
+    }
+
+    .type {
+      font-size: 0.85rem;
+      padding: 0.35rem 0.9rem;
+    }
+
+    .definition {
+      font-size: 1.4rem;
+      line-height: 1.55;
+    }
+
+    .example {
+      font-size: 1.15rem;
+      padding: 0.9rem;
+    }
+  }
+
+  /* Widescreen 16:9 - less vertical space */
+  @media (min-aspect-ratio: 8/5) and (max-aspect-ratio: 16/9) {
+    .word-container {
+      padding: 0.75rem;
+      overflow: hidden;
+    }
+
+    .word {
+      font-size: 2.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .all-definitions {
+      gap: 0.75rem;
+    }
+
+    .definition-block {
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+    }
+
+    .definition-block.multiple {
+      padding: 0.6rem;
+    }
+
+    .definition-block.multiple .type {
+      margin-bottom: 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .definition-block.multiple .definition {
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .definition-block.multiple .example {
+      padding: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    .type {
+      margin-bottom: 0.75rem;
+      font-size: 0.8rem;
+      padding: 0.3rem 0.8rem;
+    }
+
+    .definition {
+      font-size: 1.3rem;
+      margin-bottom: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .example {
+      font-size: 1.05rem;
+      padding: 0.8rem;
+      line-height: 1.4;
+    }
+
+    .definition-counter,
+    .definition-counter-static {
+      font-size: 0.7rem;
+      margin-top: -0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-container {
+      width: 65px;
+    }
+  }
+
+  /* Ultrawide aspect ratios (21:9, 2:1+) - very limited vertical space */
+  @media (min-aspect-ratio: 16/9) {
+    .word-container {
+      padding: 0.5rem;
+      overflow: hidden;
+    }
+
+    .word {
+      font-size: 2.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .all-definitions {
+      gap: 0.5rem;
+    }
+
+    .definition-block {
+      margin-bottom: 0.5rem;
+      padding: 0.5rem;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .definition-block.multiple {
+      padding: 0.4rem;
+    }
+
+    .definition-block.multiple .type {
+      margin-bottom: 0.3rem;
+      font-size: 0.65rem;
+    }
+
+    .definition-block.multiple .definition {
+      margin-bottom: 0.3rem;
+      font-size: 0.95rem;
+    }
+
+    .definition-block.multiple .example {
+      padding: 0.4rem;
+      font-size: 0.8rem;
+    }
+
+    .type {
+      margin-bottom: 0.5rem;
+      font-size: 0.7rem;
+      padding: 0.25rem 0.6rem;
+    }
+
+    .definition {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .example {
+      font-size: 0.9rem;
+      padding: 0.6rem;
+      line-height: 1.3;
+    }
+
+    .definition-counter,
+    .definition-counter-static {
+      font-size: 0.6rem;
+      margin-top: -0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .progress-container {
+      width: 55px;
     }
   }
 
