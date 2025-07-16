@@ -12,9 +12,13 @@
   let intervalId: NodeJS.Timeout;
   let progress = 0;
   let progressInterval: NodeJS.Timeout;
+  let isAutoCycling = true; // Track if auto-cycling is enabled
+  let userInteractionTimer: NodeJS.Timeout; // Timer to resume auto-cycling after user interaction
+  let showAllDefinitions = true; // Track whether to show all definitions or cycle
+  let containerHeight = 0; // Track container height for responsive behavior
 
   function setupInterval() {
-    // Clear any existing interval
+    // Clear any existing intervals
     if (intervalId) clearInterval(intervalId);
     if (progressInterval) clearInterval(progressInterval);
 
@@ -22,13 +26,41 @@
     currentDefinitionIndex = 0;
     progress = 0;
 
-    // Start new interval if multiple definitions (increased from 8 to 10 seconds)
-    if ($wordStore && $wordStore.definitions.length > 1) {
-      intervalId = setInterval(cycleDefinitions, 10000); // Changed from 8000 to 10000
+    // Determine if we should show all definitions or cycle based on space and count
+    updateDisplayMode();
+
+    // Start new interval only if cycling and multiple definitions and auto-cycling is enabled
+    if (!showAllDefinitions && $wordStore && $wordStore.definitions.length > 1 && isAutoCycling) {
+      intervalId = setInterval(cycleDefinitions, 10000); // 10 seconds
       // Update progress every 100ms (100 steps over 10 seconds)
       progressInterval = setInterval(() => {
-        progress = Math.min(100, progress + 1);
-      }, 100); // Changed from 80 to 100
+        if (isAutoCycling) {
+          progress = Math.min(100, progress + 1);
+        }
+      }, 100);
+    }
+  }
+
+  function updateDisplayMode() {
+    if (!$wordStore) return;
+
+    const definitionCount = $wordStore.definitions.length;
+    const isSmallScreen = window.innerWidth <= 768;
+    const isMediumScreen = window.innerWidth <= 1360 && window.innerHeight <= 768;
+
+    // Show all definitions if:
+    // - 3 or fewer definitions on normal screens
+    // - 2 or fewer definitions on medium screens
+    // - 1 definition on small screens
+    // - Or if there's only 1 definition anyway
+    if (definitionCount === 1) {
+      showAllDefinitions = true;
+    } else if (isSmallScreen) {
+      showAllDefinitions = definitionCount <= 1;
+    } else if (isMediumScreen) {
+      showAllDefinitions = definitionCount <= 2;
+    } else {
+      showAllDefinitions = definitionCount <= 3;
     }
   }
 
@@ -41,8 +73,50 @@
   }
 
   function cycleDefinitions() {
-    if ($wordStore && $wordStore.definitions.length > 1) {
+    if (!showAllDefinitions && $wordStore && $wordStore.definitions.length > 1 && isAutoCycling) {
       currentDefinitionIndex = (currentDefinitionIndex + 1) % $wordStore.definitions.length;
+      progress = 0;
+    }
+  }
+
+  function previousDefinition() {
+    if (!showAllDefinitions && $wordStore && $wordStore.definitions.length > 1) {
+      pauseAutoCycling();
+      currentDefinitionIndex =
+        currentDefinitionIndex === 0
+          ? $wordStore.definitions.length - 1
+          : currentDefinitionIndex - 1;
+    }
+  }
+
+  function nextDefinition() {
+    if (!showAllDefinitions && $wordStore && $wordStore.definitions.length > 1) {
+      pauseAutoCycling();
+      currentDefinitionIndex = (currentDefinitionIndex + 1) % $wordStore.definitions.length;
+    }
+  }
+
+  function pauseAutoCycling() {
+    isAutoCycling = false;
+    progress = 0;
+    if (intervalId) clearInterval(intervalId);
+    if (progressInterval) clearInterval(progressInterval);
+    if (userInteractionTimer) clearTimeout(userInteractionTimer);
+
+    // Resume auto-cycling after 15 seconds of no interaction
+    userInteractionTimer = setTimeout(() => {
+      isAutoCycling = true;
+      setupInterval();
+    }, 15000);
+  }
+
+  function toggleAutoCycling() {
+    isAutoCycling = !isAutoCycling;
+    if (isAutoCycling) {
+      setupInterval();
+    } else {
+      if (intervalId) clearInterval(intervalId);
+      if (progressInterval) clearInterval(progressInterval);
       progress = 0;
     }
   }
@@ -64,9 +138,20 @@
     // If no stored word or it's from a different day, get a new word
     getRandomWord();
 
+    // Add resize listener to update display mode
+    const handleResize = () => {
+      if ($wordStore) {
+        updateDisplayMode();
+        setupInterval(); // Restart intervals if needed
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
     return () => {
       if (intervalId) clearInterval(intervalId);
       if (progressInterval) clearInterval(progressInterval);
+      if (userInteractionTimer) clearTimeout(userInteractionTimer);
+      window.removeEventListener('resize', handleResize);
     };
   });
 
@@ -86,37 +171,55 @@
   {#if $wordStore}
     <div class="word-section">
       <div class="word">{$wordStore.word}</div>
-      {#if $wordStore.definitions.length > 1}
+      {#if $wordStore.definitions.length > 1 && !showAllDefinitions}
         <div class="definition-counter">
           {currentDefinitionIndex + 1} / {$wordStore.definitions.length}
           <div class="progress-container">
             <div class="progress-bar" style="width: {progress}%"></div>
           </div>
         </div>
+      {:else if $wordStore.definitions.length > 1}
+        <div class="definition-counter-static">
+          {$wordStore.definitions.length} definitions
+        </div>
       {/if}
     </div>
 
-    {#key currentDefinitionIndex}
-      {#if $wordStore && $wordStore.definitions[currentDefinitionIndex]}
-        {@const currentDef = $wordStore.definitions[currentDefinitionIndex]}
-        <div
-          class="definition-block"
-          in:fly={{ x: 300, duration: 600, easing: quintOut }}
-          out:fly={{ x: -300, duration: 600, easing: quintOut }}
-        >
-          <div class="type">({currentDef.type})</div>
-          <div class="definition">{currentDef.definition}</div>
-          <div class="example">"{currentDef.example}"</div>
-        </div>
-      {/if}
-    {/key}
+    {#if showAllDefinitions}
+      <!-- Show all definitions at once -->
+      <div class="all-definitions">
+        {#each $wordStore.definitions as definition, index}
+          <div class="definition-block" class:multiple={$wordStore.definitions.length > 1}>
+            <div class="type">({definition.type})</div>
+            <div class="definition">{definition.definition}</div>
+            <div class="example">"{definition.example}"</div>
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <!-- Cycling view for limited space -->
+      {#key currentDefinitionIndex}
+        {#if $wordStore && $wordStore.definitions[currentDefinitionIndex]}
+          {@const currentDef = $wordStore.definitions[currentDefinitionIndex]}
+          <div
+            class="definition-block"
+            in:fly={{ x: 300, duration: 600, easing: quintOut }}
+            out:fly={{ x: -300, duration: 600, easing: quintOut }}
+          >
+            <div class="type">({currentDef.type})</div>
+            <div class="definition">{currentDef.definition}</div>
+            <div class="example">"{currentDef.example}"</div>
+          </div>
+        {/if}
+      {/key}
+    {/if}
   {/if}
 </div>
 
 <style>
   /* Large (default) styles */
   .word-container {
-    padding: 1.5rem;
+    padding: 1rem;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -133,10 +236,10 @@
   }
 
   .word {
-    font-size: 3rem;
+    font-size: 2.5rem;
     font-weight: 600;
     color: var(--teal-800);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     letter-spacing: -0.03em;
     line-height: 1;
   }
@@ -150,6 +253,26 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   }
 
+  .definition-block.multiple {
+    margin-bottom: 0;
+    padding: 0.75rem;
+  }
+
+  .definition-block.multiple .type {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .definition-block.multiple .definition {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .definition-block.multiple .example {
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+
   .definition-block:last-child {
     margin-bottom: 0;
   }
@@ -158,8 +281,8 @@
     display: inline-block;
     color: var(--teal-600);
     font-style: italic;
-    margin-bottom: 1.25rem;
-    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-size: 1rem;
     padding: 0.25rem 1rem;
     background: white;
     border-radius: 9999px;
@@ -168,9 +291,9 @@
 
   .definition {
     color: var(--gray-800);
-    margin-bottom: 1.75rem;
+    margin-bottom: 1.25rem;
     line-height: 1.6;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 500;
     letter-spacing: -0.01em;
   }
@@ -179,11 +302,11 @@
     color: var(--teal-600);
     font-style: italic;
     line-height: 1.6;
-    padding: 1.25rem;
+    padding: 1rem;
     background: white;
     border-radius: 0.75rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    font-size: 1.1rem;
+    font-size: 1rem;
   }
 
   .definition-counter {
@@ -195,6 +318,27 @@
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
+  }
+
+  .definition-counter-static {
+    font-size: 0.875rem;
+    color: var(--teal-600);
+    margin-top: -0.5rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    opacity: 0.8;
+  }
+
+  .all-definitions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .definition-block.multiple {
+    margin-bottom: 0;
   }
 
   .progress-container {
@@ -222,11 +366,34 @@
       margin-bottom: 0.5rem;
     }
 
+    .all-definitions {
+      gap: 0.5rem;
+    }
+
     .definition-block {
       margin-bottom: 0.5rem;
       padding: 0.5rem;
       display: grid;
       gap: 0.5rem;
+    }
+
+    .definition-block.multiple {
+      padding: 0.4rem;
+    }
+
+    .definition-block.multiple .type {
+      margin-bottom: 0.4rem;
+      font-size: 0.7rem;
+    }
+
+    .definition-block.multiple .definition {
+      margin-bottom: 0.4rem;
+      font-size: 1rem;
+    }
+
+    .definition-block.multiple .example {
+      padding: 0.5rem;
+      font-size: 0.85rem;
     }
 
     .type {
@@ -247,7 +414,8 @@
       line-height: 1.4;
     }
 
-    .definition-counter {
+    .definition-counter,
+    .definition-counter-static {
       font-size: 0.65rem;
       margin-top: -0.25rem;
       margin-bottom: 0.25rem;
@@ -269,9 +437,25 @@
       margin-bottom: 1rem;
     }
 
+    .all-definitions {
+      gap: 0.75rem;
+    }
+
     .definition-block {
       padding: 1rem;
       margin-bottom: 1rem;
+    }
+
+    .definition-block.multiple {
+      padding: 0.75rem;
+    }
+
+    .definition-block.multiple .definition {
+      font-size: 1.1rem;
+    }
+
+    .definition-block.multiple .example {
+      font-size: 0.95rem;
     }
 
     .definition {

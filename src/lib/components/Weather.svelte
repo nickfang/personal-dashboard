@@ -29,11 +29,13 @@
   }
 
   $: forecastDays = forecast?.forecastday || [];
-  $: lastUpdatedTime = lastUpdated ? lastUpdated.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }) : '';
+  $: lastUpdatedTime = lastUpdated
+    ? lastUpdated.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : '';
 
   onMount(fetchWeather);
 </script>
@@ -50,7 +52,7 @@
   {:else}
     <div class="weather-grid">
       <div class="current-weather">
-        <img src={weather.condition.icon} alt={weather.condition.text} width="48" height="48" />
+        <img src={weather.condition.icon} alt={weather.condition.text} width="64" height="64" />
         <div class="current-main">
           <div class="location">Austin, TX</div>
           {#if lastUpdatedTime}
@@ -65,8 +67,8 @@
           <span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -81,8 +83,8 @@
           <span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -109,8 +111,8 @@
               <img
                 src={day.day.condition.icon}
                 alt={day.day.condition.text}
-                width="32"
-                height="32"
+                width="40"
+                height="40"
               />
             </div>
             <div class="temp-range">
@@ -142,9 +144,9 @@
       </div>
 
       {#if forecast}
-      <div class="graph-container">
-        <PressureGraph {forecast} />
-      </div>
+        <div class="graph-container">
+          <PressureGraph {forecast} />
+        </div>
       {/if}
     </div>
   {/if}
@@ -152,7 +154,7 @@
 
 <style>
   .weather-container {
-    padding: 1.5rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -182,27 +184,26 @@
 
   .weather-grid {
     flex: 1;
-    display: grid;
-    gap: 1rem;
-    grid-template-rows: auto 1fr auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
   }
 
   .current-weather {
-    text-align: center;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 2fr 1fr;
     gap: 1rem;
     align-items: center;
-    justify-items: center;
-    padding: 1rem 3rem;
+    padding: 1.5rem;
     background: var(--teal-50);
-    border-radius: .75rem;
+    border-radius: 0.75rem;
   }
 
   .current-main {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     text-align: center;
   }
 
@@ -213,59 +214,95 @@
   }
 
   .temperature {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 300;
     color: var(--teal-800);
   }
 
   .condition {
     color: var(--teal-600);
-    font-size: 0.875rem;
+    font-size: 1rem;
     margin-top: 0.25rem;
+  }
+
+  .location {
+    color: var(--teal-600);
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+  }
+
+  .last-updated {
+    color: var(--teal-600);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+  }
+
+  .weather-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+    color: var(--teal-600);
+    font-size: 1rem;
   }
 
   .forecast-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem;
-    text-align: center;
-    align-self: center;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
   }
 
   .forecast-card {
     border: 1px solid var(--teal-100);
-    border-radius: .75rem;
-    padding: 0.5rem 0.5rem 0.75rem 0.5rem;
+    border-radius: 0.75rem;
+    padding: 1rem;
     background: rgba(255, 255, 255, 0.5);
     display: flex;
     flex-direction: column;
     align-items: center;
+    text-align: center;
+    min-height: 140px;
   }
 
   .day-row {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    gap: 0.5rem;
   }
 
   .forecast-day {
     color: var(--teal-600);
-    font-size: 0.875rem;
-    margin-right: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
   }
 
   .temp-range {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    margin: 0.5rem 0;
+  }
+
+  .max-temp {
+    color: var(--teal-800);
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .min-temp {
+    color: var(--teal-600);
+    font-weight: 400;
+    font-size: 1.1rem;
   }
 
   .forecast-details {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     color: var(--teal-600);
-    display: grid;
-    gap: 0.25rem;
+    margin-top: auto;
   }
 
   .forecast-details span {
@@ -275,164 +312,141 @@
   }
 
   .forecast-details svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
   }
 
-  .max-temp {
-    color: var(--teal-800);
-    font-weight: 500;
-  }
-
-  .min-temp {
-    color: var(--teal-600);
-    font-weight: 400;
-  }
-
-  .weather-details {
-    align-self: center;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.5rem;
-    color: var(--teal-600);
-    font-size: 0.875rem;
-  }
-
-  .location {
-    color: var(--teal-600);
-    font-size: 1rem;
-    margin-bottom: 0.25rem;
-  }
   .graph-container {
     background: white;
-    padding: 1rem;
-    border-radius: .75rem;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
     border: 1px solid var(--teal-100);
-    /* height: 140px; */
-    align-self: end;
+    min-height: 120px;
   }
+
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
 
+  /* Tablet and smaller laptops */
+  @media (max-width: 1024px) {
+    .weather-container {
+      padding: 0.75rem;
+    }
+
+    .weather-grid {
+      gap: 1rem;
+    }
+
+    .current-weather {
+      grid-template-columns: auto 1fr auto;
+      padding: 1rem;
+    }
+
+    .temperature {
+      font-size: 2rem;
+    }
+
+    .forecast-card {
+      padding: 0.75rem;
+      min-height: 120px;
+    }
+
+    .graph-container {
+      padding: 1rem;
+    }
+  }
+
+  /* Mobile */
   @media (max-width: 768px) {
     .weather-container {
-      padding: 1rem;
+      padding: 0.5rem;
+    }
+
+    .weather-grid {
+      gap: 0.75rem;
     }
 
     .current-weather {
       grid-template-columns: 1fr;
-      gap: 1rem;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      text-align: center;
     }
 
     .current-main {
-      align-items: center;
-      text-align: center;
       order: 2;
     }
 
     .current-weather img {
-      width: 64px;
-      height: 64px;
       order: 1;
-      margin-bottom: 0.5rem;
+      width: 48px;
+      height: 48px;
     }
 
     .weather-details {
+      order: 3;
       align-items: center;
       flex-direction: row;
       justify-content: center;
-      gap: 2rem;
-      order: 3;
-      margin: 0.5rem 0;
+      gap: 1rem;
     }
 
-    .forecast-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .graph-container {
-      border-radius: .75rem;
-      padding: 0.75rem;
-    }
-  }
-
-  @media (max-width: 1360px) and (max-height: 768px) {
-    .weather-container {
-      padding: 0.5rem;
-    }
-    
-    .weather-grid {
-      gap: 0.25rem;
-      grid-template-rows: auto auto auto;
-      height: 100%;
-    }
-
-    .current-weather {
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 0.5rem;
-      padding: 0.25rem;
-    }
-
-    .forecast-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.25rem;
-      padding: 0.25rem 0;
-    }
-
-    .forecast-card {
-      padding: 0.375rem;
-    }
-
-    .day-row {
-      margin-bottom: 0.25rem;
-    }
     .temperature {
-      font-size: 1.5rem;
-    }
-
-    .graph-container {
-      /* height: 120px; */
-      padding: 0.25rem;
-    }
-
-    .location {
-      font-size: 0.75rem;
+      font-size: 1.75rem;
     }
 
     .condition {
-      font-size: 0.65rem;
+      font-size: 0.9rem;
     }
 
-    .weather-details {
-      font-size: 0.65rem;
+    .location {
+      font-size: 1rem;
+    }
+
+    .forecast-grid {
+      gap: 0.5rem;
+    }
+
+    .forecast-card {
+      padding: 0.5rem;
+      min-height: 100px;
+    }
+
+    .day-row {
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .day-row img {
+      width: 28px;
+      height: 28px;
     }
 
     .forecast-day {
-      font-size: 0.65rem;
+      font-size: 0.75rem;
+    }
+
+    .temp-range {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .max-temp,
+    .min-temp {
+      font-size: 0.9rem;
     }
 
     .forecast-details {
-      font-size: 0.55rem;
+      font-size: 0.7rem;
     }
 
-    .last-updated {
-      font-size: 0.6rem;
-      margin-bottom: 0.25rem;
+    .graph-container {
+      padding: 0.5rem;
+      min-height: 80px;
     }
-  }
-
-  .last-updated {
-    color: var(--teal-600);
-    font-size: 0.75rem;
-    margin-bottom: 0.5rem;
-    opacity: 0.8;
   }
 </style>

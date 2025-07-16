@@ -50,11 +50,11 @@
   <div class="weather-section">
     <Weather />
   </div>
-  <div class="calendar-section">
-    <Calendar2 />
-  </div>
   <div class="word-section">
     <SatWord />
+  </div>
+  <div class="calendar-section">
+    <Calendar2 />
   </div>
 </div>
 
@@ -135,7 +135,7 @@
     display: grid;
     gap: 2rem;
     padding: 1rem;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     height: 100vh;
     box-sizing: border-box;
     grid-template-rows: 72px 1fr 1fr;
@@ -168,13 +168,13 @@
     grid-row: 2;
   }
 
-  .calendar-section {
+  .word-section {
     grid-column: 2;
-    grid-row: 2 / span 2;
+    grid-row: 2;
   }
 
-  .word-section {
-    grid-column: 1;
+  .calendar-section {
+    grid-column: 1 / span 2;
     grid-row: 3;
   }
 
@@ -209,15 +209,53 @@
     }
   }
 
+  /* Tablet styles */
+  @media (max-width: 1024px) and (min-width: 769px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+      height: auto;
+      min-height: 100vh;
+      padding: 1rem;
+      gap: 1.5rem;
+      grid-template-rows: auto auto auto auto;
+      width: 100%;
+      position: relative;
+      overflow: visible;
+    }
+
+    .nav {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .weather-section {
+      grid-column: 1;
+      grid-row: 2;
+      min-height: 350px;
+    }
+
+    .word-section {
+      grid-column: 1;
+      grid-row: 3;
+      min-height: 400px;
+    }
+
+    .calendar-section {
+      grid-column: 1;
+      grid-row: 4;
+      min-height: 600px;
+    }
+  }
+
   /* Small (mobile) styles */
   @media (max-width: 768px) {
     .dashboard-grid {
       grid-template-columns: 1fr;
       height: auto;
       min-height: 100vh;
-      padding: 1rem;
+      padding: 0.75rem;
       gap: 1rem;
-      grid-template-rows: auto;
+      grid-template-rows: auto auto auto auto;
       width: 100%;
       position: relative;
       overflow: visible;
@@ -233,19 +271,68 @@
       font-size: 1.25rem;
     }
 
-    .weather-section {
-      grid-row: auto;
+    .nav {
+      grid-column: 1;
+      grid-row: 1;
+      padding: 1rem 1.5rem;
     }
 
-    .calendar-section {
+    .weather-section {
       grid-column: 1;
-      grid-row: auto;
-      min-height: 600px;
+      grid-row: 2;
+      min-height: 300px;
     }
 
     .word-section {
       grid-column: 1;
-      grid-row: auto;
+      grid-row: 3;
+      min-height: 350px;
+    }
+
+    .calendar-section {
+      grid-column: 1;
+      grid-row: 4;
+      min-height: 500px;
+    }
+
+    .weather-section,
+    .word-section,
+    .calendar-section {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  /* Very small mobile screens */
+  @media (max-width: 480px) {
+    .dashboard-grid {
+      padding: 0.5rem;
+      gap: 0.75rem;
+    }
+
+    .nav {
+      padding: 0.75rem 1rem;
+    }
+
+    .dashboard-title {
+      font-size: 1.125rem;
+    }
+
+    .user-info {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .weather-section {
+      min-height: 280px;
+    }
+
+    .word-section {
+      min-height: 320px;
+    }
+
+    .calendar-section {
+      min-height: 450px;
     }
   }
 

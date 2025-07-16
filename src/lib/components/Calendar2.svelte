@@ -239,7 +239,12 @@
     <div class="calendar-content">
       <!-- Week Navigation -->
       <div class="week-nav">
-        <button class="nav-button" on:click={previousWeek} title="Previous Week">
+        <button
+          class="nav-button"
+          on:click={previousWeek}
+          title="Previous Week"
+          aria-label="Previous Week"
+        >
           <svg
             width="16"
             height="16"
@@ -254,7 +259,7 @@
 
         <button class="today-button" on:click={goToToday}> Today </button>
 
-        <button class="nav-button" on:click={nextWeek} title="Next Week">
+        <button class="nav-button" on:click={nextWeek} title="Next Week" aria-label="Next Week">
           <svg
             width="16"
             height="16"
@@ -279,7 +284,19 @@
             <div class="day-events">
               {#each getEventsForDay(day) as event}
                 <div class="event" class:all-day={!event.start?.dateTime}>
-                  <div class="event-title">{event.summary || 'Untitled Event'}</div>
+                  <div class="event-title">
+                    {@html (event.summary || 'Untitled Event')
+                      .replace(/\\n/g, '<br>')
+                      .replace(/\n/g, '<br>')}
+                  </div>
+                  {#if event.location}
+                    <div class="event-location">
+                      📍 {@html event.location
+                        .replace(/\\n/g, '<br>')
+                        .replace(/\n/g, '<br>')
+                        .replace(/\\,/g, ',')}
+                    </div>
+                  {/if}
                   {#if event.start?.dateTime}
                     <div class="event-time">
                       {formatTime(event.start.dateTime)}
@@ -317,7 +334,7 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    font-size: clamp(0.75rem, 1vw, 1rem);
+    font-size: clamp(0.875rem, 1.2vw, 1.1rem);
   }
 
   .calendar-loading {
@@ -540,7 +557,7 @@
   }
 
   .day-name {
-    font-size: clamp(0.7rem, 0.9vw, 0.875rem);
+    font-size: clamp(0.8rem, 1vw, 1rem);
     font-weight: 500;
   }
 
@@ -556,8 +573,8 @@
   .event {
     background: var(--teal-100, #a3dfdf);
     border-radius: 0.25rem;
-    padding: 0.25rem 0.5rem;
-    font-size: clamp(0.6rem, 0.8vw, 0.75rem);
+    padding: 0.375rem 0.5rem;
+    font-size: clamp(0.75rem, 0.9vw, 0.875rem);
     border-left: 3px solid var(--teal-600, #006666);
   }
 
@@ -570,11 +587,20 @@
     font-weight: 500;
     margin-bottom: 0.125rem;
     word-break: break-word;
+    line-height: 1.3;
+  }
+
+  .event-location {
+    font-size: clamp(0.65rem, 0.8vw, 0.75rem);
+    color: var(--teal-600, #006666);
+    opacity: 0.8;
+    margin-bottom: 0.125rem;
+    word-break: break-word;
     line-height: 1.2;
   }
 
   .event-time {
-    font-size: clamp(0.55rem, 0.7vw, 0.7rem);
+    font-size: clamp(0.7rem, 0.85vw, 0.8rem);
     opacity: 0.8;
   }
 
@@ -582,7 +608,7 @@
     text-align: center;
     color: var(--teal-600, #006666);
     opacity: 0.6;
-    font-size: clamp(0.6rem, 0.8vw, 0.75rem);
+    font-size: clamp(0.75rem, 0.9vw, 0.875rem);
     padding: 1rem 0;
   }
 
@@ -599,6 +625,7 @@
   @media (max-width: 768px) {
     .calendar2-container {
       padding: 1rem;
+      font-size: 0.9rem;
     }
 
     .calendar-grid {
@@ -610,26 +637,182 @@
     }
 
     .event {
-      padding: 0.2rem 0.3rem;
+      padding: 0.3rem 0.4rem;
+      font-size: 0.8rem;
+    }
+
+    .event-location {
+      font-size: 0.7rem;
+    }
+
+    .event-time {
+      font-size: 0.75rem;
+    }
+
+    .day-name {
+      font-size: 0.85rem;
     }
   }
 
-  @media (max-width: 600px) {
+  @media (max-width: 1024px) {
+    .calendar2-container {
+      font-size: 0.85rem;
+    }
+
     .calendar-grid {
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 0.5rem;
     }
 
     .day-column {
       min-height: auto;
+      flex-direction: row;
+      align-items: flex-start;
+      border-radius: 0.5rem;
+      overflow: hidden;
     }
 
     .day-header {
-      padding: 0.75rem;
+      flex-shrink: 0;
+      width: 100px;
+      padding: 0.75rem 0.5rem;
+      border-bottom: none;
+      border-right: 1px solid var(--teal-100, #a3dfdf);
+      text-align: left;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .today .day-header {
+      background: var(--teal-600, #006666);
+      color: white;
     }
 
     .day-name {
-      font-size: 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .day-events {
+      flex: 1;
+      padding: 0.5rem;
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: stretch;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .event {
+      font-size: 0.8rem;
+      padding: 0.4rem 0.6rem;
+      margin: 0;
+      border-radius: 0.375rem;
+      border-left: 3px solid var(--teal-600, #006666);
+      background: var(--teal-100, #a3dfdf);
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .event.all-day {
+      background: var(--teal-600, #006666);
+      color: white;
+      border-left-color: var(--teal-800, #004444);
+    }
+
+    .event-title {
+      font-size: 0.8rem;
+      margin-bottom: 0.125rem;
+      line-height: 1.3;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .event-location {
+      font-size: 0.7rem;
+      margin-bottom: 0.125rem;
+      margin-top: 0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .event-time {
+      font-size: 0.7rem;
+      margin-top: 0;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .no-events {
+      color: var(--teal-500, #006666);
+      opacity: 0.6;
+      font-size: 0.75rem;
+      padding: 0.75rem 0;
+      font-style: italic;
+    }
+  }
+
+  /* iPhone and small mobile sizes - vertical stacking */
+  @media (max-width: 600px) {
+    .day-column {
+      flex-direction: column;
+      align-items: stretch;
+      overflow: hidden;
+    }
+
+    .day-header {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--teal-100, #a3dfdf);
+      text-align: center;
+      padding: 0.6rem 0.5rem;
+      overflow: hidden;
+    }
+
+    .day-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .day-events {
+      padding: 0.6rem;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .event {
+      font-size: 0.85rem;
+      padding: 0.5rem 0.7rem;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .event-title {
+      font-size: 0.85rem;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+
+    .event-location {
+      font-size: 0.75rem;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+
+    .event-time {
+      font-size: 0.75rem;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
   }
 
