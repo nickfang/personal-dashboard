@@ -8,11 +8,29 @@ export const isAuthenticated: Writable<boolean> = writable(false);
 const userManager = new UserManager(authSettings);
 
 userManager.events.addUserLoaded((loadedUser) => {
+  console.log('[authService] User loaded:', loadedUser?.profile?.sub);
   user.set(loadedUser);
   isAuthenticated.set(true);
 });
 
 userManager.events.addUserUnloaded(() => {
+  console.log('[authService] User unloaded');
+  user.set(null);
+  isAuthenticated.set(false);
+});
+
+userManager.events.addAccessTokenExpired(() => {
+  console.log('[authService] Access token expired');
+  user.set(null);
+  isAuthenticated.set(false);
+  // Redirect to login page when token expires
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+});
+
+userManager.events.addSilentRenewError((error) => {
+  console.error('[authService] Silent renew error:', error);
   user.set(null);
   isAuthenticated.set(false);
 });
@@ -58,11 +76,52 @@ export const handleCallback = async (): Promise<User | null> => {
 
 export const startSignOut = async (): Promise<void> => {
   try {
+    // Clear the server session first
     await fetch('/api/auth/session', { method: 'DELETE' });
   } catch (error) {
     console.error('Error calling session deletion endpoint:', error);
   }
-  return userManager.signoutRedirect();
+  
+  // Clear client-side state immediately
+  user.set(null);
+  isAuthenticated.set(false);
+  
+  try {
+    // Clear any stored tokens
+    await userManager.removeUser();
+  } catch (error) {
+    console.error('Error removing user:', error);
+  }
+  
+  // Direct redirect to login without using Cognito hosted UI
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
+};
+
+export const forceSignOut = async (): Promise<void> => {
+  try {
+    // Clear the server session
+    await fetch('/api/auth/session', { method: 'DELETE' });
+  } catch (error) {
+    console.error('Error calling session deletion endpoint:', error);
+  }
+  
+  // Clear client-side state
+  user.set(null);
+  isAuthenticated.set(false);
+  
+  // Clear any stored tokens
+  try {
+    await userManager.removeUser();
+  } catch (error) {
+    console.error('Error removing user:', error);
+  }
+  
+  // Direct redirect to login without going through Cognito
+  if (typeof window !== 'undefined') {
+    window.location.href = '/login';
+  }
 };
 
 export const getAccessToken = async (): Promise<string | null> => {

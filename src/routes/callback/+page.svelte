@@ -11,11 +11,9 @@
       const user = await handleCallback();
       if (user) {
         // Successfully handled callback and server session should be created.
-        // Redirect to the original intended page or dashboard.
-        const stateFromUrl = $page.url.searchParams.get('state');
-        console.log('[Callback Page] State from URL:', stateFromUrl);
-        const redirectTo = stateFromUrl || '/dashboard'; // OIDC often puts original URL in 'state' or you might need to retrieve it differently
-        await goto(redirectTo, { replaceState: true });
+        // Always redirect to dashboard after successful login
+        console.log('[Callback Page] User authenticated, redirecting to dashboard');
+        await goto('/dashboard', { replaceState: true });
       } else {
         error = 'Login failed or was cancelled.';
       }
