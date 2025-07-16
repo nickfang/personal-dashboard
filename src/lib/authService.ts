@@ -21,18 +21,36 @@ userManager.events.addUserUnloaded(() => {
 
 userManager.events.addAccessTokenExpired(() => {
   console.log('[authService] Access token expired');
-  user.set(null);
-  isAuthenticated.set(false);
-  // Redirect to login page when token expires
-  if (typeof window !== 'undefined') {
-    window.location.href = '/login';
-  }
+  // Don't immediately redirect - let silent renewal handle it first
+  // Only redirect if we're not in the middle of a page load
+  setTimeout(() => {
+    userManager.getUser().then((currentUser) => {
+      if (!currentUser) {
+        console.log('[authService] No user after token expiry, redirecting to login');
+        user.set(null);
+        isAuthenticated.set(false);
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+      }
+    });
+  }, 2000); // Give silent renewal 2 seconds to work
 });
 
 userManager.events.addSilentRenewError((error) => {
   console.error('[authService] Silent renew error:', error);
   user.set(null);
   isAuthenticated.set(false);
+});
+
+userManager.events.addUserSignedIn(() => {
+  console.log('[authService] User signed in');
+  userManager.getUser().then((loadedUser) => {
+    if (loadedUser) {
+      user.set(loadedUser);
+      isAuthenticated.set(true);
+    }
+  });
 });
 
 export const startSignIn = async (): Promise<void> => {

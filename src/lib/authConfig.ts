@@ -13,5 +13,11 @@ export const authSettings: UserManagerSettings = {
       : import.meta.env.VITE_COGNITO_LOGOUT_DEV,
   response_type: 'code',
   scope: 'email openid phone',
-  automaticSilentRenew: false,
+  automaticSilentRenew: true,
+  silent_redirect_uri:
+    import.meta.env.MODE === 'production'
+      ? import.meta.env.VITE_COGNITO_CALLBACK_PROD
+      : import.meta.env.VITE_COGNITO_CALLBACK_DEV,
+  includeIdTokenInSilentRenew: true,
+  accessTokenExpiringNotificationTimeInSeconds: 60, // Start renewal 60 seconds before expiry
 };
