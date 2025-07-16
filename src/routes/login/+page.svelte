@@ -32,6 +32,7 @@
 <div class="login-container">
   <div class="login-card">
     <div class="header">
+      <div class="dashboard-icon">🏠</div>
       <h1 class="title">Personal Dashboard</h1>
       <p class="subtitle">Sign in to access your dashboard</p>
     </div>
@@ -54,8 +55,9 @@
         </button>
         
         <div class="info-text">
-          <p>This dashboard is designed for large screen displays</p>
-          <p>Perfect for your living room or office wall mount</p>
+          <p><strong>Living Room Dashboard</strong></p>
+          <p>Optimized for large screen displays</p>
+          <p>Weather • Calendar • Daily Word • Time</p>
         </div>
       {/if}
     </div>
@@ -68,18 +70,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(to bottom right, var(--teal-50, #d1efef), var(--teal-100, #a3dfdf));
     padding: 2rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   .login-card {
     background: white;
-    border-radius: 1.5rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     padding: 3rem;
     max-width: 500px;
     width: 100%;
     text-align: center;
+    transition: box-shadow 0.3s ease;
+  }
+
+  .login-card:hover {
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
   }
 
   .header {
@@ -88,16 +96,17 @@
 
   .title {
     font-size: 2.5rem;
-    font-weight: 700;
-    color: #1f2937;
+    font-weight: 600;
+    color: var(--gray-800, #1f2937);
     margin: 0 0 0.5rem 0;
     line-height: 1.2;
   }
 
   .subtitle {
     font-size: 1.125rem;
-    color: #6b7280;
+    color: var(--teal-600, #006666);
     margin: 0;
+    font-weight: 500;
   }
 
   .login-content {
@@ -111,21 +120,21 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.75rem;
+    background: var(--teal-600, #006666);
+    border: none;
+    color: white;
+    border-radius: 0.375rem;
     padding: 1rem 2rem;
     font-size: 1.125rem;
-    font-weight: 600;
-    color: #374151;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
   .signin-button:hover {
-    border-color: #4285f4;
-    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+    background: var(--teal-800, #004444);
+    box-shadow: 0 4px 12px rgba(0, 102, 102, 0.25);
     transform: translateY(-1px);
   }
 
@@ -133,14 +142,26 @@
     transform: translateY(0);
   }
 
+  .signin-button:focus {
+    outline: 2px solid var(--teal-600, #006666);
+    outline-offset: 2px;
+  }
+
   .google-icon {
     flex-shrink: 0;
+    background: white;
+    border-radius: 0.25rem;
+    padding: 0.25rem;
   }
 
   .success-message {
-    color: #059669;
+    color: var(--teal-600, #006666);
     font-size: 1.125rem;
     font-weight: 500;
+    background: var(--teal-50, #d1efef);
+    padding: 1rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--teal-100, #a3dfdf);
   }
 
   .success-message p {
@@ -149,12 +170,22 @@
 
   .info-text {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--teal-600, #006666);
     line-height: 1.5;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 1.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--teal-100, #a3dfdf);
   }
 
   .info-text p {
     margin: 0.25rem 0;
+  }
+
+  .dashboard-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
   }
 
   /* Responsive design for large displays */
@@ -162,15 +193,19 @@
     .title {
       font-size: 3rem;
     }
-    
+
     .login-card {
       padding: 4rem;
       max-width: 600px;
     }
-    
+
     .signin-button {
       font-size: 1.25rem;
       padding: 1.25rem 2.5rem;
+    }
+
+    .dashboard-icon {
+      font-size: 4rem;
     }
   }
 
@@ -179,10 +214,19 @@
     .title {
       font-size: 3.5rem;
     }
-    
+
     .login-card {
       padding: 5rem;
       max-width: 700px;
+    }
+
+    .signin-button {
+      font-size: 1.375rem;
+      padding: 1.5rem 3rem;
+    }
+
+    .dashboard-icon {
+      font-size: 5rem;
     }
   }
 </style>
