@@ -17,18 +17,18 @@
     // Clear any existing interval
     if (intervalId) clearInterval(intervalId);
     if (progressInterval) clearInterval(progressInterval);
-    
+
     // Reset index and progress
     currentDefinitionIndex = 0;
     progress = 0;
 
-    // Start new interval if multiple definitions
+    // Start new interval if multiple definitions (increased from 8 to 10 seconds)
     if ($wordStore && $wordStore.definitions.length > 1) {
-      intervalId = setInterval(cycleDefinitions, 8000);
-      // Update progress every 80ms (100 steps over 8 seconds)
+      intervalId = setInterval(cycleDefinitions, 10000); // Changed from 8000 to 10000
+      // Update progress every 100ms (100 steps over 10 seconds)
       progressInterval = setInterval(() => {
         progress = Math.min(100, progress + 1);
-      }, 80);
+      }, 100); // Changed from 80 to 100
     }
   }
 
@@ -77,9 +77,9 @@
 </script>
 
 <div class="word-container">
-  <SectionHeader 
-    title="Word of the Day" 
-    fullscreenPath="/fullscreen/sat-word" 
+  <SectionHeader
+    title="Word of the Day"
+    fullscreenPath="/fullscreen/sat-word"
     onRefresh={getRandomWord}
   />
 
@@ -99,7 +99,8 @@
     {#key currentDefinitionIndex}
       {#if $wordStore && $wordStore.definitions[currentDefinitionIndex]}
         {@const currentDef = $wordStore.definitions[currentDefinitionIndex]}
-        <div class="definition-block"
+        <div
+          class="definition-block"
           in:fly={{ x: 300, duration: 600, easing: quintOut }}
           out:fly={{ x: -300, duration: 600, easing: quintOut }}
         >
@@ -144,7 +145,7 @@
     margin-bottom: 0.75rem;
     padding: 1rem;
     background: var(--teal-50);
-    border-radius: .75rem;
+    border-radius: 0.75rem;
     border: 1px solid var(--teal-100);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
   }
