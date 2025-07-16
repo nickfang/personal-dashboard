@@ -107,7 +107,9 @@
             <div class="forecast-card">
               <div class="day-row">
                 <div class="forecast-day">
-                  {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short' })}
+                  {new Date(day.date + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'short',
+                  })}
                 </div>
                 <img
                   src={day.day.condition.icon}
@@ -579,7 +581,7 @@
     }
 
     .max-temp::after {
-      content: "/";
+      content: '/';
       color: var(--teal-400);
       margin-left: 2px;
     }

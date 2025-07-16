@@ -107,7 +107,7 @@ JWT_SECRET=your-secure-jwt-secret
 - Enable "Allow sign-in using providers"
 - Configure allowed OAuth flows and scopes
 - **IMPORTANT**: Add sign-out URLs in "Allowed sign-out URLs":
-  - `http://localhost:5173/login` (development)  
+  - `http://localhost:5173/login` (development)
   - `https://yourdomain.com/login` (production)
 
 ### 3. **Google OAuth Setup**
@@ -205,14 +205,14 @@ forceSignOut()      // Emergency local sign-out
 
 1. **Start development server**: `npm run dev`
 2. **Visit**: `http://localhost:5173`
-3. **Test authentication flow**: 
+3. **Test authentication flow**:
    - Should redirect to login → sign in with Google → redirect to dashboard
-4. **Test global logout**: 
+4. **Test global logout**:
    - Click sign out → redirected to Cognito logout → returned to login page
    - Try signing in again → should require full Google authentication (not auto-login)
-5. **Test protection**: 
+5. **Test protection**:
    - Try accessing `/dashboard` without auth → should redirect to login with redirectTo parameter
-6. **Test recovery**: 
+6. **Test recovery**:
    - If you encounter stale auth state → login page should auto-detect and clear it
 
 ### **Production Deployment Verification**

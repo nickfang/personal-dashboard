@@ -49,7 +49,7 @@
     const isSmallScreen = window.innerWidth <= 768;
     const isMediumScreen = window.innerWidth <= 1360 && window.innerHeight <= 768;
     const aspectRatio = window.innerWidth / window.innerHeight;
-    
+
     // Categorize aspect ratios for different display behaviors
     const isSquareish = aspectRatio >= 1.0 && aspectRatio <= 1.35; // 4:3 (1.33), 5:4 (1.25)
     const isStandard = aspectRatio > 1.35 && aspectRatio <= 1.65; // 16:10 (1.6), 1920x1200 (1.6)
@@ -210,8 +210,8 @@
 
     {#if showAllDefinitions}
       <!-- Show all definitions at once -->
-      <div 
-        class="all-definitions" 
+      <div
+        class="all-definitions"
         class:single-column={innerWidth <= 768}
         class:single-definition={$wordStore.definitions.length === 1 && innerWidth > 768}
       >
