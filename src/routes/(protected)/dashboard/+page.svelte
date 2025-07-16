@@ -355,6 +355,16 @@
       margin: 0 auto;
     }
 
+    .weather-section,
+    .word-section,
+    .calendar-section {
+      overflow: hidden;
+    }
+
+    .weather-section :global(.weather-grid) {
+      overflow: hidden !important;
+    }
+
     .nav {
       padding: 0.75rem 1.5rem;
     }

@@ -16,6 +16,7 @@
   let userInteractionTimer: NodeJS.Timeout; // Timer to resume auto-cycling after user interaction
   let showAllDefinitions = true; // Track whether to show all definitions or cycle
   let containerHeight = 0; // Track container height for responsive behavior
+  let innerWidth = 0; // Track window width for responsive behavior
 
   function setupInterval() {
     // Clear any existing intervals
@@ -181,6 +182,8 @@
   }
 </script>
 
+<svelte:window bind:innerWidth />
+
 <div class="word-container">
   <SectionHeader
     title="Word of the Day"
@@ -198,7 +201,7 @@
             <div class="progress-bar" style="width: {progress}%"></div>
           </div>
         </div>
-      {:else if $wordStore.definitions.length > 1}
+      {:else if $wordStore.definitions.length > 2}
         <div class="definition-counter-static">
           {$wordStore.definitions.length} definitions
         </div>
@@ -207,7 +210,11 @@
 
     {#if showAllDefinitions}
       <!-- Show all definitions at once -->
-      <div class="all-definitions">
+      <div 
+        class="all-definitions" 
+        class:single-column={innerWidth <= 768}
+        class:single-definition={$wordStore.definitions.length === 1 && innerWidth > 768}
+      >
         {#each $wordStore.definitions as definition, index}
           <div class="definition-block" class:multiple={$wordStore.definitions.length > 1}>
             <div class="type">({definition.type})</div>
@@ -350,11 +357,23 @@
   }
 
   .all-definitions {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1rem;
     flex: 1;
     overflow-y: auto;
+    justify-content: center;
+  }
+
+  /* Force single column when on small screens, but keep half-width for single definition on desktop */
+  .all-definitions.single-column {
+    grid-template-columns: 1fr;
+  }
+
+  /* For single definition, make it half-width and center it */
+  .all-definitions.single-definition {
+    grid-template-columns: minmax(300px, 0.5fr);
+    justify-content: center;
   }
 
   .definition-block.multiple {
@@ -459,6 +478,7 @@
 
     .all-definitions {
       gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
 
     .definition-block {
@@ -502,6 +522,7 @@
 
     .all-definitions {
       gap: 0.875rem;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
 
     .definition-block {
@@ -543,6 +564,7 @@
 
     .all-definitions {
       gap: 0.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
 
     .definition-block {
@@ -613,6 +635,7 @@
 
     .all-definitions {
       gap: 0.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     }
 
     .definition-block {
@@ -684,6 +707,7 @@
 
     .all-definitions {
       gap: 0.75rem;
+      grid-template-columns: 1fr !important; /* Force single column on mobile */
     }
 
     .definition-block {

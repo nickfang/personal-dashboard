@@ -344,6 +344,98 @@
     }
   }
 
+  /* Medium height displays (1360x768 and similar) */
+  @media (max-height: 768px) and (min-width: 769px) {
+    .weather-container {
+      padding: 0.5rem;
+    }
+
+    .weather-grid {
+      gap: 0.5rem;
+      grid-template-rows: 1fr auto;
+    }
+
+    .top-row {
+      gap: 0.75rem;
+    }
+
+    .current-weather {
+      padding: 0.75rem;
+      gap: 0.5rem;
+    }
+
+    .temperature {
+      font-size: 2rem;
+    }
+
+    .location {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .last-updated {
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .condition {
+      font-size: 0.9rem;
+    }
+
+    .weather-details {
+      gap: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .forecast-grid {
+      gap: 0.5rem;
+    }
+
+    .forecast-card {
+      padding: 0.5rem;
+      min-height: 80px;
+      gap: 0.25rem;
+    }
+
+    .day-row {
+      margin-bottom: 0.5rem;
+      gap: 0.25rem;
+    }
+
+    .day-row img {
+      width: 32px;
+      height: 32px;
+    }
+
+    .forecast-day {
+      font-size: 0.85rem;
+    }
+
+    .temp-range {
+      margin: 0.25rem 0;
+      gap: 0.125rem;
+    }
+
+    .max-temp,
+    .min-temp {
+      font-size: 1rem;
+    }
+
+    .forecast-details {
+      font-size: 0.75rem;
+    }
+
+    .forecast-details svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .graph-container {
+      padding: 0.75rem;
+      min-height: 60px; /* Reduced height for graph */
+    }
+  }
+
   /* Tablet and smaller laptops */
   @media (max-width: 1024px) {
     .weather-container {
