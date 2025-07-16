@@ -93,7 +93,37 @@ export const startSignOut = async (): Promise<void> => {
     console.error('Error removing user:', error);
   }
   
-  // Direct redirect to login without using Cognito hosted UI
+  // Redirect to Cognito logout endpoint for proper global sign-out
+  if (typeof window !== 'undefined') {
+    const logoutUrl = authSettings.post_logout_redirect_uri || '/login';
+    const cognitoDomain = `https://${import.meta.env.VITE_COGNITO_DOMAIN}.auth.${import.meta.env.VITE_AWS_REGION}.amazoncognito.com`;
+    const signOutUrl = `${cognitoDomain}/logout?client_id=${import.meta.env.VITE_COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(logoutUrl)}`;
+    
+    console.log('Redirecting to Cognito logout:', signOutUrl);
+    window.location.href = signOutUrl;
+  }
+};
+
+export const startSignOutLocal = async (): Promise<void> => {
+  try {
+    // Clear the server session first
+    await fetch('/api/auth/session', { method: 'DELETE' });
+  } catch (error) {
+    console.error('Error calling session deletion endpoint:', error);
+  }
+  
+  // Clear client-side state immediately
+  user.set(null);
+  isAuthenticated.set(false);
+  
+  try {
+    // Clear any stored tokens
+    await userManager.removeUser();
+  } catch (error) {
+    console.error('Error removing user:', error);
+  }
+  
+  // Direct redirect to login without using Cognito hosted UI (local sign-out only)
   if (typeof window !== 'undefined') {
     window.location.href = '/login';
   }
