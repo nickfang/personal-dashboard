@@ -5,12 +5,28 @@
   import { onMount } from 'svelte';
 
   onMount(() => {
+    let redirectTimeout: NodeJS.Timeout;
+    
     // If user is already authenticated, redirect to dashboard
-    isAuthenticated.subscribe((value) => {
+    const unsubscribe = isAuthenticated.subscribe((value) => {
       console.log('Login page - Is authenticated:', value);
       if (value) {
         const redirectTo = $page.url.searchParams.get('redirectTo') || '/dashboard';
-        goto(redirectTo, { replaceState: true });
+        console.log('Redirecting to:', redirectTo);
+        
+        // Clear any existing timeout
+        if (redirectTimeout) {
+          clearTimeout(redirectTimeout);
+        }
+        
+        // Try immediate redirect
+        goto(redirectTo, { replaceState: true }).catch((error) => {
+          console.error('Redirect failed:', error);
+          // Fallback to manual redirect after 3 seconds if goto fails
+          redirectTimeout = setTimeout(() => {
+            window.location.href = redirectTo;
+          }, 3000);
+        });
       }
     });
 
@@ -18,6 +34,14 @@
       console.log('Current user:', currentUser);
     });
     console.log('Environment:', import.meta.env.MODE);
+    
+    // Cleanup function
+    return () => {
+      unsubscribe();
+      if (redirectTimeout) {
+        clearTimeout(redirectTimeout);
+      }
+    };
   });
 
   const handleSignIn = async () => {
@@ -44,6 +68,10 @@
             ✓ Successfully logged in as {$user?.profile?.name || $user?.profile?.email || 'User'}
           </p>
           <p>Redirecting to dashboard...</p>
+          <div class="manual-redirect">
+            <p>If you're not redirected automatically:</p>
+            <a href="/dashboard" class="dashboard-link">Go to Dashboard</a>
+          </div>
         </div>
       {:else}
         <button on:click={handleSignIn} class="signin-button">
@@ -186,6 +214,28 @@
 
   .success-message p {
     margin: 0.5rem 0;
+  }
+
+  .manual-redirect {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--teal-200, #7dd3fc);
+  }
+
+  .dashboard-link {
+    display: inline-block;
+    background: var(--teal-600, #006666);
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+    transition: background-color 0.2s ease;
+  }
+
+  .dashboard-link:hover {
+    background: var(--teal-700, #004d4d);
   }
 
   .info-text {
