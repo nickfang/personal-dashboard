@@ -169,12 +169,15 @@ function parseICSData(icsData: string) {
     }
   }
 
-  // Filter for events from last week onwards and sort by date
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 7);
-  lastWeek.setHours(0, 0, 0, 0);
+  // Filter for events from one month before to one month after current date
+  const now = new Date();
+  const monthBefore = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+  const monthAfter = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  
+  monthBefore.setHours(0, 0, 0, 0);
+  monthAfter.setHours(23, 59, 59, 999);
 
-  console.log('Filtering events. Cutoff date:', lastWeek.toISOString());
+  console.log('Filtering events. Date range:', monthBefore.toISOString(), 'to', monthAfter.toISOString());
 
   const filteredEvents = events.filter((e) => {
     const eventDate = new Date(e.start.dateTime || e.start.date);
@@ -182,11 +185,12 @@ function parseICSData(icsData: string) {
     // For all-day events, compare just the date part to avoid timezone issues
     if (e.start.date) {
       const eventDateString = e.start.date;
-      const cutoffDateString = lastWeek.toISOString().split('T')[0];
-      return eventDateString >= cutoffDateString;
+      const startDateString = monthBefore.toISOString().split('T')[0];
+      const endDateString = monthAfter.toISOString().split('T')[0];
+      return eventDateString >= startDateString && eventDateString <= endDateString;
     } else {
-      // For timed events, use the existing logic but be more lenient
-      return eventDate >= lastWeek;
+      // For timed events, use full datetime comparison
+      return eventDate >= monthBefore && eventDate <= monthAfter;
     }
   });
 
