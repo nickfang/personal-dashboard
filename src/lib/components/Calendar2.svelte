@@ -62,7 +62,11 @@
   }
 
   function getEventsForDay(date: Date): any[] {
-    const dayString = date.toISOString().split('T')[0];
+    // Use local timezone to avoid timezone shift issues with all-day events
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dayString = `${year}-${month}-${day}`;
     console.log(`[Calendar2] Getting events for ${dayString}. Total events:`, events.length);
     
     const dayEvents = events.filter((event) => {
@@ -81,13 +85,24 @@
         // For all-day events, compare date strings directly to avoid timezone issues
         return matches;
       } else {
-        // For timed events, use the existing logic
-        const eventDateString = new Date(event.start.dateTime).toISOString().split('T')[0];
+        // For timed events, extract date in local timezone to avoid shifts
+        const eventDate = new Date(event.start.dateTime);
+        const eventYear = eventDate.getFullYear();
+        const eventMonth = String(eventDate.getMonth() + 1).padStart(2, '0');
+        const eventDay = String(eventDate.getDate()).padStart(2, '0');
+        const eventDateString = `${eventYear}-${eventMonth}-${eventDay}`;
         return eventDateString === dayString;
       }
     });
     
-    if (dayString === new Date().toISOString().split('T')[0]) {
+    // Check if this is today using local timezone
+    const today = new Date();
+    const todayYear = today.getFullYear();
+    const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
+    const todayDay = String(today.getDate()).padStart(2, '0');
+    const todayString = `${todayYear}-${todayMonth}-${todayDay}`;
+    
+    if (dayString === todayString) {
       console.log(`[Calendar2] Events for today (${dayString}):`, dayEvents);
     }
     

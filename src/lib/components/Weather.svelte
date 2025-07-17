@@ -189,7 +189,7 @@
   .weather-grid {
     flex: 1;
     display: grid;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: 1fr 200px; /* Fixed heights: flexible top row, 200px chart */
     gap: 1rem;
     overflow: hidden;
   }
@@ -336,8 +336,10 @@
     padding: 1rem;
     border-radius: 0.75rem;
     border: 1px solid var(--teal-100);
-    min-height: 100px;
+    height: 100%; /* Fill the allocated grid space */
+    max-height: 200px; /* Consistent maximum height */
     grid-column: 1 / -1; /* Full width across both columns */
+    overflow: hidden; /* Prevent content overflow */
   }
 
   @keyframes spin {
@@ -354,7 +356,7 @@
 
     .weather-grid {
       gap: 0.5rem;
-      grid-template-rows: 1fr auto;
+      grid-template-rows: 1fr 120px; /* Smaller chart height for medium displays */
     }
 
     .top-row {
@@ -434,8 +436,8 @@
 
     .graph-container {
       padding: 0.5rem;
-      min-height: 40px; /* Further reduced height for tight displays */
-      max-height: 50px; /* Constrain maximum height */
+      height: 100%; /* Fill the allocated 120px */
+      max-height: 120px; /* Match the grid allocation */
     }
   }
 
@@ -447,6 +449,7 @@
 
     .weather-grid {
       gap: 1rem;
+      grid-template-rows: 1fr 180px; /* Consistent chart height for tablet */
     }
 
     .top-row {
@@ -470,6 +473,8 @@
 
     .graph-container {
       padding: 1rem;
+      height: 100%; /* Fill the allocated 180px */
+      max-height: 180px; /* Match the grid allocation */
     }
   }
 
@@ -481,7 +486,7 @@
 
     .weather-grid {
       gap: 0.75rem;
-      grid-template-rows: auto auto auto; /* Stack all three sections vertically */
+      grid-template-rows: auto auto 140px; /* Fixed chart height for mobile */
     }
 
     .top-row {
@@ -595,7 +600,8 @@
 
     .graph-container {
       padding: 0.5rem;
-      min-height: 80px;
+      height: 100%; /* Fill the allocated 140px */
+      max-height: 140px; /* Match the grid allocation */
     }
   }
 </style>
