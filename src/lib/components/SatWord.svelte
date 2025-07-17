@@ -287,7 +287,7 @@
 
   .definition-block.multiple .type {
     margin-bottom: 0.75rem;
-    font-size: 0.9rem;
+    font-size: 0.875rem;
   }
 
   .definition-block.multiple .definition {
@@ -309,11 +309,15 @@
     color: var(--teal-600);
     font-style: italic;
     margin-bottom: 1rem;
-    font-size: 1rem;
-    padding: 0.25rem 1rem;
+    font-size: 0.875rem;
+    padding: 0.375rem 0.875rem;
     background: white;
     border-radius: 9999px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    max-width: fit-content;
+    white-space: nowrap;
+    min-width: 3.5rem;
+    text-align: center;
   }
 
   .definition {
@@ -422,7 +426,7 @@
 
     .definition-block.multiple .type {
       margin-bottom: 0.4rem;
-      font-size: 0.7rem;
+      font-size: 0.875rem;
     }
 
     .definition-block.multiple .definition {
@@ -437,8 +441,12 @@
 
     .type {
       margin-bottom: 0.5rem;
-      font-size: 0.75rem;
-      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      padding: 0.375rem 0.875rem;
+      max-width: fit-content;
+      white-space: nowrap;
+      min-width: 3.5rem;
+      text-align: center;
     }
 
     .definition {
@@ -492,8 +500,12 @@
 
     .type {
       margin-bottom: 1rem;
-      font-size: 0.9rem;
-      padding: 0.4rem 1rem;
+      font-size: 0.875rem;
+      padding: 0.375rem 0.875rem;
+      max-width: fit-content;
+      white-space: nowrap;
+      min-width: 3.5rem;
+      text-align: center;
     }
 
     .definition {
@@ -535,8 +547,12 @@
     }
 
     .type {
-      font-size: 0.85rem;
-      padding: 0.35rem 0.9rem;
+      font-size: 0.875rem;
+      padding: 0.375rem 0.875rem;
+      max-width: fit-content;
+      white-space: nowrap;
+      min-width: 3.5rem;
+      text-align: center;
     }
 
     .definition {
@@ -578,7 +594,7 @@
 
     .definition-block.multiple .type {
       margin-bottom: 0.5rem;
-      font-size: 0.75rem;
+      font-size: 0.875rem;
     }
 
     .definition-block.multiple .definition {
@@ -593,8 +609,12 @@
 
     .type {
       margin-bottom: 0.75rem;
-      font-size: 0.8rem;
-      padding: 0.3rem 0.8rem;
+      font-size: 0.875rem;
+      padding: 0.375rem 0.875rem;
+      max-width: fit-content;
+      white-space: nowrap;
+      min-width: 3.5rem;
+      text-align: center;
     }
 
     .definition {
@@ -651,7 +671,7 @@
 
     .definition-block.multiple .type {
       margin-bottom: 0.3rem;
-      font-size: 0.65rem;
+      font-size: 0.875rem;
     }
 
     .definition-block.multiple .definition {
@@ -666,8 +686,12 @@
 
     .type {
       margin-bottom: 0.5rem;
-      font-size: 0.7rem;
-      padding: 0.25rem 0.6rem;
+      font-size: 0.875rem;
+      padding: 0.375rem 0.875rem;
+      max-width: fit-content;
+      white-space: nowrap;
+      min-width: 3.5rem;
+      text-align: center;
     }
 
     .definition {
@@ -725,6 +749,16 @@
 
     .definition-block.multiple .example {
       font-size: 0.95rem;
+    }
+
+    .type {
+      font-size: 0.875rem;
+      padding: 0.375rem 0.875rem;
+      max-width: fit-content;
+      white-space: nowrap;
+      min-width: 3.5rem;
+      text-align: center;
+      margin-bottom: 0.75rem;
     }
 
     .definition {

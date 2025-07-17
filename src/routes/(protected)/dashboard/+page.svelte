@@ -6,13 +6,32 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
 
+  // Accept data from the server load function
+  export let data;
+
   const handleSignOut = async () => {
     await startSignOutComplete();
   };
 
   onMount(() => {
-    // Any initialization code can go here
+    // Sync server-side auth state with client-side stores
+    console.log('[Dashboard] onMount - data:', data);
+    console.log('[Dashboard] onMount - $isAuthenticated:', $isAuthenticated);
+    console.log('[Dashboard] onMount - $user:', $user);
+    
+    // Always sync server data to client stores if server data exists
+    if (data?.isAuthenticated && data?.user) {
+      console.log('[Dashboard] Syncing server auth state with client stores');
+      isAuthenticated.set(true);
+      user.set(data.user);
+    }
   });
+
+  // Reactive debugging
+  $: console.log('[Dashboard] Reactive - data.isAuthenticated:', data?.isAuthenticated);
+  $: console.log('[Dashboard] Reactive - $isAuthenticated:', $isAuthenticated);
+  $: console.log('[Dashboard] Reactive - data.user:', data?.user);
+  $: console.log('[Dashboard] Reactive - $user:', $user);
 </script>
 
 <div class="dashboard-grid">
@@ -22,10 +41,10 @@
         <h1 class="dashboard-title">Personal Dashboard</h1>
       </div>
       <div class="nav-right">
-        {#if $isAuthenticated && $user}
+        {#if data?.isAuthenticated || $isAuthenticated}
           <div class="user-info">
             <span class="user-name">
-              {$user.profile?.name || $user.profile?.email || 'User'}
+              {data?.user?.profile?.name || data?.user?.profile?.email || $user?.profile?.name || $user?.profile?.email || 'User'}
             </span>
             <button on:click={handleSignOut} class="logout-button">
               <svg

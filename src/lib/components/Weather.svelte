@@ -433,8 +433,9 @@
     }
 
     .graph-container {
-      padding: 0.75rem;
-      min-height: 60px; /* Reduced height for graph */
+      padding: 0.5rem;
+      min-height: 40px; /* Further reduced height for tight displays */
+      max-height: 50px; /* Constrain maximum height */
     }
   }
 
