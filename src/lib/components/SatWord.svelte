@@ -520,7 +520,6 @@
       line-height: 1.5;
     }
   }
-
   /* Standard widescreen (16:10, 1920x1200) - balanced */
   @media (min-aspect-ratio: 4/3) and (max-aspect-ratio: 8/5) {
     .word-container {

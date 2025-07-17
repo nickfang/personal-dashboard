@@ -63,22 +63,35 @@
 
   function getEventsForDay(date: Date): any[] {
     const dayString = date.toISOString().split('T')[0];
-    return events.filter((event) => {
+    console.log(`[Calendar2] Getting events for ${dayString}. Total events:`, events.length);
+    
+    const dayEvents = events.filter((event) => {
       if (!event.start) return false;
 
       // Handle all-day events (those with start.date instead of start.dateTime)
       if (event.start.date) {
         const eventStartDate = event.start.date;
         const eventEndDate = event.end?.date || event.start.date;
+        const matches = dayString >= eventStartDate && dayString <= eventEndDate;
+        
+        if (event.summary?.includes('Skippy')) {
+          console.log(`[Calendar2] Skippy event check: ${dayString} >= ${eventStartDate} && ${dayString} <= ${eventEndDate} = ${matches}`);
+        }
 
         // For all-day events, compare date strings directly to avoid timezone issues
-        return dayString >= eventStartDate && dayString <= eventEndDate;
+        return matches;
       } else {
         // For timed events, use the existing logic
         const eventDateString = new Date(event.start.dateTime).toISOString().split('T')[0];
         return eventDateString === dayString;
       }
     });
+    
+    if (dayString === new Date().toISOString().split('T')[0]) {
+      console.log(`[Calendar2] Events for today (${dayString}):`, dayEvents);
+    }
+    
+    return dayEvents;
   }
 
   async function fetchCalendarEvents() {
@@ -103,8 +116,10 @@
       const response = await fetch(`/api/calendar?t=${Date.now()}`);
 
       const data = await response.json();
+      console.log('[Calendar2] API Response:', data);
 
       if (!response.ok) {
+        console.log('[Calendar2] API Error:', response.status, data);
         // If we have cached events, show refresh error instead of main error
         if (cachedEvents.length > 0) {
           refreshError = 'Failed to refresh calendar. Showing cached events.';
@@ -127,6 +142,7 @@
       }
 
       const newEvents = data.events || [];
+      console.log('[Calendar2] Received events:', newEvents.length);
 
       // Only update if we actually got events
       if (newEvents.length > 0) {
@@ -136,6 +152,14 @@
         refreshError = null;
         console.log('Calendar events loaded:', events.length, 'events');
         console.log('First few events:', events.slice(0, 3));
+        
+        // Look for Skippy specifically
+        const skippyEvent = events.find(e => e.summary?.includes('Skippy'));
+        if (skippyEvent) {
+          console.log('[Calendar2] Found Skippy event:', skippyEvent);
+        } else {
+          console.log('[Calendar2] No Skippy event found in loaded events');
+        }
       } else {
         // No events returned - keep cached events if we have them
         if (cachedEvents.length > 0) {
