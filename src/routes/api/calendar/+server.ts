@@ -81,14 +81,27 @@ export const GET: RequestHandler = async (event) => {
 
 function parseICSData(icsData: string) {
   const events = [];
-  const lines = icsData.split('\n');
+  // Unfold ICS lines (lines starting with space/tab are continuations)
+  const unfoldedData = icsData.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+  const lines = unfoldedData.split(/\r?\n/);
   let currentEvent: any = {};
+  let eventCount = 0;
+
+  console.log('ICS parsing: Total lines:', lines.length);
+  console.log('ICS parsing: First 10 lines:', lines.slice(0, 10));
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line.startsWith('BEGIN:VEVENT')) {
+      eventCount++;
       currentEvent = {};
     } else if (line.startsWith('END:VEVENT')) {
+      if (eventCount <= 3) {
+        console.log(`ICS parsing: Event ${eventCount} raw data:`, currentEvent);
+      }
+      if (eventCount <= 5 && currentEvent.rrule) {
+        console.log(`ICS parsing: Event ${eventCount} has RRULE:`, currentEvent.rrule);
+      }
       // Validate that the event has the required fields before adding
       if (
         currentEvent.summary &&
@@ -166,11 +179,31 @@ function parseICSData(icsData: string) {
       currentEvent.description = line.substring(12);
     } else if (line.startsWith('LOCATION:')) {
       currentEvent.location = line.substring(9);
+    } else if (line.startsWith('RRULE:')) {
+      currentEvent.rrule = line.substring(6);
     }
   }
 
-  // Filter for events from one month before to one month after current date
+  const recurringCount = events.filter(e => e.rrule).length;
+  const nonRecurring = events.filter(e => !e.rrule);
   const now = new Date();
+
+  // Sort non-recurring by date descending to find most recent
+  const sortedNonRecurring = [...nonRecurring].sort((a, b) => {
+    const dateA = new Date(a.start.dateTime || a.start.date);
+    const dateB = new Date(b.start.dateTime || b.start.date);
+    return dateB.getTime() - dateA.getTime();
+  });
+
+  console.log('ICS parsing: Total VEVENT blocks found:', eventCount);
+  console.log('ICS parsing: Events with RRULE (recurring):', recurringCount);
+  console.log('ICS parsing: Non-recurring events:', nonRecurring.length);
+  console.log('ICS parsing: 5 most recent non-recurring events:');
+  sortedNonRecurring.slice(0, 5).forEach((e, i) => {
+    console.log(`  ${i + 1}. ${e.start.dateTime || e.start.date} - ${e.summary}`);
+  });
+
+  // Filter for events from one month before to one month after current date
   const monthBefore = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
   const monthAfter = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
   
