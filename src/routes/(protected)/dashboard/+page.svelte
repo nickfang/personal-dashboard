@@ -171,16 +171,10 @@
     overflow: hidden;
   }
 
-  /* Ensure all sections respect their container bounds */
-  .weather-section :global(.weather-grid),
-  .word-section :global(.word-container),
-  .calendar-section :global(.calendar-container) {
-    overflow: hidden;
-  }
-
   .weather-section,
   .word-section,
   .calendar-section {
+    container-type: size; /* Enable container queries for child components */
     overflow: hidden;
     background: white;
     border-radius: 0.75rem;
@@ -215,12 +209,6 @@
   .calendar-section {
     grid-column: 1 / span 2;
     grid-row: 3;
-  }
-
-  .weather-section :global(.weather-container),
-  .word-section :global(.word-container) {
-    transform: scale(var(--scale, 1));
-    transform-origin: top center;
   }
 
   :global(.fullscreen) {
@@ -343,10 +331,6 @@
       overflow: hidden;
     }
 
-    .weather-section :global(.weather-grid) {
-      overflow: hidden !important;
-    }
-
     .nav {
       padding: 1rem 1.5rem;
     }
@@ -382,10 +366,6 @@
     .word-section,
     .calendar-section {
       overflow: hidden;
-    }
-
-    .weather-section :global(.weather-grid) {
-      overflow: hidden !important;
     }
 
     .nav {

@@ -12,28 +12,42 @@
   let intervalId: NodeJS.Timeout;
   let progress = 0;
   let progressInterval: NodeJS.Timeout;
-  let isAutoCycling = true; // Track if auto-cycling is enabled
-  let userInteractionTimer: NodeJS.Timeout; // Timer to resume auto-cycling after user interaction
-  let showAllDefinitions = true; // Track whether to show all definitions or cycle
-  let containerHeight = 0; // Track container height for responsive behavior
-  let innerWidth = 0; // Track window width for responsive behavior
+  let isAutoCycling = true;
+  let userInteractionTimer: NodeJS.Timeout;
 
-  function setupInterval() {
-    // Clear any existing intervals
+  // Container dimensions for responsive behavior (bound to DOM)
+  let containerHeight = 0;
+  let containerWidth = 0;
+
+  // Reactive: determine display mode based on container size
+  $: definitionCount = $wordStore?.definitions?.length ?? 0;
+  $: showAllDefinitions = computeShowAllDefinitions(containerHeight, containerWidth, definitionCount);
+
+  function computeShowAllDefinitions(height: number, width: number, count: number): boolean {
+    if (count <= 1) return true;
+    // Container height thresholds (matching CSS container queries)
+    if (height < 350) return false; // Compact: always cycle
+    if (height < 450) return count <= 2; // Medium: show up to 2
+    return count <= 3; // Large: show up to 3
+  }
+
+  // Reactive: manage cycling when display mode changes
+  $: if ($wordStore) {
+    manageCycling(showAllDefinitions, isAutoCycling);
+  }
+
+  function manageCycling(showAll: boolean, autoCycle: boolean) {
+    // Clear existing intervals
     if (intervalId) clearInterval(intervalId);
     if (progressInterval) clearInterval(progressInterval);
 
-    // Reset index and progress
+    // Reset state
     currentDefinitionIndex = 0;
     progress = 0;
 
-    // Determine if we should show all definitions or cycle based on space and count
-    updateDisplayMode();
-
-    // Start new interval only if cycling and multiple definitions and auto-cycling is enabled
-    if (!showAllDefinitions && $wordStore && $wordStore.definitions.length > 1 && isAutoCycling) {
-      intervalId = setInterval(cycleDefinitions, 10000); // 10 seconds
-      // Update progress every 100ms (100 steps over 10 seconds)
+    // Start cycling only when not showing all and auto-cycling is enabled
+    if (!showAll && $wordStore && $wordStore.definitions.length > 1 && autoCycle) {
+      intervalId = setInterval(cycleDefinitions, 10000);
       progressInterval = setInterval(() => {
         if (isAutoCycling) {
           progress = Math.min(100, progress + 1);
@@ -42,55 +56,12 @@
     }
   }
 
-  function updateDisplayMode() {
-    if (!$wordStore) return;
-
-    const definitionCount = $wordStore.definitions.length;
-    const isSmallScreen = window.innerWidth <= 768;
-    const isMediumScreen = window.innerWidth <= 1360 && window.innerHeight <= 768;
-    const aspectRatio = window.innerWidth / window.innerHeight;
-
-    // Categorize aspect ratios for different display behaviors
-    const isSquareish = aspectRatio >= 1.0 && aspectRatio <= 1.35; // 4:3 (1.33), 5:4 (1.25)
-    const isStandard = aspectRatio > 1.35 && aspectRatio <= 1.65; // 16:10 (1.6), 1920x1200 (1.6)
-    const isWidescreen = aspectRatio > 1.65 && aspectRatio <= 1.8; // 16:9 (1.78)
-    const isUltrawide = aspectRatio > 1.8; // 21:9 (2.33), 2:1 (2.0), etc.
-
-    // Show all definitions based on aspect ratio and available space:
-    // - Square/4:3: More vertical space, can show more definitions
-    // - Standard 16:10: Balanced approach
-    // - Widescreen 16:9: Less vertical space, be more conservative
-    // - Ultrawide: Much less vertical space relative to width, be most conservative
-    if (definitionCount === 1) {
-      showAllDefinitions = true;
-    } else if (isSmallScreen) {
-      showAllDefinitions = definitionCount <= 1;
-    } else if (isMediumScreen) {
-      showAllDefinitions = definitionCount <= 2;
-    } else if (isSquareish) {
-      // 4:3, 5:4 - more vertical space available
-      showAllDefinitions = definitionCount <= 4;
-    } else if (isStandard) {
-      // 16:10, 1920x1200 - good balance
-      showAllDefinitions = definitionCount <= 3;
-    } else if (isWidescreen) {
-      // 16:9 - less vertical space
-      showAllDefinitions = definitionCount <= 2;
-    } else if (isUltrawide) {
-      // 21:9, 2:1+ - very wide, limited vertical space
-      showAllDefinitions = definitionCount <= 2;
-    } else {
-      // Fallback for unusual aspect ratios
-      showAllDefinitions = definitionCount <= 3;
-    }
-  }
-
   function getRandomWord() {
     const randomIndex = Math.floor(Math.random() * words.length);
     const [word, definitions] = words[randomIndex];
     const today = new Date().toLocaleDateString();
     wordStore.set({ word, definitions, date: today });
-    setupInterval();
+    // Cycling is managed reactively via $: manageCycling()
   }
 
   function cycleDefinitions() {
@@ -127,23 +98,22 @@
     // Resume auto-cycling after 15 seconds of no interaction
     userInteractionTimer = setTimeout(() => {
       isAutoCycling = true;
-      setupInterval();
+      // The reactive $: manageCycling() will restart the intervals
     }, 15000);
   }
 
   function toggleAutoCycling() {
     isAutoCycling = !isAutoCycling;
-    if (isAutoCycling) {
-      setupInterval();
-    } else {
+    if (!isAutoCycling) {
       if (intervalId) clearInterval(intervalId);
       if (progressInterval) clearInterval(progressInterval);
       progress = 0;
     }
+    // When turning on, the reactive $: manageCycling() handles it
   }
 
   onMount(() => {
-    // Check if we have a stored word and if it's from today
+    // Check if we have a stored word from today
     const today = new Date().toLocaleDateString();
     const storedWord = localStorage.getItem('satWord');
 
@@ -151,7 +121,6 @@
       const parsed = JSON.parse(storedWord);
       if (parsed.date === today) {
         wordStore.set(parsed);
-        setupInterval();
         return;
       }
     }
@@ -159,20 +128,11 @@
     // If no stored word or it's from a different day, get a new word
     getRandomWord();
 
-    // Add resize listener to update display mode
-    const handleResize = () => {
-      if ($wordStore) {
-        updateDisplayMode();
-        setupInterval(); // Restart intervals if needed
-      }
-    };
-    window.addEventListener('resize', handleResize);
-
+    // Cleanup on unmount
     return () => {
       if (intervalId) clearInterval(intervalId);
       if (progressInterval) clearInterval(progressInterval);
       if (userInteractionTimer) clearTimeout(userInteractionTimer);
-      window.removeEventListener('resize', handleResize);
     };
   });
 
@@ -182,9 +142,7 @@
   }
 </script>
 
-<svelte:window bind:innerWidth />
-
-<div class="word-container">
+<div class="word-container" bind:clientHeight={containerHeight} bind:clientWidth={containerWidth}>
   <SectionHeader
     title="Word of the Day"
     fullscreenPath="/fullscreen/sat-word"
@@ -198,7 +156,7 @@
         <div class="definition-counter">
           {currentDefinitionIndex + 1} / {$wordStore.definitions.length}
           <div class="progress-container">
-            <div class="progress-bar" style="width: {progress}%"></div>
+            <div class="progress-bar" style:width="{progress}%"></div>
           </div>
         </div>
       {:else if $wordStore.definitions.length > 2}
@@ -212,8 +170,7 @@
       <!-- Show all definitions at once -->
       <div
         class="all-definitions"
-        class:single-column={innerWidth <= 768}
-        class:single-definition={$wordStore.definitions.length === 1 && innerWidth > 768}
+        class:single-definition={$wordStore.definitions.length === 1}
       >
         {#each $wordStore.definitions as definition, index}
           <div class="definition-block" class:multiple={$wordStore.definitions.length > 1}>
@@ -229,7 +186,7 @@
         {#if $wordStore && $wordStore.definitions[currentDefinitionIndex]}
           {@const currentDef = $wordStore.definitions[currentDefinitionIndex]}
           <div
-            class="definition-block"
+            class="definition-block cycling"
             in:fly={{ x: 300, duration: 600, easing: quintOut }}
             out:fly={{ x: -300, duration: 600, easing: quintOut }}
           >
@@ -397,375 +354,234 @@
     transition: width 80ms linear;
   }
 
-  /* Medium (1360x768) styles */
-  @media (max-width: 1360px) and (max-height: 768px) {
+  /*
+   * CONTAINER QUERY BREAKPOINTS:
+   * - 450px+ height: Full layout, all definitions visible
+   * - 350-450px height: Medium, up to 2 definitions
+   * - <350px height: Compact, cycling mode
+   * - <500px width: Single column layout
+   */
+
+  /* Medium container height - compact spacing */
+  @container (max-height: 450px) {
     .word-container {
-      padding: 0.5rem;
-      overflow: hidden;
+      padding: var(--space-sm);
     }
 
     .word {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+      font-size: var(--font-2xl);
+      margin-bottom: var(--space-sm);
+    }
+
+    .word-section {
+      padding: var(--space-sm) 0;
     }
 
     .all-definitions {
-      gap: 0.5rem;
+      gap: var(--space-sm);
     }
 
     .definition-block {
-      margin-bottom: 0.5rem;
-      padding: 0.5rem;
-      display: grid;
-      gap: 0.5rem;
+      padding: var(--space-sm);
+      margin-bottom: var(--space-sm);
     }
 
     .definition-block.multiple {
-      padding: 0.4rem;
+      padding: var(--space-sm);
     }
 
     .definition-block.multiple .type {
-      margin-bottom: 0.4rem;
-      font-size: 0.875rem;
+      margin-bottom: var(--space-sm);
+      font-size: var(--font-sm);
     }
 
     .definition-block.multiple .definition {
-      margin-bottom: 0.4rem;
-      font-size: 1rem;
+      margin-bottom: var(--space-sm);
+      font-size: var(--font-base);
     }
 
     .definition-block.multiple .example {
-      padding: 0.5rem;
-      font-size: 0.85rem;
+      padding: var(--space-sm);
+      font-size: var(--font-sm);
     }
 
     .type {
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-      padding: 0.375rem 0.875rem;
-      max-width: fit-content;
-      white-space: nowrap;
-      min-width: 3.5rem;
-      text-align: center;
+      margin-bottom: var(--space-sm);
+      font-size: var(--font-sm);
     }
 
     .definition {
-      font-size: 1.25rem;
-      margin-bottom: 0.5rem;
+      font-size: var(--font-lg);
+      margin-bottom: var(--space-sm);
       line-height: 1.5;
     }
 
     .example {
-      font-size: 1rem;
-      padding: 0.75rem;
+      font-size: var(--font-base);
+      padding: var(--space-sm);
       line-height: 1.4;
     }
 
     .definition-counter,
     .definition-counter-static {
-      font-size: 0.65rem;
-      margin-top: -0.25rem;
-      margin-bottom: 0.25rem;
+      font-size: var(--font-xs);
+      margin-top: calc(-1 * var(--space-xs));
+      margin-bottom: var(--space-xs);
     }
 
     .progress-container {
-      width: 60px;
+      width: 70px;
     }
   }
 
-  /* Square-ish aspect ratios (4:3, 5:4) - more vertical space */
-  @media (min-aspect-ratio: 1/1) and (max-aspect-ratio: 4/3) {
+  /* Compact container height - very tight spacing */
+  @container (max-height: 350px) {
     .word-container {
-      padding: 1.25rem;
+      padding: var(--space-xs);
     }
 
     .word {
-      font-size: 3.5rem;
-      margin-bottom: 1.25rem;
+      font-size: var(--font-xl);
+      margin-bottom: var(--space-xs);
     }
 
-    .all-definitions {
-      gap: 1rem;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    }
-
-    .definition-block {
-      margin-bottom: 1rem;
-      padding: 1.25rem;
-    }
-
-    .definition-block.multiple {
-      padding: 1rem;
-    }
-
-    .type {
-      margin-bottom: 1rem;
-      font-size: 0.875rem;
-      padding: 0.375rem 0.875rem;
-      max-width: fit-content;
-      white-space: nowrap;
-      min-width: 3.5rem;
-      text-align: center;
-    }
-
-    .definition {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-      line-height: 1.6;
-    }
-
-    .example {
-      font-size: 1.2rem;
-      padding: 1rem;
-      line-height: 1.5;
-    }
-  }
-  /* Standard widescreen (16:10, 1920x1200) - balanced */
-  @media (min-aspect-ratio: 4/3) and (max-aspect-ratio: 8/5) {
-    .word-container {
-      padding: 1rem;
-    }
-
-    .word {
-      font-size: 3.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .all-definitions {
-      gap: 0.875rem;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    .word-section {
+      padding: var(--space-xs) 0;
     }
 
     .definition-block {
-      margin-bottom: 0.875rem;
-      padding: 1rem;
+      padding: var(--space-xs);
+      margin-bottom: var(--space-xs);
     }
 
-    .definition-block.multiple {
-      padding: 0.8rem;
-    }
-
-    .type {
-      font-size: 0.875rem;
-      padding: 0.375rem 0.875rem;
-      max-width: fit-content;
-      white-space: nowrap;
-      min-width: 3.5rem;
-      text-align: center;
-    }
-
-    .definition {
-      font-size: 1.4rem;
-      line-height: 1.55;
-    }
-
-    .example {
-      font-size: 1.15rem;
-      padding: 0.9rem;
-    }
-  }
-
-  /* Widescreen 16:9 - less vertical space */
-  @media (min-aspect-ratio: 8/5) and (max-aspect-ratio: 16/9) {
-    .word-container {
-      padding: 0.75rem;
-      overflow: hidden;
-    }
-
-    .word {
-      font-size: 2.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .all-definitions {
-      gap: 0.75rem;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    }
-
-    .definition-block {
-      margin-bottom: 0.75rem;
-      padding: 0.75rem;
-    }
-
-    .definition-block.multiple {
-      padding: 0.6rem;
-    }
-
-    .definition-block.multiple .type {
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-    }
-
-    .definition-block.multiple .definition {
-      margin-bottom: 0.5rem;
-      font-size: 1.1rem;
-    }
-
-    .definition-block.multiple .example {
-      padding: 0.6rem;
-      font-size: 0.9rem;
+    .definition-block.cycling {
+      padding: var(--space-sm);
     }
 
     .type {
-      margin-bottom: 0.75rem;
-      font-size: 0.875rem;
-      padding: 0.375rem 0.875rem;
-      max-width: fit-content;
-      white-space: nowrap;
-      min-width: 3.5rem;
-      text-align: center;
+      margin-bottom: var(--space-xs);
+      font-size: var(--font-xs);
+      padding: var(--space-xs) var(--space-sm);
     }
 
     .definition {
-      font-size: 1.3rem;
-      margin-bottom: 0.75rem;
-      line-height: 1.5;
-    }
-
-    .example {
-      font-size: 1.05rem;
-      padding: 0.8rem;
-      line-height: 1.4;
-    }
-
-    .definition-counter,
-    .definition-counter-static {
-      font-size: 0.7rem;
-      margin-top: -0.5rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .progress-container {
-      width: 65px;
-    }
-  }
-
-  /* Ultrawide aspect ratios (21:9, 2:1+) - very limited vertical space */
-  @media (min-aspect-ratio: 16/9) {
-    .word-container {
-      padding: 0.5rem;
-      overflow: hidden;
-    }
-
-    .word {
-      font-size: 2.25rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .all-definitions {
-      gap: 0.5rem;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    }
-
-    .definition-block {
-      margin-bottom: 0.5rem;
-      padding: 0.5rem;
-      display: grid;
-      gap: 0.5rem;
-    }
-
-    .definition-block.multiple {
-      padding: 0.4rem;
-    }
-
-    .definition-block.multiple .type {
-      margin-bottom: 0.3rem;
-      font-size: 0.875rem;
-    }
-
-    .definition-block.multiple .definition {
-      margin-bottom: 0.3rem;
-      font-size: 0.95rem;
-    }
-
-    .definition-block.multiple .example {
-      padding: 0.4rem;
-      font-size: 0.8rem;
-    }
-
-    .type {
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-      padding: 0.375rem 0.875rem;
-      max-width: fit-content;
-      white-space: nowrap;
-      min-width: 3.5rem;
-      text-align: center;
-    }
-
-    .definition {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
+      font-size: var(--font-base);
+      margin-bottom: var(--space-xs);
       line-height: 1.4;
     }
 
     .example {
-      font-size: 0.9rem;
-      padding: 0.6rem;
+      font-size: var(--font-sm);
+      padding: var(--space-xs);
       line-height: 1.3;
     }
 
     .definition-counter,
     .definition-counter-static {
       font-size: 0.6rem;
-      margin-top: -0.25rem;
-      margin-bottom: 0.25rem;
+      margin-top: 0;
+      margin-bottom: var(--space-xs);
     }
 
     .progress-container {
-      width: 55px;
+      width: 50px;
     }
   }
 
-  /* Small (mobile) styles */
-  @media (max-width: 768px) {
+  /* Very compact - minimal padding */
+  @container (max-height: 250px) {
+    .word {
+      font-size: var(--font-lg);
+      margin-bottom: 0;
+    }
+
+    .word-section {
+      padding: 0;
+    }
+
+    .definition-block.cycling {
+      padding: var(--space-xs);
+    }
+
+    .type {
+      font-size: 0.65rem;
+      padding: 0.125rem var(--space-xs);
+      margin-bottom: var(--space-xs);
+    }
+
+    .definition {
+      font-size: var(--font-sm);
+      margin-bottom: var(--space-xs);
+    }
+
+    .example {
+      font-size: var(--font-xs);
+      padding: var(--space-xs);
+    }
+  }
+
+  /* Narrow container - single column */
+  @container (max-width: 500px) {
+    .all-definitions {
+      grid-template-columns: 1fr;
+      gap: var(--space-sm);
+    }
+
+    .definition-block {
+      padding: var(--space-md);
+    }
+
+    .definition-block.multiple {
+      padding: var(--space-sm);
+    }
+
+    .definition-block.multiple .definition {
+      font-size: var(--font-base);
+    }
+
+    .definition-block.multiple .example {
+      font-size: var(--font-sm);
+    }
+
+    .word {
+      font-size: var(--font-2xl);
+    }
+  }
+
+  /* Large container height - generous spacing */
+  @container (min-height: 500px) {
     .word-container {
-      padding: 1rem;
+      padding: var(--space-lg);
     }
 
     .word {
       font-size: 3rem;
-      margin-bottom: 1rem;
+      margin-bottom: var(--space-md);
     }
 
     .all-definitions {
-      gap: 0.75rem;
-      grid-template-columns: 1fr !important; /* Force single column on mobile */
+      gap: var(--space-md);
     }
 
     .definition-block {
-      padding: 1rem;
-      margin-bottom: 1rem;
+      padding: var(--space-lg);
+      margin-bottom: var(--space-md);
     }
 
     .definition-block.multiple {
-      padding: 0.75rem;
-    }
-
-    .definition-block.multiple .definition {
-      font-size: 1.1rem;
-    }
-
-    .definition-block.multiple .example {
-      font-size: 0.95rem;
-    }
-
-    .type {
-      font-size: 0.875rem;
-      padding: 0.375rem 0.875rem;
-      max-width: fit-content;
-      white-space: nowrap;
-      min-width: 3.5rem;
-      text-align: center;
-      margin-bottom: 0.75rem;
+      padding: var(--space-md);
     }
 
     .definition {
-      font-size: 1.25rem;
+      font-size: 1.3rem;
+      margin-bottom: var(--space-md);
+      line-height: 1.6;
     }
 
     .example {
-      font-size: 1rem;
+      font-size: var(--font-lg);
+      padding: var(--space-md);
+      line-height: 1.5;
     }
   }
 </style>

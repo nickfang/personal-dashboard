@@ -1,10 +1,27 @@
 /* Custom base styles */
 :root {
+  /* Colors */
   --teal-50: #d1efef;
   --teal-100: #a3dfdf;
   --teal-600: #006666;
   --teal-800: #004444;
   --gray-800: #1f2937;
+
+  /* Spacing tokens */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  /* Font tokens */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.25rem;
+  --font-xl: 1.5rem;
+  --font-2xl: 2rem;
+
   font-size: 18px;
 }
 

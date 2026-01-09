@@ -35,8 +35,10 @@
 
 <style>
   main {
+    container-type: size;
     min-height: calc(100vh - 136px);
-    overflow: auto;
+    height: calc(100vh - 136px);
+    overflow: hidden;
     padding: 1.5rem;
     margin-bottom: 88px;
   }

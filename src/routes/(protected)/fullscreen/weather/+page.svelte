@@ -2,4 +2,14 @@
   import Weather from '$lib/components/Weather.svelte';
 </script>
 
-<Weather />
+<div class="fullscreen-wrapper">
+  <Weather />
+</div>
+
+<style>
+  .fullscreen-wrapper {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+</style>
