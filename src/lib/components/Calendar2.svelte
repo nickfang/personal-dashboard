@@ -15,16 +15,18 @@
 
   // Container dimensions for responsive behavior
   let containerHeight = 0;
+  let containerWidth = 0;
 
   // Reactive: determine number of columns based on preference and container size
+  // Auto mode considers BOTH height AND width to avoid cramped columns
   $: columns =
     $calendarViewMode === '3-day'
       ? 3
       : $calendarViewMode === 'week'
         ? 7
-        : containerHeight < 400
+        : containerHeight < 400 || containerWidth < 700
           ? 3
-          : 7; // auto
+          : 7; // auto: use 3-day if short OR narrow
 
   // Reactive: update displayed days when columns change
   $: currentDays = getDays(weekStartDate, columns);
@@ -251,7 +253,7 @@
   });
 </script>
 
-<div class="calendar2-container" bind:clientHeight={containerHeight}>
+<div class="calendar2-container" bind:clientHeight={containerHeight} bind:clientWidth={containerWidth}>
   <SectionHeader
     title="Calendar"
     fullscreenPath="/fullscreen/calendar"

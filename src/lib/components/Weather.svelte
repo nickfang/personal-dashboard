@@ -608,8 +608,18 @@
     }
 
     .graph-container {
+      display: block; /* Override height-based hiding in scrollable mode */
       padding: var(--space-sm);
-      max-height: 140px;
+      max-height: 160px; /* Reasonable size for narrow scrollable layout */
+    }
+
+    /*
+     * In narrow scrollable mode, remove height constraints.
+     * The page can scroll, so show all content naturally.
+     */
+    .weather-grid {
+      grid-template-rows: auto auto; /* Let rows size naturally */
+      overflow: visible;
     }
   }
 </style>
