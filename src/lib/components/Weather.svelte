@@ -348,62 +348,70 @@
     }
   }
 
-  /* Medium height displays (1360x768 and similar) */
-  @media (max-height: 768px) and (min-width: 769px) {
+  /*
+   * CONTAINER QUERY BREAKPOINTS:
+   * - 400px height: Reduce chart height, compact spacing
+   * - 300px height: Hide chart entirely
+   * - 250px height: Ultra-compact forecast layout
+   * - 400px width: Stack to single column
+   */
+
+  /* Medium container height - reduce chart, tighten spacing */
+  @container (max-height: 400px) {
     .weather-container {
-      padding: 0.5rem;
+      padding: var(--space-sm);
     }
 
     .weather-grid {
-      gap: 0.5rem;
-      grid-template-rows: 1fr 120px; /* Smaller chart height for medium displays */
+      gap: var(--space-sm);
+      grid-template-rows: 1fr 120px;
     }
 
     .top-row {
-      gap: 0.75rem;
+      gap: var(--space-sm);
     }
 
     .current-weather {
-      padding: 0.75rem;
-      gap: 0.5rem;
+      padding: var(--space-sm);
+      gap: var(--space-sm);
     }
 
     .temperature {
-      font-size: 2rem;
+      font-size: var(--font-2xl);
     }
 
     .location {
-      font-size: 1rem;
-      margin-bottom: 0.25rem;
+      font-size: var(--font-base);
+      margin-bottom: var(--space-xs);
     }
 
     .last-updated {
-      font-size: 0.75rem;
-      margin-bottom: 0.25rem;
+      font-size: var(--font-xs);
+      margin-bottom: var(--space-xs);
     }
 
     .condition {
-      font-size: 0.9rem;
+      font-size: var(--font-sm);
     }
 
     .weather-details {
-      gap: 0.5rem;
-      font-size: 0.9rem;
+      gap: var(--space-sm);
+      font-size: var(--font-sm);
     }
 
     .forecast-grid {
-      gap: 0.5rem;
+      gap: var(--space-sm);
     }
 
     .forecast-card {
-      padding: 0.5rem;
+      padding: var(--space-sm);
       min-height: 80px;
-      gap: 0.25rem;
+      gap: var(--space-xs);
     }
 
     .day-row {
-      margin-bottom: 0.5rem;
-      gap: 0.25rem;
+      margin-bottom: var(--space-sm);
+      gap: var(--space-xs);
     }
 
     .day-row img {
@@ -412,21 +420,21 @@
     }
 
     .forecast-day {
-      font-size: 0.85rem;
+      font-size: var(--font-sm);
     }
 
     .temp-range {
-      margin: 0.25rem 0;
+      margin: var(--space-xs) 0;
       gap: 0.125rem;
     }
 
     .max-temp,
     .min-temp {
-      font-size: 1rem;
+      font-size: var(--font-base);
     }
 
     .forecast-details {
-      font-size: 0.75rem;
+      font-size: var(--font-xs);
     }
 
     .forecast-details svg {
@@ -435,71 +443,72 @@
     }
 
     .graph-container {
-      padding: 0.5rem;
-      height: 100%; /* Fill the allocated 120px */
-      max-height: 120px; /* Match the grid allocation */
+      padding: var(--space-sm);
+      max-height: 120px;
     }
   }
 
-  /* Tablet and smaller laptops */
-  @media (max-width: 1024px) {
-    .weather-container {
-      padding: 0.75rem;
-    }
-
+  /* Small container height - hide chart */
+  @container (max-height: 300px) {
     .weather-grid {
-      gap: 1rem;
-      grid-template-rows: 1fr 180px; /* Consistent chart height for tablet */
-    }
-
-    .top-row {
-      grid-template-columns: 1fr 1fr; /* Keep side-by-side on tablet */
-      gap: 1rem;
-    }
-
-    .current-weather {
-      grid-template-columns: auto 1fr auto;
-      padding: 1rem;
-    }
-
-    .temperature {
-      font-size: 2rem;
-    }
-
-    .forecast-card {
-      padding: 0.75rem;
-      min-height: 120px;
+      grid-template-rows: 1fr;
     }
 
     .graph-container {
-      padding: 1rem;
-      height: 100%; /* Fill the allocated 180px */
-      max-height: 180px; /* Match the grid allocation */
+      display: none;
+    }
+
+    .forecast-card {
+      min-height: 70px;
     }
   }
 
-  /* Mobile */
-  @media (max-width: 768px) {
+  /* Very small container height - ultra-compact */
+  @container (max-height: 250px) {
     .weather-container {
-      padding: 0.5rem;
+      padding: var(--space-xs);
     }
 
     .weather-grid {
-      gap: 0.75rem;
-      grid-template-rows: auto auto 140px; /* Fixed chart height for mobile */
+      gap: var(--space-xs);
     }
 
     .top-row {
-      grid-template-columns: 1fr; /* Stack current weather and forecast vertically on mobile */
-      gap: 0.75rem;
+      gap: var(--space-xs);
+    }
+
+    .current-weather {
+      padding: var(--space-xs);
+    }
+
+    .temperature {
+      font-size: var(--font-xl);
+    }
+
+    .forecast-card {
+      padding: var(--space-xs);
+      min-height: 60px;
+    }
+
+    .day-row img {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  /* Narrow container width - stack layout */
+  @container (max-width: 500px) {
+    .top-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-sm);
     }
 
     .current-weather {
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 1rem;
-      padding: 1rem;
+      gap: var(--space-md);
+      padding: var(--space-md);
       text-align: left;
     }
 
@@ -519,14 +528,14 @@
       order: 3;
       flex-direction: column;
       align-items: flex-end;
-      gap: 0.5rem;
+      gap: var(--space-sm);
       flex-shrink: 0;
     }
 
     .temp-condition {
       align-items: flex-start;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: var(--space-xs);
     }
 
     .temperature {
@@ -534,31 +543,31 @@
     }
 
     .condition {
-      font-size: 0.9rem;
+      font-size: var(--font-sm);
     }
 
     .location {
-      font-size: 1rem;
+      font-size: var(--font-base);
     }
 
     .forecast-grid {
       grid-template-columns: 1fr;
-      gap: 0.5rem;
+      gap: var(--space-sm);
     }
 
     .forecast-card {
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem;
+      gap: var(--space-sm);
+      padding: var(--space-sm);
       min-height: 60px;
     }
 
     .day-row {
       flex-direction: row;
       align-items: center;
-      gap: 0.5rem;
+      gap: var(--space-sm);
       margin-bottom: 0;
       flex-shrink: 0;
     }
@@ -569,21 +578,21 @@
     }
 
     .forecast-day {
-      font-size: 0.8rem;
+      font-size: var(--font-xs);
       font-weight: 500;
       min-width: 45px;
     }
 
     .temp-range {
       flex-direction: row;
-      gap: 0.25rem;
+      gap: var(--space-xs);
       margin: 0;
       flex-shrink: 0;
     }
 
     .max-temp,
     .min-temp {
-      font-size: 0.9rem;
+      font-size: var(--font-sm);
     }
 
     .max-temp::after {
@@ -599,9 +608,18 @@
     }
 
     .graph-container {
-      padding: 0.5rem;
-      height: 100%; /* Fill the allocated 140px */
-      max-height: 140px; /* Match the grid allocation */
+      display: block; /* Override height-based hiding in scrollable mode */
+      padding: var(--space-sm);
+      max-height: 160px; /* Reasonable size for narrow scrollable layout */
+    }
+
+    /*
+     * In narrow scrollable mode, remove height constraints.
+     * The page can scroll, so show all content naturally.
+     */
+    .weather-grid {
+      grid-template-rows: auto auto; /* Let rows size naturally */
+      overflow: visible;
     }
   }
 </style>

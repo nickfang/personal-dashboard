@@ -24,3 +24,4 @@ Makefile
 
 # New file
 src/lib/config/service-account.json
+test-results/

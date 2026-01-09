@@ -18,7 +18,7 @@
     console.log('[Dashboard] onMount - data:', data);
     console.log('[Dashboard] onMount - $isAuthenticated:', $isAuthenticated);
     console.log('[Dashboard] onMount - $user:', $user);
-    
+
     // Always sync server data to client stores if server data exists
     if (data?.isAuthenticated && data?.user) {
       console.log('[Dashboard] Syncing server auth state with client stores');
@@ -44,10 +44,14 @@
         {#if data?.isAuthenticated || $isAuthenticated}
           <div class="user-info">
             <span class="user-name">
-              {data?.user?.profile?.name || data?.user?.profile?.email || $user?.profile?.name || $user?.profile?.email || 'User'}
+              {data?.user?.profile?.name ||
+                data?.user?.profile?.email ||
+                $user?.profile?.name ||
+                $user?.profile?.email ||
+                'User'}
             </span>
             <button on:click={handleSignOut} class="logout-button">
-              <svg
+              <!-- <svg
                 width="16"
                 height="16"
                 viewBox="0 0 24 24"
@@ -58,7 +62,7 @@
                 <path d="M9 21H5a2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                 <polyline points="16,17 21,12 16,7" />
                 <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
+              </svg> -->
               Sign Out
             </button>
           </div>
@@ -167,16 +171,10 @@
     overflow: hidden;
   }
 
-  /* Ensure all sections respect their container bounds */
-  .weather-section :global(.weather-grid),
-  .word-section :global(.word-container),
-  .calendar-section :global(.calendar-container) {
-    overflow: hidden;
-  }
-
   .weather-section,
   .word-section,
   .calendar-section {
+    container-type: size; /* Enable container queries for child components */
     overflow: hidden;
     background: white;
     border-radius: 0.75rem;
@@ -211,12 +209,6 @@
   .calendar-section {
     grid-column: 1 / span 2;
     grid-row: 3;
-  }
-
-  .weather-section :global(.weather-container),
-  .word-section :global(.word-container) {
-    transform: scale(var(--scale, 1));
-    transform-origin: top center;
   }
 
   :global(.fullscreen) {
@@ -339,10 +331,6 @@
       overflow: hidden;
     }
 
-    .weather-section :global(.weather-grid) {
-      overflow: hidden !important;
-    }
-
     .nav {
       padding: 1rem 1.5rem;
     }
@@ -378,10 +366,6 @@
     .word-section,
     .calendar-section {
       overflow: hidden;
-    }
-
-    .weather-section :global(.weather-grid) {
-      overflow: hidden !important;
     }
 
     .nav {
