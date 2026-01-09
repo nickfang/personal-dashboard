@@ -91,7 +91,7 @@
     const day = String(date.getDate()).padStart(2, '0');
     const dayString = `${year}-${month}-${day}`;
     console.log(`[Calendar2] Getting events for ${dayString}. Total events:`, events.length);
-    
+
     const dayEvents = events.filter((event) => {
       if (!event.start) return false;
 
@@ -100,9 +100,11 @@
         const eventStartDate = event.start.date;
         const eventEndDate = event.end?.date || event.start.date;
         const matches = dayString >= eventStartDate && dayString <= eventEndDate;
-        
+
         if (event.summary?.includes('Skippy')) {
-          console.log(`[Calendar2] Skippy event check: ${dayString} >= ${eventStartDate} && ${dayString} <= ${eventEndDate} = ${matches}`);
+          console.log(
+            `[Calendar2] Skippy event check: ${dayString} >= ${eventStartDate} && ${dayString} <= ${eventEndDate} = ${matches}`
+          );
         }
 
         // For all-day events, compare date strings directly to avoid timezone issues
@@ -117,18 +119,18 @@
         return eventDateString === dayString;
       }
     });
-    
+
     // Check if this is today using local timezone
     const today = new Date();
     const todayYear = today.getFullYear();
     const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
     const todayDay = String(today.getDate()).padStart(2, '0');
     const todayString = `${todayYear}-${todayMonth}-${todayDay}`;
-    
+
     if (dayString === todayString) {
       console.log(`[Calendar2] Events for today (${dayString}):`, dayEvents);
     }
-    
+
     return dayEvents;
   }
 
@@ -190,9 +192,9 @@
         refreshError = null;
         console.log('Calendar events loaded:', events.length, 'events');
         console.log('First few events:', events.slice(0, 3));
-        
+
         // Look for Skippy specifically
-        const skippyEvent = events.find(e => e.summary?.includes('Skippy'));
+        const skippyEvent = events.find((e) => e.summary?.includes('Skippy'));
         if (skippyEvent) {
           console.log('[Calendar2] Found Skippy event:', skippyEvent);
         } else {
@@ -253,7 +255,11 @@
   });
 </script>
 
-<div class="calendar2-container" bind:clientHeight={containerHeight} bind:clientWidth={containerWidth}>
+<div
+  class="calendar2-container"
+  bind:clientHeight={containerHeight}
+  bind:clientWidth={containerWidth}
+>
   <SectionHeader
     title="Calendar"
     fullscreenPath="/fullscreen/calendar"
