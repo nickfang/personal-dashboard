@@ -386,7 +386,7 @@
     }
   }
 
-  /* Tablet styles */
+  /* Tablet styles - single column, scrollable */
   @media (max-width: 1024px) and (min-width: 769px) {
     .dashboard-grid {
       grid-template-columns: 1fr;
@@ -408,19 +408,25 @@
     .weather-section {
       grid-column: 1;
       grid-row: 2;
-      min-height: 350px;
     }
 
     .word-section {
       grid-column: 1;
       grid-row: 3;
-      min-height: 400px;
     }
 
     .calendar-section {
       grid-column: 1;
       grid-row: 4;
-      min-height: 600px;
+    }
+
+    /* Scrollable mode: width-only container queries, let height grow naturally */
+    .weather-section,
+    .word-section,
+    .calendar-section {
+      container-type: inline-size;
+      overflow: visible;
+      height: auto;
     }
   }
 
@@ -457,25 +463,26 @@
     .weather-section {
       grid-column: 1;
       grid-row: 2;
-      min-height: 300px;
     }
 
     .word-section {
       grid-column: 1;
       grid-row: 3;
-      min-height: 350px;
     }
 
     .calendar-section {
       grid-column: 1;
       grid-row: 4;
-      min-height: 500px;
     }
 
+    /* Scrollable mode: width-only container queries, let height grow naturally */
     .weather-section,
     .word-section,
     .calendar-section {
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      container-type: inline-size;
+      overflow: visible;
+      height: auto;
     }
   }
 
@@ -500,17 +507,7 @@
       gap: 0.5rem;
     }
 
-    .weather-section {
-      min-height: 280px;
-    }
-
-    .word-section {
-      min-height: 320px;
-    }
-
-    .calendar-section {
-      min-height: 450px;
-    }
+    /* No min-heights - sections grow to fit content in scrollable mode */
   }
 
   /* Extra large displays (4K and above) - maintain aspect ratio logic */

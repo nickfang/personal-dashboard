@@ -189,7 +189,7 @@
   .weather-grid {
     flex: 1;
     display: grid;
-    grid-template-rows: 1fr 200px; /* Fixed heights: flexible top row, 200px chart */
+    grid-template-rows: 1fr 200px; /* Flexible top row, 200px chart */
     gap: 1rem;
     overflow: hidden;
   }
@@ -236,6 +236,11 @@
     color: var(--teal-600);
     font-size: 1rem;
     margin-top: 0.25rem;
+    /* Prevent long condition text from overflowing */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .location {
@@ -271,21 +276,21 @@
   .forecast-card {
     border: 1px solid var(--teal-100);
     border-radius: 0.75rem;
-    padding: 0.75rem;
+    padding: 0.5rem;
     background: rgba(255, 255, 255, 0.5);
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    min-height: 120px;
+    justify-content: space-between; /* Distribute space evenly */
   }
 
   .day-row {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
-    gap: 0.5rem;
+    margin-bottom: 0.25rem; /* Reduced from 1rem */
+    gap: 0.25rem;
   }
 
   .forecast-day {
@@ -298,8 +303,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    margin: 0.5rem 0;
+    gap: 0.125rem;
+    margin: 0.25rem 0;
   }
 
   .max-temp {
@@ -337,7 +342,7 @@
     border-radius: 0.75rem;
     border: 1px solid var(--teal-100);
     height: 100%; /* Fill the allocated grid space */
-    max-height: 200px; /* Consistent maximum height */
+    max-height: 200px; /* Consistent with grid row height */
     grid-column: 1 / -1; /* Full width across both columns */
     overflow: hidden; /* Prevent content overflow */
   }
@@ -456,10 +461,6 @@
 
     .graph-container {
       display: none;
-    }
-
-    .forecast-card {
-      min-height: 70px;
     }
   }
 

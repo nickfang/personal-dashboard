@@ -43,16 +43,16 @@
         maintainAspectRatio: false,
         layout: {
           padding: {
-            top: 2,
-            right: 2,
-            bottom: 2,
-            left: 2
+            top: 10,
+            right: 5,
+            bottom: 5,
+            left: 5
           }
         },
         scales: {
           y: {
             min: 29.5,
-            max: 30.5,
+            max: 30.75,
             grid: {
               color: 'rgba(0, 0, 0, 0.05)',
             },

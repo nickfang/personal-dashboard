@@ -17,32 +17,28 @@
   let containerHeight = 0;
   let containerWidth = 0;
 
-  // Reactive: determine number of columns based on preference and container size
-  // Auto mode considers BOTH height AND width to avoid cramped columns
+  // Reactive: determine if we should show list view
+  // List view is used when explicitly selected OR when auto mode detects narrow width
+  $: isListView =
+    $calendarViewMode === 'list' ||
+    ($calendarViewMode === 'auto' && containerWidth < 600);
+
+  // Reactive: determine number of columns for grid view (only used when !isListView)
   $: columns =
     $calendarViewMode === '3-day'
       ? 3
       : $calendarViewMode === 'week'
         ? 7
-        : containerHeight < 400 || containerWidth < 700
-          ? 3
-          : 7; // auto: use 3-day if short OR narrow
+        : 7; // auto in wide mode = week
 
-  // Reactive: update displayed days when columns change
-  $: currentDays = getDays(weekStartDate, columns);
+  // Reactive: update displayed days - list view always shows 7 days like week view
+  $: currentDays = getDays(weekStartDate, isListView ? 7 : columns);
 
   function getDays(startDate: Date, numDays: number): Date[] {
     const days: Date[] = [];
     const start = new Date(startDate);
 
-    if (numDays === 7) {
-      // Get Monday of the current week
-      const dayOfWeek = start.getDay();
-      const diff = start.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-      start.setDate(diff);
-    }
-    // For 3-day view, start from the current date
-
+    // Always start from the provided date (today by default)
     for (let i = 0; i < numDays; i++) {
       const day = new Date(start);
       day.setDate(start.getDate() + i);
@@ -348,6 +344,13 @@
           </button>
           <button
             class="view-button"
+            class:active={$calendarViewMode === 'list'}
+            on:click={() => ($calendarViewMode = 'list')}
+          >
+            List
+          </button>
+          <button
+            class="view-button"
             class:active={$calendarViewMode === '3-day'}
             on:click={() => ($calendarViewMode = '3-day')}
           >
@@ -363,48 +366,90 @@
         </div>
       </div>
 
-      <!-- Calendar Grid -->
-      <div class="calendar-grid" style:--columns={columns}>
-        {#each currentDays as day}
-          <div class="day-column" class:today={isToday(day)}>
-            <div class="day-header">
-              <div class="day-name">{formatDate(day)}</div>
-            </div>
-
-            <div class="day-events">
-              {#each getEventsForDay(day) as event}
-                <div class="event" class:all-day={!event.start?.dateTime}>
-                  <div class="event-title">
-                    {@html (event.summary || 'Untitled Event')
-                      .replace(/\\n/g, '<br>')
-                      .replace(/\n/g, '<br>')}
-                  </div>
-                  {#if event.location}
-                    <div class="event-location">
-                      📍 {@html event.location
+      {#if isListView}
+        <!-- List/Agenda View -->
+        <div class="calendar-list">
+          {#each currentDays as day}
+            <div class="list-day-section" class:today={isToday(day)}>
+              <div class="list-day-header">{formatDate(day)}</div>
+              <div class="list-day-events">
+                {#each getEventsForDay(day) as event}
+                  <div class="list-event" class:all-day={!event.start?.dateTime}>
+                    <div class="list-event-title">
+                      {@html (event.summary || 'Untitled Event')
                         .replace(/\\n/g, '<br>')
-                        .replace(/\n/g, '<br>')
-                        .replace(/\\,/g, ',')}
+                        .replace(/\n/g, '<br>')}
                     </div>
-                  {/if}
-                  {#if event.start?.dateTime}
-                    <div class="event-time">
-                      {formatTime(event.start.dateTime)}
-                      {#if event.end?.dateTime && event.start.dateTime !== event.end.dateTime}
-                        - {formatTime(event.end.dateTime)}
-                      {/if}
-                    </div>
-                  {:else}
-                    <div class="event-time">All day</div>
-                  {/if}
-                </div>
-              {:else}
-                <div class="no-events">No events</div>
-              {/each}
+                    {#if event.start?.dateTime}
+                      <div class="list-event-time">
+                        {formatTime(event.start.dateTime)}
+                        {#if event.end?.dateTime && event.start.dateTime !== event.end.dateTime}
+                          - {formatTime(event.end.dateTime)}
+                        {/if}
+                      </div>
+                    {:else}
+                      <div class="list-event-time">All day</div>
+                    {/if}
+                    {#if event.location}
+                      <div class="list-event-location">
+                        📍 {@html event.location
+                          .replace(/\\n/g, '<br>')
+                          .replace(/\n/g, '<br>')
+                          .replace(/\\,/g, ',')}
+                      </div>
+                    {/if}
+                  </div>
+                {:else}
+                  <div class="list-no-events">No events</div>
+                {/each}
+              </div>
             </div>
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {:else}
+        <!-- Calendar Grid -->
+        <div class="calendar-grid" style:--columns={columns}>
+          {#each currentDays as day}
+            <div class="day-column" class:today={isToday(day)}>
+              <div class="day-header">
+                <div class="day-name">{formatDate(day)}</div>
+              </div>
+
+              <div class="day-events">
+                {#each getEventsForDay(day) as event}
+                  <div class="event" class:all-day={!event.start?.dateTime}>
+                    <div class="event-title">
+                      {@html (event.summary || 'Untitled Event')
+                        .replace(/\\n/g, '<br>')
+                        .replace(/\n/g, '<br>')}
+                    </div>
+                    {#if event.location}
+                      <div class="event-location">
+                        📍 {@html event.location
+                          .replace(/\\n/g, '<br>')
+                          .replace(/\n/g, '<br>')
+                          .replace(/\\,/g, ',')}
+                      </div>
+                    {/if}
+                    {#if event.start?.dateTime}
+                      <div class="event-time">
+                        {formatTime(event.start.dateTime)}
+                        {#if event.end?.dateTime && event.start.dateTime !== event.end.dateTime}
+                          - {formatTime(event.end.dateTime)}
+                        {/if}
+                      </div>
+                    {:else}
+                      <div class="event-time">All day</div>
+                    {/if}
+                  </div>
+                {:else}
+                  <div class="no-events">No events</div>
+                {/each}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
 
       <!-- Last refresh info -->
       {#if lastRefreshTime}
@@ -425,6 +470,7 @@
     display: flex;
     flex-direction: column;
     font-size: clamp(0.875rem, 1.2vw, 1.1rem);
+    overflow: hidden; /* Prevent overflow in fixed layout mode */
   }
 
   .calendar-loading {
@@ -566,6 +612,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0; /* Allow flex shrinking */
+    overflow: hidden; /* Prevent content from overflowing container */
   }
 
   .week-nav {
@@ -1056,5 +1104,99 @@
     .event {
       padding: var(--space-sm) var(--space-md);
     }
+  }
+
+  /* ===========================================
+   * LIST VIEW STYLES
+   * Agenda-style layout for narrow/mobile screens
+   * =========================================== */
+
+  .calendar-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .list-day-section {
+    /* Contains header and events for one day */
+  }
+
+  .list-day-header {
+    font-weight: 600;
+    font-size: var(--font-base);
+    color: var(--teal-700, #004d4d);
+    border-bottom: 2px solid var(--teal-200, #a3dfdf);
+    padding-bottom: var(--space-xs);
+    margin-bottom: var(--space-sm);
+  }
+
+  .list-day-section.today .list-day-header {
+    color: white;
+    background: var(--teal-600, #006666);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: 0.375rem;
+    border-bottom: none;
+    margin-bottom: var(--space-sm);
+  }
+
+  .list-day-events {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding-left: var(--space-sm);
+  }
+
+  .list-event {
+    background: var(--teal-50, #d1efef);
+    border-left: 3px solid var(--teal-600, #006666);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: 0 0.375rem 0.375rem 0;
+  }
+
+  .list-event.all-day {
+    background: var(--teal-600, #006666);
+    color: white;
+    border-left-color: var(--teal-800, #004444);
+  }
+
+  .list-event-title {
+    font-weight: 500;
+    font-size: var(--font-base);
+    margin-bottom: var(--space-xs);
+    line-height: 1.3;
+  }
+
+  .list-event.all-day .list-event-title {
+    color: white;
+  }
+
+  .list-event-time {
+    font-size: var(--font-sm);
+    color: var(--teal-700, #004d4d);
+    margin-bottom: var(--space-xs);
+  }
+
+  .list-event.all-day .list-event-time {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .list-event-location {
+    font-size: var(--font-sm);
+    color: var(--teal-600, #006666);
+    line-height: 1.3;
+  }
+
+  .list-event.all-day .list-event-location {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .list-no-events {
+    color: var(--teal-500, #008080);
+    font-style: italic;
+    font-size: var(--font-sm);
+    padding: var(--space-xs) 0;
+    padding-left: var(--space-sm);
   }
 </style>

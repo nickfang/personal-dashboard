@@ -21,7 +21,11 @@
 
   // Reactive: determine display mode based on container size
   $: definitionCount = $wordStore?.definitions?.length ?? 0;
-  $: showAllDefinitions = computeShowAllDefinitions(containerHeight, containerWidth, definitionCount);
+  $: showAllDefinitions = computeShowAllDefinitions(
+    containerHeight,
+    containerWidth,
+    definitionCount
+  );
 
   function computeShowAllDefinitions(height: number, width: number, count: number): boolean {
     if (count <= 1) return true;
@@ -168,10 +172,7 @@
 
     {#if showAllDefinitions}
       <!-- Show all definitions at once -->
-      <div
-        class="all-definitions"
-        class:single-definition={$wordStore.definitions.length === 1}
-      >
+      <div class="all-definitions" class:single-definition={$wordStore.definitions.length === 1}>
         {#each $wordStore.definitions as definition, index}
           <div class="definition-block" class:multiple={$wordStore.definitions.length > 1}>
             <div class="type">({definition.type})</div>
@@ -207,12 +208,12 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: auto;
+    overflow: hidden; /* No internal scrollbar - let container queries adapt content */
   }
 
   .word-section {
     text-align: center;
-    overflow: auto;
+    overflow: hidden;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -331,9 +332,9 @@
     grid-template-columns: 1fr;
   }
 
-  /* For single definition, make it half-width and center it */
+  /* For single definition, use more width but not full width */
   .all-definitions.single-definition {
-    grid-template-columns: minmax(300px, 0.5fr);
+    grid-template-columns: minmax(300px, 0.75fr);
     justify-content: center;
   }
 

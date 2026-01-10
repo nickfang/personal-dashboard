@@ -17,11 +17,12 @@ function createPersistedStore<T>(key: string, initial: T) {
 
 /**
  * Calendar view mode preference
- * - 'auto': Automatically choose based on container size
- * - '3-day': Always show 3 days
- * - 'week': Always show 7 days
+ * - 'auto': Automatically choose based on container size (wide → week grid, narrow → list)
+ * - 'list': Always show agenda/list format
+ * - '3-day': Always show 3-day grid
+ * - 'week': Always show 7-day grid
  */
-export const calendarViewMode = createPersistedStore<'auto' | '3-day' | 'week'>(
+export const calendarViewMode = createPersistedStore<'auto' | 'list' | '3-day' | 'week'>(
   'calendar-view-mode',
   'auto'
 );
