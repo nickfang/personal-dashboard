@@ -86,7 +86,6 @@
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dayString = `${year}-${month}-${day}`;
-    console.log(`[Calendar2] Getting events for ${dayString}. Total events:`, events.length);
 
     const dayEvents = events.filter((event) => {
       if (!event.start) return false;
@@ -95,16 +94,8 @@
       if (event.start.date) {
         const eventStartDate = event.start.date;
         const eventEndDate = event.end?.date || event.start.date;
-        const matches = dayString >= eventStartDate && dayString <= eventEndDate;
-
-        if (event.summary?.includes('Skippy')) {
-          console.log(
-            `[Calendar2] Skippy event check: ${dayString} >= ${eventStartDate} && ${dayString} <= ${eventEndDate} = ${matches}`
-          );
-        }
-
         // For all-day events, compare date strings directly to avoid timezone issues
-        return matches;
+        return dayString >= eventStartDate && dayString <= eventEndDate;
       } else {
         // For timed events, extract date in local timezone to avoid shifts
         const eventDate = new Date(event.start.dateTime);
@@ -116,23 +107,11 @@
       }
     });
 
-    // Check if this is today using local timezone
-    const today = new Date();
-    const todayYear = today.getFullYear();
-    const todayMonth = String(today.getMonth() + 1).padStart(2, '0');
-    const todayDay = String(today.getDate()).padStart(2, '0');
-    const todayString = `${todayYear}-${todayMonth}-${todayDay}`;
-
-    if (dayString === todayString) {
-      console.log(`[Calendar2] Events for today (${dayString}):`, dayEvents);
-    }
-
     return dayEvents;
   }
 
   async function fetchCalendarEvents() {
     if (isFetching) {
-      console.log('Already fetching calendar events, skipping');
       return;
     }
 
@@ -146,16 +125,13 @@
 
       error = null;
       refreshError = null;
-      console.log('Starting calendar fetch...');
 
       // Add cache busting to ensure fresh data
       const response = await fetch(`/api/calendar?t=${Date.now()}`);
 
       const data = await response.json();
-      console.log('[Calendar2] API Response:', data);
 
       if (!response.ok) {
-        console.log('[Calendar2] API Error:', response.status, data);
         // If we have cached events, show refresh error instead of main error
         if (cachedEvents.length > 0) {
           refreshError = 'Failed to refresh calendar. Showing cached events.';
@@ -178,7 +154,6 @@
       }
 
       const newEvents = data.events || [];
-      console.log('[Calendar2] Received events:', newEvents.length);
 
       // Only update if we actually got events
       if (newEvents.length > 0) {
@@ -186,16 +161,6 @@
         cachedEvents = [...newEvents]; // Update cache
         lastRefreshTime = new Date(); // Update refresh timestamp
         refreshError = null;
-        console.log('Calendar events loaded:', events.length, 'events');
-        console.log('First few events:', events.slice(0, 3));
-
-        // Look for Skippy specifically
-        const skippyEvent = events.find((e) => e.summary?.includes('Skippy'));
-        if (skippyEvent) {
-          console.log('[Calendar2] Found Skippy event:', skippyEvent);
-        } else {
-          console.log('[Calendar2] No Skippy event found in loaded events');
-        }
       } else {
         // No events returned - keep cached events if we have them
         if (cachedEvents.length > 0) {
@@ -210,7 +175,6 @@
       isFetching = false;
     } catch (e) {
       console.error('Calendar fetch error:', e);
-      console.log('Fetch failed, using cached events if available');
 
       // If we have cached events, use them and show refresh error
       if (cachedEvents.length > 0) {

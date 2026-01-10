@@ -3,7 +3,6 @@
   import Calendar2 from '$lib/components/Calendar2.svelte';
   import SatWord from '$lib/components/SatWord.svelte';
   import { isAuthenticated, startSignOutComplete, user } from '$lib/authService';
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
 
   // Accept data from the server load function
@@ -15,23 +14,11 @@
 
   onMount(() => {
     // Sync server-side auth state with client-side stores
-    console.log('[Dashboard] onMount - data:', data);
-    console.log('[Dashboard] onMount - $isAuthenticated:', $isAuthenticated);
-    console.log('[Dashboard] onMount - $user:', $user);
-
-    // Always sync server data to client stores if server data exists
     if (data?.isAuthenticated && data?.user) {
-      console.log('[Dashboard] Syncing server auth state with client stores');
       isAuthenticated.set(true);
       user.set(data.user);
     }
   });
-
-  // Reactive debugging
-  $: console.log('[Dashboard] Reactive - data.isAuthenticated:', data?.isAuthenticated);
-  $: console.log('[Dashboard] Reactive - $isAuthenticated:', $isAuthenticated);
-  $: console.log('[Dashboard] Reactive - data.user:', data?.user);
-  $: console.log('[Dashboard] Reactive - $user:', $user);
 </script>
 
 <div class="dashboard-grid">
