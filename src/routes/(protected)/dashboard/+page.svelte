@@ -3,7 +3,6 @@
   import Calendar2 from '$lib/components/Calendar2.svelte';
   import SatWord from '$lib/components/SatWord.svelte';
   import { isAuthenticated, startSignOutComplete, user } from '$lib/authService';
-  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
 
   // Accept data from the server load function
@@ -15,23 +14,11 @@
 
   onMount(() => {
     // Sync server-side auth state with client-side stores
-    console.log('[Dashboard] onMount - data:', data);
-    console.log('[Dashboard] onMount - $isAuthenticated:', $isAuthenticated);
-    console.log('[Dashboard] onMount - $user:', $user);
-
-    // Always sync server data to client stores if server data exists
     if (data?.isAuthenticated && data?.user) {
-      console.log('[Dashboard] Syncing server auth state with client stores');
       isAuthenticated.set(true);
       user.set(data.user);
     }
   });
-
-  // Reactive debugging
-  $: console.log('[Dashboard] Reactive - data.isAuthenticated:', data?.isAuthenticated);
-  $: console.log('[Dashboard] Reactive - $isAuthenticated:', $isAuthenticated);
-  $: console.log('[Dashboard] Reactive - data.user:', data?.user);
-  $: console.log('[Dashboard] Reactive - $user:', $user);
 </script>
 
 <div class="dashboard-grid">
@@ -386,7 +373,7 @@
     }
   }
 
-  /* Tablet styles */
+  /* Tablet styles - single column, scrollable */
   @media (max-width: 1024px) and (min-width: 769px) {
     .dashboard-grid {
       grid-template-columns: 1fr;
@@ -408,19 +395,25 @@
     .weather-section {
       grid-column: 1;
       grid-row: 2;
-      min-height: 350px;
     }
 
     .word-section {
       grid-column: 1;
       grid-row: 3;
-      min-height: 400px;
     }
 
     .calendar-section {
       grid-column: 1;
       grid-row: 4;
-      min-height: 600px;
+    }
+
+    /* Scrollable mode: width-only container queries, let height grow naturally */
+    .weather-section,
+    .word-section,
+    .calendar-section {
+      container-type: inline-size;
+      overflow: visible;
+      height: auto;
     }
   }
 
@@ -457,25 +450,26 @@
     .weather-section {
       grid-column: 1;
       grid-row: 2;
-      min-height: 300px;
     }
 
     .word-section {
       grid-column: 1;
       grid-row: 3;
-      min-height: 350px;
     }
 
     .calendar-section {
       grid-column: 1;
       grid-row: 4;
-      min-height: 500px;
     }
 
+    /* Scrollable mode: width-only container queries, let height grow naturally */
     .weather-section,
     .word-section,
     .calendar-section {
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      container-type: inline-size;
+      overflow: visible;
+      height: auto;
     }
   }
 
@@ -500,17 +494,7 @@
       gap: 0.5rem;
     }
 
-    .weather-section {
-      min-height: 280px;
-    }
-
-    .word-section {
-      min-height: 320px;
-    }
-
-    .calendar-section {
-      min-height: 450px;
-    }
+    /* No min-heights - sections grow to fit content in scrollable mode */
   }
 
   /* Extra large displays (4K and above) - maintain aspect ratio logic */
