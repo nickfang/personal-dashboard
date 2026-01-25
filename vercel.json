@@ -1,5 +1,0 @@
-{
-  "git": {
-    "ignoreCommands": "git diff HEAD~ HEAD -- ./frontend"
-  }
-}
