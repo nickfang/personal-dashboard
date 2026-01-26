@@ -1,2 +1,8 @@
 .DS_Store
 *.log
+
+# Env
+.env
+.env.*
+!.env.example
+!.env.test
