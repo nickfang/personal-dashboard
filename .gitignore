@@ -1,5 +1,11 @@
+#MACOS Specific
 .DS_Store
-*.log
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Env
 .env

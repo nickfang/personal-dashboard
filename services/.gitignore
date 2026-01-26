@@ -1,0 +1,33 @@
+# Compiled Object files, Local builds, etc.
+*.a
+*.o
+*.6
+*.8
+*.vpi
+*.pyc
+
+# Executables
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+# Common binary names
+bin/
+weather-collector
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+
+
