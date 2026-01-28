@@ -83,11 +83,10 @@ resource "google_secret_manager_secret_iam_member" "secret_access" {
 }
 
 # Build and Push Docker Image using Cloud Build
+# This resource serves as a "Bootstrap" step. It ensures an image exists so Terraform
+# can successfully create the Cloud Run Job initially (Disaster Recovery).
+# For day-to-day development, GitHub Actions will build and deploy new images.
 resource "null_resource" "cloud_build" {
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-
   provisioner "local-exec" {
     command = <<EOT
       gcloud builds submit ../services/weather-collector \
@@ -124,6 +123,20 @@ resource "google_cloud_run_v2_job" "weather_collector" {
         }
       }
     }
+  }
+
+  # Lifecycle Ignore: "Bootstrap + CD" Pattern
+  # We instruct Terraform to ignore changes to the 'image' field.
+  # This allows GitHub Actions (CD) to deploy new versions (v2, v3...) without Terraform
+  # trying to revert the job back to the 'bootstrap' image version (latest) on the next apply.
+  lifecycle {
+    ignore_changes = [
+      template[0].template[0].containers[0].image,
+      client,
+      client_version,
+      template[0].labels,
+      template[0].annotations
+    ]
   }
 
   depends_on = [google_project_service.run, null_resource.cloud_build, google_secret_manager_secret_version.google_maps_key_version]
