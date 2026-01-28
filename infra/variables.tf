@@ -14,3 +14,9 @@ variable "google_maps_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "github_repository" {
+  description = "The GitHub repository (owner/repo) allowed to deploy via OIDC"
+  type        = string
+  default     = "nickfang/personal-dashboard"
+}
