@@ -8,3 +8,9 @@ variable "region" {
   type        = string
   default     = "us-central1"
 }
+
+variable "google_maps_api_key" {
+  description = "The Google Maps API Key for the Weather Collector"
+  type        = string
+  sensitive   = true
+}
