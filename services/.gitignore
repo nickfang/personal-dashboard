@@ -14,7 +14,6 @@
 *.dylib
 # Common binary names
 bin/
-weather-collector
 
 # Test binary, built with `go test -c`
 *.test
