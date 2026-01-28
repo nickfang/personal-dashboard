@@ -1,12 +1,6 @@
-# Enable the Firestore API
-resource "google_project_service" "firestore" {
-  service            = "firestore.googleapis.com"
-  disable_on_destroy = false
-}
-
 # Create the Firestore Database (Native Mode)
 resource "google_firestore_database" "database" {
-  # Depends on the API being enabled
+  # Depends on the API being enabled (managed in main.tf)
   depends_on = [google_project_service.firestore]
 
   project     = var.project_id
