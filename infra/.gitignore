@@ -1,0 +1,16 @@
+# Local .terraform directory (provider binaries)
+.terraform/
+
+# Local state files
+*.tfstate
+*.tfstate.backup
+
+# Local variable files (contains private Project IDs/secrets)
+*.tfvars
+*.tfvars.json
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
