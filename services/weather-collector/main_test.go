@@ -72,12 +72,12 @@ func TestCalculatePressureStats(t *testing.T) {
 		{
 			name:      "Empty History",
 			history:   []PressurePoint{},
-			wantTrend: "stable",
+			wantTrend: "unknown",
 		},
 		{
 			name:      "Single Point",
 			history:   []PressurePoint{mkPoint(0, 1013.0)},
-			wantTrend: "stable",
+			wantTrend: "unknown",
 		},
 		{
 			name: "Stable Pressure",
@@ -105,9 +105,9 @@ func TestCalculatePressureStats(t *testing.T) {
 		{
 			name: "Falling Pressure",
 			history: []PressurePoint{
-				mkPoint(3, 1020.0), // T-3h
-				mkPoint(2, 1019.0), // T-2h
-				mkPoint(0, 1018.0), // T-0h (Current)
+				mkPoint(3, 1020.0),
+				mkPoint(2, 1019.0),
+				mkPoint(0, 1018.0),
 			},
 			wantTrend:   "falling",
 			wantDelta3h: floatPtr(-2.0), // 1018 - 1020
@@ -119,7 +119,7 @@ func TestCalculatePressureStats(t *testing.T) {
 				mkPoint(12, 1005.0),
 				mkPoint(0, 1010.0),
 			},
-			wantTrend:    "stable", 
+			wantTrend:    "unknown", // 3h is missing in this test data
 			wantDelta24h: floatPtr(10.0), // Now matches because of timestamp logic!
 		},
 	}

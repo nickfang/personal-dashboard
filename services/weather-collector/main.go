@@ -164,7 +164,7 @@ func main() {
 		wp, err := fetchWeatherWithRetry(apiKey, loc)
 		if err != nil {
 			// Structured logging for GCP Error Reporting
-			slog.Error("Failed to fetch weather after retries", 
+			slog.Error("Failed to fetch/validate weather after retries", 
 				"location", loc.ID, 
 				"error", err,
 			)
@@ -240,7 +240,7 @@ func fetchWeather(apiKey string, loc WeatherLocation) (*WeatherPoint, error) {
 		return nil, fmt.Errorf("failed to decode JSON: %w", err)
 	}
 
-	return mapToWeatherPoint(loc.ID, data), nil
+	return mapToWeatherPoint(loc.ID, data)
 }
 
 func CtoF(c float64) float64 {
@@ -251,7 +251,13 @@ func KtoM(k float64) float64 {
 	return k * 0.621371
 }
 
-func mapToWeatherPoint(locationID string, data WeatherAPIResponse) *WeatherPoint {
+func mapToWeatherPoint(locationID string, data WeatherAPIResponse) (*WeatherPoint, error) {
+	// Strict Data Validation:
+	// If pressure is 0.0, we assume the API response is incomplete or corrupted.
+	// Saving a 0.0 pressure reading ruins statistical analysis (deltas).
+	if data.AirPressure.MeanSeaLevelMillibars == 0 {
+		return nil, fmt.Errorf("invalid pressure data (0.0) received for %s. Full payload: %+v", locationID, data)
+	}
 
 	wp := &WeatherPoint{
 		Location:             locationID,
@@ -292,17 +298,25 @@ func mapToWeatherPoint(locationID string, data WeatherAPIResponse) *WeatherPoint
 		"precipitation_pct", wp.PrecipitationPercent,
 	)
 
-	return wp
+	return wp, nil
 }
 
 func calculatePressureStats(history []PressurePoint) PressureStats {
-	stats := PressureStats{Trend: "stable"}
+	stats := PressureStats{Trend: "unknown"}
 
 	if len(history) < 2 {
 		return stats
 	}
 
 	current := history[len(history)-1]
+
+	// Log audit info once per location
+	type deltaAudit struct {
+		Target string   `json:"target"`
+		Found  string   `json:"found,omitempty"`
+		Delta  *float64 `json:"delta,omitempty"`
+	}
+	audit := make(map[string]deltaAudit)
 
 	// getDelta uses a Time-Window Search instead of array indices.
 	// This decouples logic from the sampling rate and makes it resilient to
@@ -318,6 +332,7 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 
 		for i := len(history) - 2; i >= 0; i-- {
 			p := &history[i]
+
 			diff := p.TimeStamp.Sub(targetTime)
 			if diff < 0 {
 				diff = -diff
@@ -337,10 +352,18 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 			}
 		}
 
+		key := fmt.Sprintf("%dh", hoursAgo)
+		entry := deltaAudit{Target: targetTime.Format(time.RFC3339)}
+
 		if bestMatch != nil {
+			entry.Found = bestMatch.TimeStamp.Format(time.RFC3339)
 			res := current.PressureMb - bestMatch.PressureMb
+			entry.Delta = &res
+			audit[key] = entry
 			return &res
 		}
+		
+		audit[key] = entry
 		return nil
 	}
 
@@ -350,10 +373,16 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 	stats.Delta12h = getDelta(12)
 	stats.Delta24h = getDelta(24)
 
+	// Log the timestamp and value audit info at INFO level
+	slog.Info("Pressure Analysis Diagnostics",
+		"location", current.TimeStamp,
+		"current_time", current.TimeStamp.Format(time.RFC3339),
+		"analysis", audit,
+	)
+
 	// Simple trend logic with noise threshold
 	// NOTE: We rely exclusively on the 3-Hour Delta (Delta3h) to define the "Trend" string.
 	// This adheres to the World Meteorological Organization (WMO) definition of "Barometric Tendency".
-	// While we calculate 1h, 24h, etc., they are for context only and do not drive the official trend label.
 	if stats.Delta3h != nil {
 		d3 := *stats.Delta3h
 		if d3 > 0.5 {
