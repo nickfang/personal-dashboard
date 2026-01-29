@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -134,17 +134,29 @@ type WeatherAPIResponse struct {
 }
 
 func main() {
+	// Setup Structured Logging
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}
+	if os.Getenv("DEBUG") == "true" {
+		opts.Level = slog.LevelDebug
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+
 	ctx := context.Background()
 	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
 	projectID := os.Getenv("GCP_PROJECT_ID")
 
 	if apiKey == "" || projectID == "" {
-		log.Fatal("Missing required env vars: GOOGLE_MAPS_API_KEY, GCP_PROJECT_ID")
+		slog.Error("Missing required env vars", "vars", "GOOGLE_MAPS_API_KEY, GCP_PROJECT_ID")
+		os.Exit(1)
 	}
 
 	client, err := firestore.NewClientWithDatabase(ctx, projectID, "weather-log")
 	if err != nil {
-		log.Fatalf("Failed to create firestore client: %v", err)
+		slog.Error("Failed to create firestore client", "error", err)
+		os.Exit(1)
 	}
 	defer client.Close()
 
@@ -152,14 +164,17 @@ func main() {
 		wp, err := fetchWeatherWithRetry(apiKey, loc)
 		if err != nil {
 			// Structured logging for GCP Error Reporting
-			log.Printf("ERROR: Failed to fetch weather for %s after all retries: %v", loc.ID, err)
+			slog.Error("Failed to fetch weather after retries", 
+				"location", loc.ID, 
+				"error", err,
+			)
 			continue
 		}
 
 		// 1. Save to Raw Archive
 		err = saveRawWeatherData(ctx, client, wp)
 		if err != nil {
-			log.Printf("Error saving raw weather data for %s: %v", loc.ID, err)
+			slog.Error("Error saving raw weather data", "location", loc.ID, "error", err)
 			continue
 		}
 
@@ -168,7 +183,6 @@ func main() {
 		err = client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 			cache, err := getUpdatedCacheDoc(cacheRef, wp, tx)
 			if err != nil {
-				log.Printf("Error getting updated cache doc for %s: %v", loc.ID, err)
 				return err
 			}
 
@@ -176,10 +190,10 @@ func main() {
 		})
 
 		if err != nil {
-			log.Printf("Error updating cache for %s: %v", loc.ID, err)
+			slog.Error("Error updating cache", "location", loc.ID, "error", err)
 		}
 
-		fmt.Printf("Processed weather for %s\n", loc.ID)
+		slog.Info("Processed weather", "location", loc.ID)
 	}
 }
 
@@ -238,6 +252,7 @@ func KtoM(k float64) float64 {
 }
 
 func mapToWeatherPoint(locationID string, data WeatherAPIResponse) *WeatherPoint {
+
 	wp := &WeatherPoint{
 		Location:             locationID,
 		Timestamp:            time.Now(),
@@ -260,18 +275,22 @@ func mapToWeatherPoint(locationID string, data WeatherAPIResponse) *WeatherPoint
 		PrecipitationPercent: data.Precipitation.Probability.Percent,
 	}
 
-	// log.Printf("Mapped Data [DB Format] for %s:\n"+
-	// 	"  Timestamp:    %v\n"+
-	// 	"  Temp:         %.1f°C\n"+
-	// 	"  Feels Like:   %.1f°C\n"+
-	// 	"  Humidity:     %d%%\n"+
-	// 	"  UV Index:     %d\n"+
-	// 	"  Pressure:     %.1f mb\n"+
-	// 	"  Wind:         %d° @ %.1f kph (gust %.1f kph)\n"+
-	// 	"  Visibility:   %.1f km\n"+
-	// 	"  DewPoint:     %.1f°C\n"+
-	// 	"  Precipitation:     %d%%\n",
-	// 	locationID, wp.Timestamp.Format(time.RFC3339), wp.TempC, wp.TempFeelC, wp.HumidityPercent, wp.UVIndex, wp.PressureMb, wp.WindDirDeg, wp.WindSpeedKph, wp.WindGustKph, wp.VisibilityKm, wp.DewpointC, wp.PrecipitationPercent)
+	// Structured Debug Log - Contains all mapping info for troubleshooting
+	slog.Debug("Mapped Weather Data [DB Format]",
+		"location", locationID,
+		"timestamp", wp.Timestamp,
+		"temp_c", wp.TempC,
+		"feels_like_c", wp.TempFeelC,
+		"humidity_pct", wp.HumidityPercent,
+		"uv_index", wp.UVIndex,
+		"pressure_mb", wp.PressureMb,
+		"wind_dir_deg", wp.WindDirDeg,
+		"wind_speed_kph", wp.WindSpeedKph,
+		"wind_gust_kph", wp.WindGustKph,
+		"visibility_km", wp.VisibilityKm,
+		"dewpoint_c", wp.DewpointC,
+		"precipitation_pct", wp.PrecipitationPercent,
+	)
 
 	return wp
 }
@@ -381,6 +400,7 @@ func getUpdatedCacheDoc(cacheRef *firestore.DocumentRef, wp *WeatherPoint, tx *f
 
 	return cache, nil
 }
+
 func saveRawWeatherData(ctx context.Context, client *firestore.Client, wp *WeatherPoint) error {
 	_, _, err := client.Collection("weather_raw").Add(ctx, wp)
 	if err != nil {
