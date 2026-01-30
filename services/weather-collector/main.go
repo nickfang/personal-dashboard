@@ -13,6 +13,14 @@ import (
 	"cloud.google.com/go/firestore"
 )
 
+const (
+	MAX_HISTORY_POINTS       = 48
+	DELTA_TOLERANCE          = 45 * time.Minute
+	DELTA_NOISE_THRESHOLD    = 0.5 // mb
+	WEATHER_RAW_COLLECTION   = "weather_raw"
+	WEATHER_CACHE_COLLECTION = "weather_cache"
+)
+
 type WeatherLocation struct {
 	ID   string
 	lat  float64
@@ -164,8 +172,8 @@ func main() {
 		wp, err := fetchWeatherWithRetry(apiKey, loc)
 		if err != nil {
 			// Structured logging for GCP Error Reporting
-			slog.Error("Failed to fetch/validate weather after retries", 
-				"location", loc.ID, 
+			slog.Error("Failed to fetch/validate weather after retries",
+				"location", loc.ID,
 				"error", err,
 			)
 			continue
@@ -179,7 +187,7 @@ func main() {
 		}
 
 		// 2. Update Hot Cache (Transaction)
-		cacheRef := client.Collection("weather_cache").Doc(loc.ID)
+		cacheRef := client.Collection(WEATHER_CACHE_COLLECTION).Doc(loc.ID)
 		err = client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 			cache, err := getUpdatedCacheDoc(cacheRef, wp, tx)
 			if err != nil {
@@ -325,7 +333,7 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 		targetTime := current.TimeStamp.Add(time.Duration(-hoursAgo) * time.Hour)
 		// 45 minute tolerance allows us to find the closest point even if
 		// some cycles were missed or delayed.
-		tolerance := 45 * time.Minute
+		tolerance := DELTA_TOLERANCE
 
 		var bestMatch *PressurePoint
 		minDiff := tolerance + (1 * time.Second)
@@ -362,7 +370,7 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 			audit[key] = entry
 			return &res
 		}
-		
+
 		audit[key] = entry
 		return nil
 	}
@@ -385,9 +393,9 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 	// This adheres to the World Meteorological Organization (WMO) definition of "Barometric Tendency".
 	if stats.Delta3h != nil {
 		d3 := *stats.Delta3h
-		if d3 > 0.5 {
+		if d3 > DELTA_NOISE_THRESHOLD {
 			stats.Trend = "rising"
-		} else if d3 < -0.5 {
+		} else if d3 < -DELTA_NOISE_THRESHOLD {
 			stats.Trend = "falling"
 		} else {
 			stats.Trend = "stable"
@@ -419,7 +427,7 @@ func getUpdatedCacheDoc(cacheRef *firestore.DocumentRef, wp *WeatherPoint, tx *f
 		DewpointF:       wp.DewpointF,
 	}
 	cache.History = append(cache.History, newPoint)
-	if len(cache.History) > 48 {
+	if len(cache.History) > MAX_HISTORY_POINTS {
 		cache.History = cache.History[len(cache.History)-48:]
 	}
 
@@ -431,7 +439,7 @@ func getUpdatedCacheDoc(cacheRef *firestore.DocumentRef, wp *WeatherPoint, tx *f
 }
 
 func saveRawWeatherData(ctx context.Context, client *firestore.Client, wp *WeatherPoint) error {
-	_, _, err := client.Collection("weather_raw").Add(ctx, wp)
+	_, _, err := client.Collection(WEATHER_RAW_COLLECTION).Add(ctx, wp)
 	if err != nil {
 		return err
 	}

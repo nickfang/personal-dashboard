@@ -12,7 +12,7 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
     *   **Role**: Background Worker (Writer).
     *   **Runtime**: Cloud Run Job.
     *   **Trigger**: Cloud Scheduler (Hourly Cron).
-    *   **Responsibility**: 
+    *   **Responsibility**:
         *   Fetch weather data from external API (Google Weather/Maps).
         *   Process and format data.
         *   Perform "Dual-Write" to Firestore (Archive + Cache).
@@ -63,12 +63,12 @@ We utilize a **Dual-Write** strategy to balance historical accuracy with dashboa
         // Snapshot of conditions (same fields as raw)
       },
       "history": [
-        // Array of last 24 simplified data points
-        { 
-          "ts": "time", 
-          "t": 22.5, 
+        // Array of last 48 simplified data points
+        {
+          "ts": "time",
+          "t": 22.5,
           "tf": 21.0,
-          "h": 60, 
+          "h": 60,
           "uv": 4,
           "p": 1013.2,
           "wd": 180,
