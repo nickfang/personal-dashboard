@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package weather_provider.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1";
+
+service PressureStatsService {
+  rpc getAllPressureStats(GetAllPressureStatsRequest) returns (GetAllPressureStatsResponse);
+  rpc getPresssureStats(GetPressureStatsRequest) returns (GetPressureStatsResponse);
+}
+
+message PressureStat {
+  string location_id = 1;
+  google.protobuf.Timestamp last_updated = 2;
+  double delta_1h = 3;
+  double delta_3h = 4;
+  double delta_6h = 5;
+  double delta_12h = 6;
+  double delta_24h = 7;
+  string trend = 8;
+}
+
+message GetAllPressureStatsRequest {}
+
+message GetAllPressureStatsResponse {
+  repeated PressureStat stats = 1;
+}
+
+message GetPressureStatsRequest {
+  string location_id = 1;
+}
+
+message GetPressureStatsResponse {
+  PressureStat stat = 1;
+}
+

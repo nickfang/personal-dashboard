@@ -70,12 +70,13 @@ type PressureStats struct {
 	// Pointers are used for Delta fields to support a true "N/A" (nil) state.
 	// This allows the dashboard to distinguish between a 0.0 change and missing data,
 	// avoiding "Data Lies" where gaps are incorrectly represented as stable trends.
-	Delta1h  *float64 `firestore:"delta_01h"`
-	Delta3h  *float64 `firestore:"delta_3h"`
-	Delta6h  *float64 `firestore:"delta_6h"`
-	Delta12h *float64 `firestore:"delta_12h"`
-	Delta24h *float64 `firestore:"delta_24h"`
-	Trend    string   `firestore:"trend"`
+	Timestamp time.Time `firestore:"timestamp"`
+	Delta1h   *float64  `firestore:"delta_01h"`
+	Delta3h   *float64  `firestore:"delta_3h"`
+	Delta6h   *float64  `firestore:"delta_6h"`
+	Delta12h  *float64  `firestore:"delta_12h"`
+	Delta24h  *float64  `firestore:"delta_24h"`
+	Trend     string    `firestore:"trend"`
 }
 
 type CacheDoc struct {
