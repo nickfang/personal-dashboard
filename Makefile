@@ -1,4 +1,4 @@
-.PHONY: help dev-frontend dev-weather proto clean-proto
+.PHONY: help dev-frontend dev-weather proto clean-proto test
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  make %-20s %s\n", $$1, $$2}'
@@ -23,8 +23,14 @@ $(GEN_GO_DIR)/%.pb.go: $(PROTO_SRC_DIR)/%.proto
 		$<
 	@echo "  → Generated: $@"
 
-clean-proto: ## Remove all generated proto files
-	rm -rf $(GEN_GO_DIR)/*
+clean-proto: ## Remove all generated proto files (safely)
+	find $(GEN_GO_DIR) -mindepth 1 -maxdepth 1 ! -name "go.mod" ! -name "go.sum" -exec rm -rf {} +
+
+test: ## Run all Go tests
+	@find services -name "go.mod" -exec dirname {} \; | while read dir; do \
+		echo "Testing $$dir..."; \
+		(cd $$dir && go test ./...); \
+	done
 
 dev-frontend: ## Run the Svelte frontend
 	cd frontend && npm run dev

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -152,6 +153,11 @@ func main() {
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
+
+	// Load .env file if it exists (local development)
+	if err := godotenv.Load(); err != nil {
+		slog.Debug("No .env file found, using system environment variables", "error", err)
+	}
 
 	ctx := context.Background()
 	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")

@@ -312,10 +312,10 @@ const file_weather_provider_v1_weather_provider_proto_rawDesc = "" +
 	"\vlocation_id\x18\x01 \x01(\tR\n" +
 	"locationId\"Q\n" +
 	"\x18GetPressureStatsResponse\x125\n" +
-	"\x04stat\x18\x01 \x01(\v2!.weather_provider.v1.PressureStatR\x04stat2\x82\x02\n" +
+	"\x04stat\x18\x01 \x01(\v2!.weather_provider.v1.PressureStatR\x04stat2\x81\x02\n" +
 	"\x14PressureStatsService\x12x\n" +
-	"\x13getAllPressureStats\x12/.weather_provider.v1.GetAllPressureStatsRequest\x1a0.weather_provider.v1.GetAllPressureStatsResponse\x12p\n" +
-	"\x11getPresssureStats\x12,.weather_provider.v1.GetPressureStatsRequest\x1a-.weather_provider.v1.GetPressureStatsResponseBLZJgithub.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1b\x06proto3"
+	"\x13getAllPressureStats\x12/.weather_provider.v1.GetAllPressureStatsRequest\x1a0.weather_provider.v1.GetAllPressureStatsResponse\x12o\n" +
+	"\x10getPressureStats\x12,.weather_provider.v1.GetPressureStatsRequest\x1a-.weather_provider.v1.GetPressureStatsResponseBLZJgithub.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1b\x06proto3"
 
 var (
 	file_weather_provider_v1_weather_provider_proto_rawDescOnce sync.Once
@@ -343,9 +343,9 @@ var file_weather_provider_v1_weather_provider_proto_depIdxs = []int32{
 	0, // 1: weather_provider.v1.GetAllPressureStatsResponse.stats:type_name -> weather_provider.v1.PressureStat
 	0, // 2: weather_provider.v1.GetPressureStatsResponse.stat:type_name -> weather_provider.v1.PressureStat
 	1, // 3: weather_provider.v1.PressureStatsService.getAllPressureStats:input_type -> weather_provider.v1.GetAllPressureStatsRequest
-	3, // 4: weather_provider.v1.PressureStatsService.getPresssureStats:input_type -> weather_provider.v1.GetPressureStatsRequest
+	3, // 4: weather_provider.v1.PressureStatsService.getPressureStats:input_type -> weather_provider.v1.GetPressureStatsRequest
 	2, // 5: weather_provider.v1.PressureStatsService.getAllPressureStats:output_type -> weather_provider.v1.GetAllPressureStatsResponse
-	4, // 6: weather_provider.v1.PressureStatsService.getPresssureStats:output_type -> weather_provider.v1.GetPressureStatsResponse
+	4, // 6: weather_provider.v1.PressureStatsService.getPressureStats:output_type -> weather_provider.v1.GetPressureStatsResponse
 	5, // [5:7] is the sub-list for method output_type
 	3, // [3:5] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

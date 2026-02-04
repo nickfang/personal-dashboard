@@ -8,7 +8,7 @@ option go_package = "github.com/nickfang/personal-dashboard/services/gen/go/weat
 
 service PressureStatsService {
   rpc getAllPressureStats(GetAllPressureStatsRequest) returns (GetAllPressureStatsResponse);
-  rpc getPresssureStats(GetPressureStatsRequest) returns (GetPressureStatsResponse);
+  rpc getPressureStats(GetPressureStatsRequest) returns (GetPressureStatsResponse);
 }
 
 message PressureStat {

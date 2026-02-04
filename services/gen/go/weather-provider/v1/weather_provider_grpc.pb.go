@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	PressureStatsService_GetAllPressureStats_FullMethodName = "/weather_provider.v1.PressureStatsService/getAllPressureStats"
-	PressureStatsService_GetPresssureStats_FullMethodName   = "/weather_provider.v1.PressureStatsService/getPresssureStats"
+	PressureStatsService_GetPressureStats_FullMethodName    = "/weather_provider.v1.PressureStatsService/getPressureStats"
 )
 
 // PressureStatsServiceClient is the client API for PressureStatsService service.
@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PressureStatsServiceClient interface {
 	GetAllPressureStats(ctx context.Context, in *GetAllPressureStatsRequest, opts ...grpc.CallOption) (*GetAllPressureStatsResponse, error)
-	GetPresssureStats(ctx context.Context, in *GetPressureStatsRequest, opts ...grpc.CallOption) (*GetPressureStatsResponse, error)
+	GetPressureStats(ctx context.Context, in *GetPressureStatsRequest, opts ...grpc.CallOption) (*GetPressureStatsResponse, error)
 }
 
 type pressureStatsServiceClient struct {
@@ -49,10 +49,10 @@ func (c *pressureStatsServiceClient) GetAllPressureStats(ctx context.Context, in
 	return out, nil
 }
 
-func (c *pressureStatsServiceClient) GetPresssureStats(ctx context.Context, in *GetPressureStatsRequest, opts ...grpc.CallOption) (*GetPressureStatsResponse, error) {
+func (c *pressureStatsServiceClient) GetPressureStats(ctx context.Context, in *GetPressureStatsRequest, opts ...grpc.CallOption) (*GetPressureStatsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetPressureStatsResponse)
-	err := c.cc.Invoke(ctx, PressureStatsService_GetPresssureStats_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, PressureStatsService_GetPressureStats_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (c *pressureStatsServiceClient) GetPresssureStats(ctx context.Context, in *
 // for forward compatibility.
 type PressureStatsServiceServer interface {
 	GetAllPressureStats(context.Context, *GetAllPressureStatsRequest) (*GetAllPressureStatsResponse, error)
-	GetPresssureStats(context.Context, *GetPressureStatsRequest) (*GetPressureStatsResponse, error)
+	GetPressureStats(context.Context, *GetPressureStatsRequest) (*GetPressureStatsResponse, error)
 	mustEmbedUnimplementedPressureStatsServiceServer()
 }
 
@@ -78,8 +78,8 @@ type UnimplementedPressureStatsServiceServer struct{}
 func (UnimplementedPressureStatsServiceServer) GetAllPressureStats(context.Context, *GetAllPressureStatsRequest) (*GetAllPressureStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAllPressureStats not implemented")
 }
-func (UnimplementedPressureStatsServiceServer) GetPresssureStats(context.Context, *GetPressureStatsRequest) (*GetPressureStatsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetPresssureStats not implemented")
+func (UnimplementedPressureStatsServiceServer) GetPressureStats(context.Context, *GetPressureStatsRequest) (*GetPressureStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPressureStats not implemented")
 }
 func (UnimplementedPressureStatsServiceServer) mustEmbedUnimplementedPressureStatsServiceServer() {}
 func (UnimplementedPressureStatsServiceServer) testEmbeddedByValue()                              {}
@@ -120,20 +120,20 @@ func _PressureStatsService_GetAllPressureStats_Handler(srv interface{}, ctx cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PressureStatsService_GetPresssureStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PressureStatsService_GetPressureStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetPressureStatsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PressureStatsServiceServer).GetPresssureStats(ctx, in)
+		return srv.(PressureStatsServiceServer).GetPressureStats(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PressureStatsService_GetPresssureStats_FullMethodName,
+		FullMethod: PressureStatsService_GetPressureStats_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PressureStatsServiceServer).GetPresssureStats(ctx, req.(*GetPressureStatsRequest))
+		return srv.(PressureStatsServiceServer).GetPressureStats(ctx, req.(*GetPressureStatsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -150,8 +150,8 @@ var PressureStatsService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PressureStatsService_GetAllPressureStats_Handler,
 		},
 		{
-			MethodName: "getPresssureStats",
-			Handler:    _PressureStatsService_GetPresssureStats_Handler,
+			MethodName: "getPressureStats",
+			Handler:    _PressureStatsService_GetPressureStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
