@@ -1,16 +1,16 @@
-name: Deploy Weather Collector
+name: Deploy Weather Provider
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'services/weather-collector/**'
-      - '.github/workflows/deploy-weather-collector.yml'
+      - 'services/weather-provider/**'
+      - '.github/workflows/deploy-weather-provider.yml'
 
 env:
   GCP_REGION: us-central1
-  JOB_NAME: weather-collector-job
-  IMAGE_NAME: us-central1-docker.pkg.dev/fang-gcp/personal-dashboard/weather-collector
+  SERVICE_NAME: weather-provider-service
+  IMAGE_NAME: us-central1-docker.pkg.dev/fang-gcp/personal-dashboard/weather-provider
 
 jobs:
   deploy:
@@ -42,16 +42,16 @@ jobs:
         run: |
           # Use the git SHA as the tag for immutability and easy rollbacks
           IMAGE_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          
-          docker build -t "$IMAGE_TAG" services/weather-collector
+
+          docker build -t "$IMAGE_TAG" services/weather-provider
           docker push "$IMAGE_TAG"
-          
+
           # Also update 'latest' so the registry reflects the current state
           docker tag "$IMAGE_TAG" "${{ env.IMAGE_NAME }}:latest"
           docker push "${{ env.IMAGE_NAME }}:latest"
 
       - name: 'Deploy to Cloud Run'
         run: |
-          gcloud run jobs update ${{ env.JOB_NAME }} \
+          gcloud run services update ${{ env.SERVICE_NAME }} \
             --image "${{ env.IMAGE_NAME }}:${{ github.sha }}" \
             --region ${{ env.GCP_REGION }}
