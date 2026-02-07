@@ -1,7 +1,6 @@
 go 1.25.6
 
 use (
-	./services/gen/go
 	./services/weather-collector
 	./services/weather-provider
 )

@@ -4,7 +4,7 @@ package weather_provider.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1";
+option go_package = "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1";
 
 service PressureStatsService {
   rpc getAllPressureStats(GetAllPressureStatsRequest) returns (GetAllPressureStatsResponse);

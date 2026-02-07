@@ -12,7 +12,7 @@ resource "google_project_iam_member" "firestore_writer" {
 }
 
 # Grant permission to invoke Cloud Run jobs (Self-invocation for Scheduler)
-resource "google_project_iam_member" "cloud_run_invoker" {
+resource "google_project_iam_member" "weather_collector_invoker" {
   project = var.project_id
   role    = "roles/run.invoker"
   member  = "serviceAccount:${google_service_account.weather_collector_sa.email}"
@@ -44,7 +44,7 @@ resource "google_secret_manager_secret_iam_member" "secret_access" {
 # This resource serves as a "Bootstrap" step. It ensures an image exists so Terraform
 # can successfully create the Cloud Run Job initially (Disaster Recovery).
 # For day-to-day development, GitHub Actions will build and deploy new images.
-resource "null_resource" "cloud_build" {
+resource "null_resource" "weather_collector_bootstrap" {
   provisioner "local-exec" {
     command = <<EOT
       gcloud builds submit ../services/weather-collector \
@@ -97,7 +97,7 @@ resource "google_cloud_run_v2_job" "weather_collector" {
     ]
   }
 
-  depends_on = [google_project_service.run, null_resource.cloud_build, google_secret_manager_secret_version.google_maps_key_version]
+  depends_on = [google_project_service.run, null_resource.weather_collector_bootstrap, google_secret_manager_secret_version.google_maps_key_version]
 }
 
 # Create a Cloud Scheduler job to trigger the Cloud Run job hourly

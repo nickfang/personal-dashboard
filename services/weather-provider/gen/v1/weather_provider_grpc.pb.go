@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v5.29.2
-// source: weather-provider/v1/weather_provider.proto
+// source: weather_provider.proto
 
 package v1
 
@@ -155,5 +155,5 @@ var PressureStatsService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "weather-provider/v1/weather_provider.proto",
+	Metadata: "weather_provider.proto",
 }
