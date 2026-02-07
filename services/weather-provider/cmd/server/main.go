@@ -62,7 +62,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterPressureStatsServiceServer(grpcServer, handler)
-	
+
 	// Enable reflection for debugging (e.g., using grpcurl)
 	reflection.Register(grpcServer)
 

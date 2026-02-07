@@ -12,15 +12,15 @@ import (
 
 // MockReader is used by the Service in this test
 type MockReader struct {
-	GetByIDFunc func(id string) (*repository.CacheDoc, error)
-	GetAllFunc  func() ([]repository.CacheDoc, error)
+	GetByIDFunc func(ctx context.Context, id string) (*repository.CacheDoc, error)
+	GetAllFunc  func(ctx context.Context) ([]repository.CacheDoc, error)
 }
 
 func (m *MockReader) GetAll(ctx context.Context) ([]repository.CacheDoc, error) {
-	return m.GetAllFunc()
+	return m.GetAllFunc(ctx)
 }
 func (m *MockReader) GetByID(ctx context.Context, id string) (*repository.CacheDoc, error) {
-	return m.GetByIDFunc(id)
+	return m.GetByIDFunc(ctx, id)
 }
 
 func TestGetPressureStats_Mapping(t *testing.T) {
@@ -28,7 +28,7 @@ func TestGetPressureStats_Mapping(t *testing.T) {
 	now := time.Now()
 
 	mockRepo := &MockReader{
-		GetByIDFunc: func(id string) (*repository.CacheDoc, error) {
+		GetByIDFunc: func(ctx context.Context, id string) (*repository.CacheDoc, error) {
 			return &repository.CacheDoc{
 				LocationID:  id,
 				LastUpdated: now,
@@ -69,7 +69,7 @@ func TestGetPressureStats_Mapping(t *testing.T) {
 func TestGetAllPressureStats(t *testing.T) {
 	now := time.Now()
 	mockRepo := &MockReader{
-		GetAllFunc: func() ([]repository.CacheDoc, error) {
+		GetAllFunc: func(ctx context.Context) ([]repository.CacheDoc, error) {
 			return []repository.CacheDoc{
 				{LocationID: "loc-1", LastUpdated: now},
 				{LocationID: "loc-2", LastUpdated: now},
