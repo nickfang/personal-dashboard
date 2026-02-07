@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"log/slog"
 
 	pb "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/repository"
@@ -21,6 +22,7 @@ func NewGrpcHandler(svc *service.WeatherService) *GrpcHandler {
 func (h *GrpcHandler) GetAllPressureStats(ctx context.Context, req *pb.GetAllPressureStatsRequest) (*pb.GetAllPressureStatsResponse, error) {
 	docs, err := h.svc.GetAllStats(ctx)
 	if err != nil {
+		slog.Error("Error retreiving ")
 		return nil, err
 	}
 
