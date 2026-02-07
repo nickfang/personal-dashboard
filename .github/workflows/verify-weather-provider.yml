@@ -1,6 +1,12 @@
 name: Verify Weather Provider
 
 on:
+  push:
+    branches:
+      - '**'        # Run on all branches (including feature branches)
+    paths:
+      - 'services/weather-provider/**'
+      - '.github/workflows/verify-weather-provider.yml'
   pull_request:
     branches: [ main ]
     paths:
@@ -17,7 +23,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
 
       - name: Verify Dependencies
         working-directory: ./services/weather-provider
