@@ -73,8 +73,8 @@ dev-provider: ## Run Provider locally (Go)
 docker-build-provider: ## Build Provider image
 	docker build -t weather-provider services/weather-provider
 
-docker-run-provider: docker-build-provider ## Run Provider container (Port 8080)
+docker-run-provider: docker-build-provider ## Run Provider container (Port 50051)
 	docker run --rm -it \
 		--env-file services/weather-provider/.env \
-		-p 8080:8080 \
+		-p 50051:50051 \
 		weather-provider

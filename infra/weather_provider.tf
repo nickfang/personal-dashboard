@@ -45,7 +45,7 @@ resource "google_cloud_run_v2_service" "weather_provider" {
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/weather-provider:latest"
       ports {
-        container_port = 8080
+        container_port = 50051
         name = "h2c" # enable HTTP/2
       }
       env {

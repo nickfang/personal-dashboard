@@ -73,8 +73,8 @@ type PressureStats struct {
 	// avoiding "Data Lies" where gaps are incorrectly represented as stable trends.
 	Timestamp time.Time `firestore:"timestamp"`
 	Delta1h   *float64  `firestore:"delta_01h"`
-	Delta3h   *float64  `firestore:"delta_3h"`
-	Delta6h   *float64  `firestore:"delta_6h"`
+	Delta3h   *float64  `firestore:"delta_03h"`
+	Delta6h   *float64  `firestore:"delta_06h"`
 	Delta12h  *float64  `firestore:"delta_12h"`
 	Delta24h  *float64  `firestore:"delta_24h"`
 	Trend     string    `firestore:"trend"`

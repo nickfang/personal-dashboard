@@ -18,7 +18,7 @@ WORKDIR /root/
 COPY --from=builder /app/weather-provider .
 
 # Cloud Run uses the PORT environment variable
-ENV PORT=8080
-EXPOSE 8080
+ENV PORT=50051
+EXPOSE 50051
 
 CMD ["./weather-provider"]

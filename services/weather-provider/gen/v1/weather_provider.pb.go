@@ -26,9 +26,9 @@ type PressureStat struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	LastUpdated   *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
-	Delta_1H      float64                `protobuf:"fixed64,3,opt,name=delta_1h,json=delta1h,proto3" json:"delta_1h,omitempty"`
-	Delta_3H      float64                `protobuf:"fixed64,4,opt,name=delta_3h,json=delta3h,proto3" json:"delta_3h,omitempty"`
-	Delta_6H      float64                `protobuf:"fixed64,5,opt,name=delta_6h,json=delta6h,proto3" json:"delta_6h,omitempty"`
+	Delta_01H     float64                `protobuf:"fixed64,3,opt,name=delta_01h,json=delta01h,proto3" json:"delta_01h,omitempty"`
+	Delta_03H     float64                `protobuf:"fixed64,4,opt,name=delta_03h,json=delta03h,proto3" json:"delta_03h,omitempty"`
+	Delta_06H     float64                `protobuf:"fixed64,5,opt,name=delta_06h,json=delta06h,proto3" json:"delta_06h,omitempty"`
 	Delta_12H     float64                `protobuf:"fixed64,6,opt,name=delta_12h,json=delta12h,proto3" json:"delta_12h,omitempty"`
 	Delta_24H     float64                `protobuf:"fixed64,7,opt,name=delta_24h,json=delta24h,proto3" json:"delta_24h,omitempty"`
 	Trend         string                 `protobuf:"bytes,8,opt,name=trend,proto3" json:"trend,omitempty"`
@@ -80,23 +80,23 @@ func (x *PressureStat) GetLastUpdated() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *PressureStat) GetDelta_1H() float64 {
+func (x *PressureStat) GetDelta_01H() float64 {
 	if x != nil {
-		return x.Delta_1H
+		return x.Delta_01H
 	}
 	return 0
 }
 
-func (x *PressureStat) GetDelta_3H() float64 {
+func (x *PressureStat) GetDelta_03H() float64 {
 	if x != nil {
-		return x.Delta_3H
+		return x.Delta_03H
 	}
 	return 0
 }
 
-func (x *PressureStat) GetDelta_6H() float64 {
+func (x *PressureStat) GetDelta_06H() float64 {
 	if x != nil {
-		return x.Delta_6H
+		return x.Delta_06H
 	}
 	return 0
 }
@@ -294,14 +294,14 @@ var File_weather_provider_proto protoreflect.FileDescriptor
 
 const file_weather_provider_proto_rawDesc = "" +
 	"\n" +
-	"\x16weather_provider.proto\x12\x13weather_provider.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8f\x02\n" +
+	"\x16weather_provider.proto\x12\x13weather_provider.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x95\x02\n" +
 	"\fPressureStat\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\tR\n" +
 	"locationId\x12=\n" +
-	"\flast_updated\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vlastUpdated\x12\x19\n" +
-	"\bdelta_1h\x18\x03 \x01(\x01R\adelta1h\x12\x19\n" +
-	"\bdelta_3h\x18\x04 \x01(\x01R\adelta3h\x12\x19\n" +
-	"\bdelta_6h\x18\x05 \x01(\x01R\adelta6h\x12\x1b\n" +
+	"\flast_updated\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vlastUpdated\x12\x1b\n" +
+	"\tdelta_01h\x18\x03 \x01(\x01R\bdelta01h\x12\x1b\n" +
+	"\tdelta_03h\x18\x04 \x01(\x01R\bdelta03h\x12\x1b\n" +
+	"\tdelta_06h\x18\x05 \x01(\x01R\bdelta06h\x12\x1b\n" +
 	"\tdelta_12h\x18\x06 \x01(\x01R\bdelta12h\x12\x1b\n" +
 	"\tdelta_24h\x18\a \x01(\x01R\bdelta24h\x12\x14\n" +
 	"\x05trend\x18\b \x01(\tR\x05trend\"\x1c\n" +
