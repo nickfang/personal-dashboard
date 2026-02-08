@@ -1,5 +1,37 @@
 # Developer Guide
 
+## Makefiles
+
+Our `Makefile` acts as the entry point for common development tasks.
+
+*   **Default Target:** The `help` target MUST always be the first target defined. This ensures that running `make` without arguments displays the help menu rather than executing a destructive or long-running command.
+*   **Self-Documentation:** All targets should be documented with a `## Description` comment on the same line. The `help` target parses these comments to generate the menu.
+
+## gRPC & API Contracts
+
+### 1. Structure
+*   **`/services/protos` (The Source of Truth):** Contains raw `.proto` files. This is the centralized registry for all API contracts.
+*   **Service-Local `gen/` Directories:** Each service (e.g., `/services/weather-provider/gen`) contains its own copy of the generated Go code.
+
+### 2. Checking in Generated Code
+**We commit all generated Go code to Git.**
+*   **Why:** This ensures the project can be built without requiring `protoc` to be installed on every machine (including CI/CD).
+*   **Docker Compatibility:** By keeping the generated code *inside* the service folder, each microservice is a self-contained unit. This allows us to run `docker build` from within the service directory, which is required for our "Bootstrap + CD" deployment pattern in GCP.
+
+### 3. Generating Code
+We use a centralized `Makefile` at the root to handle code generation. It reads from the shared `/services/protos` registry and writes to the specific service's `gen/` folder.
+
+```bash
+make proto
+```
+
+### 4. Usage in Services
+Services should import the generated code from their own internal `gen` package.
+
+```go
+import "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
+```
+
 ## Development Workflow
 
 We follow a **Trunk-Based Development** workflow with strict CI checks.
@@ -9,15 +41,18 @@ We follow a **Trunk-Based Development** workflow with strict CI checks.
 *   **Feature Branches:** Create a new branch for every task (e.g., `feat/add-retry-logic` or `fix/timestamp-bug`).
 
 ### 2. The Lifecycle
-1.  **Code:** Work locally. Use `go run main.go` or `make` commands.
-2.  **Test:** Run unit tests locally before pushing:
+1.  **Auth (Once):** `gcloud auth application-default login`
+2.  **Code:** Work locally.
+    *   `make dev-provider`
+    *   `make dev-collector`
+3.  **Test:** Run unit tests locally before pushing:
     ```bash
     cd services/weather-collector
     go test -v ./...
     ```
-3.  **Push:** Push your feature branch to GitHub.
-4.  **Verify (CI):** Open a Pull Request. GitHub Actions (`verify-*.yml`) will automatically run tests and build checks. You cannot merge if this fails.
-5.  **Deploy (CD):** Merge the PR into `main`. GitHub Actions (`deploy-*.yml`) will build the Docker image and update Cloud Run automatically.
+4.  **Push:** Push your feature branch to GitHub.
+5.  **Verify (CI):** Open a Pull Request. GitHub Actions (`verify-*.yml`) will automatically run tests and build checks. You cannot merge if this fails.
+6.  **Deploy (CD):** Merge the PR into `main`. GitHub Actions (`deploy-*.yml`) will build the Docker image and update Cloud Run automatically.
 
 ## Infrastructure & Deployment
 

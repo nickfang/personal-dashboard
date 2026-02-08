@@ -28,5 +28,7 @@ bin/
 go.work
 go.work.sum
 
-
+# Service-specific build artifacts
+weather-provider/weather-provider
+weather-collector/weather-collector
 

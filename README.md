@@ -1,22 +1,54 @@
 # Personal Dashboard Monorepo
 
-This repository is organized as a monorepo containing the frontend dashboard and backend services.
+This repository contains the frontend dashboard and backend services for the Personal Dashboard project.
 
 ## Project Structure
 
-- **`frontend/`**: The primary user interface built with SvelteKit. It is built and deployed using **Vercel**.
-- **`services/`**: Backend microservices and APIs (primarily written in Go).
+- **`frontend/`**: The primary user interface built with **SvelteKit**.
+- **`services/`**: Backend microservices and jobs (primarily **Go**).
+  - **`weather-collector`**: A Cloud Run Job that fetches weather data.
+  - **`weather-provider`**: A gRPC Service that serves weather data.
+- **`infra/`**: Terraform configuration for GCP infrastructure.
 
-## Development
+## Getting Started
 
-### Frontend
-To run the dashboard locally:
+### Prerequisites
+1.  **Go**: v1.25+
+2.  **Node.js**: v20+
+3.  **Docker**: For running containerized services locally.
+4.  **Google Cloud SDK (`gcloud`)**: For authentication and deployment.
+
+### Authentication (Crucial)
+Backend services require access to Google Cloud Firestore. For local development, use **Application Default Credentials (ADC)**.
+
+Run this command once on your machine:
 ```bash
-cd frontend
-npm install
-npm run dev
+gcloud auth application-default login
+```
+This creates a local credential file that Docker containers will mount to authenticate.
+
+### Quick Start
+
+**1. Frontend**
+```bash
+make dev-frontend
+# Opens at http://localhost:5173
 ```
 
-### Services
-Refer to the individual service directories within `services/` for specific setup instructions.
+**2. Backend Services**
+See [services/README.md](./services/README.md) for detailed configuration.
 
+*   **Native Go (Fastest):**
+    ```bash
+    make dev-provider   # Starts the gRPC server
+    make dev-collector  # Runs the collector job once
+    ```
+*   **Docker (Production-like):**
+    ```bash
+    make docker-run-provider
+    make docker-run-collector
+    ```
+
+## Documentation
+*   [Backend Services Documentation](./services/README.md)
+*   [Infrastructure Architecture](./docs/ARCHITECTURE_INFRASTRUCTURE.md)

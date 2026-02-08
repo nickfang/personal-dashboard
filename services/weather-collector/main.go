@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/joho/godotenv"
 )
 
 const (
@@ -70,12 +71,13 @@ type PressureStats struct {
 	// Pointers are used for Delta fields to support a true "N/A" (nil) state.
 	// This allows the dashboard to distinguish between a 0.0 change and missing data,
 	// avoiding "Data Lies" where gaps are incorrectly represented as stable trends.
-	Delta1h  *float64 `firestore:"delta_01h"`
-	Delta3h  *float64 `firestore:"delta_3h"`
-	Delta6h  *float64 `firestore:"delta_6h"`
-	Delta12h *float64 `firestore:"delta_12h"`
-	Delta24h *float64 `firestore:"delta_24h"`
-	Trend    string   `firestore:"trend"`
+	Timestamp time.Time `firestore:"timestamp"`
+	Delta1h   *float64  `firestore:"delta_01h"`
+	Delta3h   *float64  `firestore:"delta_03h"`
+	Delta6h   *float64  `firestore:"delta_06h"`
+	Delta12h  *float64  `firestore:"delta_12h"`
+	Delta24h  *float64  `firestore:"delta_24h"`
+	Trend     string    `firestore:"trend"`
 }
 
 type CacheDoc struct {
@@ -151,6 +153,11 @@ func main() {
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
+
+	// Load .env file if it exists (local development)
+	if err := godotenv.Load(); err != nil {
+		slog.Debug("No .env file found, using system environment variables", "error", err)
+	}
 
 	ctx := context.Background()
 	apiKey := os.Getenv("GOOGLE_MAPS_API_KEY")
