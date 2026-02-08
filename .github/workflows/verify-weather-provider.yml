@@ -1,12 +1,6 @@
 name: Verify Weather Provider
 
 on:
-  push:
-    branches:
-      - '**'        # Run on all branches (including feature branches)
-    paths:
-      - 'services/weather-provider/**'
-      - '.github/workflows/verify-weather-provider.yml'
   pull_request:
     branches: [ main ]
     paths:

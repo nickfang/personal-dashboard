@@ -1,12 +1,6 @@
 name: Verify Weather Collector
 
 on:
-  push:
-    branches:
-      - '**'
-    paths:
-      - 'services/weather-collector/**'
-      - '.github/workflows/verify-weather-collector.yml'
   pull_request:
     branches: [ main ]
     paths:
