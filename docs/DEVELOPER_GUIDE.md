@@ -14,7 +14,7 @@ Our `Makefile` acts as the entry point for common development tasks.
 *   **Service-Local `gen/` Directories:** Each service (e.g., `/services/weather-provider/gen`) contains its own copy of the generated Go code.
 
 ### 2. Checking in Generated Code
-**We commit all generated Go code to Git.** 
+**We commit all generated Go code to Git.**
 *   **Why:** This ensures the project can be built without requiring `protoc` to be installed on every machine (including CI/CD).
 *   **Docker Compatibility:** By keeping the generated code *inside* the service folder, each microservice is a self-contained unit. This allows us to run `docker build` from within the service directory, which is required for our "Bootstrap + CD" deployment pattern in GCP.
 
@@ -51,8 +51,8 @@ We follow a **Trunk-Based Development** workflow with strict CI checks.
     go test -v ./...
     ```
 4.  **Push:** Push your feature branch to GitHub.
-4.  **Verify (CI):** Open a Pull Request. GitHub Actions (`verify-*.yml`) will automatically run tests and build checks. You cannot merge if this fails.
-5.  **Deploy (CD):** Merge the PR into `main`. GitHub Actions (`deploy-*.yml`) will build the Docker image and update Cloud Run automatically.
+5.  **Verify (CI):** Open a Pull Request. GitHub Actions (`verify-*.yml`) will automatically run tests and build checks. You cannot merge if this fails.
+6.  **Deploy (CD):** Merge the PR into `main`. GitHub Actions (`deploy-*.yml`) will build the Docker image and update Cloud Run automatically.
 
 ## Infrastructure & Deployment
 

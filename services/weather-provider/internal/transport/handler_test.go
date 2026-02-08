@@ -62,7 +62,7 @@ func TestGetPressureStats_Mapping(t *testing.T) {
 	}
 	// Verify that unmapped fields remain default
 	if resp.Stat.Delta_01H != 0 {
-		t.Errorf("expected Delta1h 0 (unset), got %f", resp.Stat.Delta_01H)
+		t.Errorf("expected Delta01h 0 (unset), got %f", resp.Stat.Delta_01H)
 	}
 }
 
