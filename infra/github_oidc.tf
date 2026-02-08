@@ -19,10 +19,10 @@ resource "google_iam_workload_identity_pool_provider" "github_provider" {
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
   }
-  
+
   # Strictly restrict access to the specified repository
   attribute_condition = "assertion.repository == \"${var.github_repository}\""
-  
+
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
@@ -58,8 +58,15 @@ resource "google_project_iam_member" "github_sa_cloud_run_developer" {
 }
 
 # 3. Service Account User (To run the job AS the weather-collector-sa)
-resource "google_service_account_iam_member" "github_sa_act_as_weather_sa" {
+resource "google_service_account_iam_member" "github_sa_act_as_weather_collector_sa" {
   service_account_id = google_service_account.weather_collector_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.github_sa.email}"
+}
+
+# 4. Service Account User (To run the service AS the weather-provider-sa)
+resource "google_service_account_iam_member" "github_sa_act_as_weather_provider_sa" {
+  service_account_id = google_service_account.weather_provider_sa.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.github_sa.email}"
 }
