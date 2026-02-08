@@ -2,7 +2,10 @@ module personal-dashboard/services/weather-collector
 
 go 1.24.0
 
-require cloud.google.com/go/firestore v1.21.0
+require (
+	cloud.google.com/go/firestore v1.21.0
+	github.com/joho/godotenv v1.5.1
+)
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
@@ -16,7 +19,6 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.7 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect

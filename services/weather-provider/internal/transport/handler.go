@@ -7,6 +7,8 @@ import (
 	pb "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/service"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -22,8 +24,8 @@ func NewGrpcHandler(svc *service.WeatherService) *GrpcHandler {
 func (h *GrpcHandler) GetAllPressureStats(ctx context.Context, req *pb.GetAllPressureStatsRequest) (*pb.GetAllPressureStatsResponse, error) {
 	docs, err := h.svc.GetAllStats(ctx)
 	if err != nil {
-		slog.Error("Error retreiving ")
-		return nil, err
+		slog.Error("Failed to retrieve pressure data.", "error", err)
+		return nil, status.Errorf(codes.Unknown, "Failed to retrieve pressure data: %v", err)
 	}
 
 	var stats []*pb.PressureStat
@@ -37,7 +39,8 @@ func (h *GrpcHandler) GetAllPressureStats(ctx context.Context, req *pb.GetAllPre
 func (h *GrpcHandler) GetPressureStats(ctx context.Context, req *pb.GetPressureStatsRequest) (*pb.GetPressureStatsResponse, error) {
 	doc, err := h.svc.GetStatsByID(ctx, req.LocationId)
 	if err != nil {
-		return nil, err
+		slog.Error("Failed to retrieve pressure data.", "error", err)
+		return nil, status.Errorf(codes.Unknown, "Failed to retrieve pressure data: %v", err)
 	}
 
 	return &pb.GetPressureStatsResponse{Stat: mapToProto(doc)}, nil

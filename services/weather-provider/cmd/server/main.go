@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/joho/godotenv"
 	pb "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
@@ -12,6 +14,8 @@ import (
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/service"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/transport"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -61,14 +65,34 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
+	
+	// Register Service
 	pb.RegisterPressureStatsServiceServer(grpcServer, handler)
+	
+	// Register Standard Health Check
+	healthServer := health.NewServer()
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
 	// Enable reflection for debugging (e.g., using grpcurl)
 	reflection.Register(grpcServer)
 
-	slog.Info("Weather Provider Server listening", "port", port)
-	if err := grpcServer.Serve(lis); err != nil {
-		slog.Error("Failed to serve gRPC", "error", err)
-		os.Exit(1)
-	}
+	// 5. Graceful Shutdown
+	go func() {
+		slog.Info("Weather Provider Server listening", "port", port)
+		if err := grpcServer.Serve(lis); err != nil {
+			slog.Error("Failed to serve gRPC", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for termination signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("Shutting down server gracefully...")
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
+	grpcServer.GracefulStop()
+	slog.Info("Server stopped")
 }

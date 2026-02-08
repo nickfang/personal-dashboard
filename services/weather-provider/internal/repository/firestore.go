@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -71,7 +72,9 @@ func (r *FirestoreRepository) Close() error {
 
 func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 	var results []CacheDoc
-	iter := r.client.Collection(WEATHER_CACHE_COLLECTION).Documents(ctx)
+	// Safety: Limit query to 100 documents to prevent OOM.
+	// In production, this should use pagination (cursors).
+	iter := r.client.Collection(WEATHER_CACHE_COLLECTION).Limit(100).Documents(ctx)
 	defer iter.Stop()
 
 	for {
@@ -85,7 +88,8 @@ func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 
 		var cache CacheDoc
 		if err := doc.DataTo(&cache); err != nil {
-			return nil, err
+			slog.Warn("Skipping invalid document in GetAll", "doc_id", doc.Ref.ID, "error", err)
+			continue
 		}
 		cache.LocationID = doc.Ref.ID
 		results = append(results, cache)

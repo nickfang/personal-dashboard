@@ -41,13 +41,16 @@ We follow a **Trunk-Based Development** workflow with strict CI checks.
 *   **Feature Branches:** Create a new branch for every task (e.g., `feat/add-retry-logic` or `fix/timestamp-bug`).
 
 ### 2. The Lifecycle
-1.  **Code:** Work locally. Use `go run main.go` or `make` commands.
-2.  **Test:** Run unit tests locally before pushing:
+1.  **Auth (Once):** `gcloud auth application-default login`
+2.  **Code:** Work locally.
+    *   `make dev-provider`
+    *   `make dev-collector`
+3.  **Test:** Run unit tests locally before pushing:
     ```bash
     cd services/weather-collector
     go test -v ./...
     ```
-3.  **Push:** Push your feature branch to GitHub.
+4.  **Push:** Push your feature branch to GitHub.
 4.  **Verify (CI):** Open a Pull Request. GitHub Actions (`verify-*.yml`) will automatically run tests and build checks. You cannot merge if this fails.
 5.  **Deploy (CD):** Merge the PR into `main`. GitHub Actions (`deploy-*.yml`) will build the Docker image and update Cloud Run automatically.
 

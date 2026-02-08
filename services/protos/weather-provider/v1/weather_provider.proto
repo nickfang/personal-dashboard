@@ -7,8 +7,8 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1";
 
 service PressureStatsService {
-  rpc getAllPressureStats(GetAllPressureStatsRequest) returns (GetAllPressureStatsResponse);
-  rpc getPressureStats(GetPressureStatsRequest) returns (GetPressureStatsResponse);
+  rpc GetAllPressureStats(GetAllPressureStatsRequest) returns (GetAllPressureStatsResponse);
+  rpc GetPressureStats(GetPressureStatsRequest) returns (GetPressureStatsResponse);
 }
 
 message PressureStat {

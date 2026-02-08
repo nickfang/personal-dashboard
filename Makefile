@@ -49,9 +49,7 @@ dev-frontend: ## Run the Svelte frontend
 # ==============================================================================
 
 dev-collector: ## Run Collector locally (Go)
-	cd services/weather-collector && \
-	export $$(grep -v '^#' .env | xargs) && \
-	go run main.go
+	-cd services/weather-collector && go run main.go
 
 docker-build-collector: ## Build Collector image
 	docker build -t weather-collector services/weather-collector
@@ -59,6 +57,8 @@ docker-build-collector: ## Build Collector image
 docker-run-collector: docker-build-collector ## Run Collector container (One-off job)
 	docker run --rm -it \
 		--env-file services/weather-collector/.env \
+		-v ~/.config/gcloud:/root/.config/gcloud \
+		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		weather-collector
 
 # ==============================================================================
@@ -66,9 +66,7 @@ docker-run-collector: docker-build-collector ## Run Collector container (One-off
 # ==============================================================================
 
 dev-provider: ## Run Provider locally (Go)
-	cd services/weather-provider && \
-	export $$(grep -v '^#' .env | xargs) && \
-	go run cmd/server/main.go
+	-cd services/weather-provider && go run cmd/server/main.go
 
 docker-build-provider: ## Build Provider image
 	docker build -t weather-provider services/weather-provider
@@ -77,4 +75,6 @@ docker-run-provider: docker-build-provider ## Run Provider container (Port 50051
 	docker run --rm -it \
 		--env-file services/weather-provider/.env \
 		-p 50051:50051 \
+		-v ~/.config/gcloud:/root/.config/gcloud \
+		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		weather-provider

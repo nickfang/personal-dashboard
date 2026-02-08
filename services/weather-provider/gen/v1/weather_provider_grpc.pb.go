@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PressureStatsService_GetAllPressureStats_FullMethodName = "/weather_provider.v1.PressureStatsService/getAllPressureStats"
-	PressureStatsService_GetPressureStats_FullMethodName    = "/weather_provider.v1.PressureStatsService/getPressureStats"
+	PressureStatsService_GetAllPressureStats_FullMethodName = "/weather_provider.v1.PressureStatsService/GetAllPressureStats"
+	PressureStatsService_GetPressureStats_FullMethodName    = "/weather_provider.v1.PressureStatsService/GetPressureStats"
 )
 
 // PressureStatsServiceClient is the client API for PressureStatsService service.
@@ -146,11 +146,11 @@ var PressureStatsService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*PressureStatsServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "getAllPressureStats",
+			MethodName: "GetAllPressureStats",
 			Handler:    _PressureStatsService_GetAllPressureStats_Handler,
 		},
 		{
-			MethodName: "getPressureStats",
+			MethodName: "GetPressureStats",
 			Handler:    _PressureStatsService_GetPressureStats_Handler,
 		},
 	},
