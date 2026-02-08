@@ -65,17 +65,19 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	
+
 	// Register Service
 	pb.RegisterPressureStatsServiceServer(grpcServer, handler)
-	
+
 	// Register Standard Health Check
 	healthServer := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
 	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
 
 	// Enable reflection for debugging (e.g., using grpcurl)
-	reflection.Register(grpcServer)
+	if os.Getenv("DEBUG") == "true" {
+		reflection.Register(grpcServer)
+	}
 
 	// 5. Graceful Shutdown
 	go func() {
