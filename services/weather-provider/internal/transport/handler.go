@@ -55,14 +55,14 @@ func mapToProto(doc *repository.CacheDoc) *pb.PressureStat {
 	}
 
 	// Safely map pointers (Deltas)
-	if doc.Analysis.Delta01h != nil {
-		stat.Delta_01H = *doc.Analysis.Delta01h
+	if doc.Analysis.Delta1h != nil {
+		stat.Delta_1H = *doc.Analysis.Delta1h
 	}
-	if doc.Analysis.Delta03h != nil {
-		stat.Delta_03H = *doc.Analysis.Delta03h
+	if doc.Analysis.Delta3h != nil {
+		stat.Delta_3H = *doc.Analysis.Delta3h
 	}
-	if doc.Analysis.Delta06h != nil {
-		stat.Delta_06H = *doc.Analysis.Delta06h
+	if doc.Analysis.Delta6h != nil {
+		stat.Delta_6H = *doc.Analysis.Delta6h
 	}
 	if doc.Analysis.Delta12h != nil {
 		stat.Delta_12H = *doc.Analysis.Delta12h

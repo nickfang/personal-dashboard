@@ -53,7 +53,7 @@ func TestKtoM(t *testing.T) {
 
 func TestCalculatePressureStats(t *testing.T) {
 	now := time.Now()
-	
+
 	// Helper to create a point at T minus hours
 	mkPoint := func(hoursAgo int, pressure float64) PressurePoint {
 		return PressurePoint{
@@ -63,11 +63,11 @@ func TestCalculatePressureStats(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		history       []PressurePoint
-		wantTrend     string
-		wantDelta3h   *float64
-		wantDelta24h  *float64
+		name         string
+		history      []PressurePoint
+		wantTrend    string
+		wantDelta3h  *float64
+		wantDelta24h *float64
 	}{
 		{
 			name:      "Empty History",
@@ -119,7 +119,7 @@ func TestCalculatePressureStats(t *testing.T) {
 				mkPoint(12, 1005.0),
 				mkPoint(0, 1010.0),
 			},
-			wantTrend:    "unknown", // 3h is missing in this test data
+			wantTrend:    "unknown",      // 3h is missing in this test data
 			wantDelta24h: floatPtr(10.0), // Now matches because of timestamp logic!
 		},
 	}
@@ -127,7 +127,7 @@ func TestCalculatePressureStats(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			stats := calculatePressureStats(tt.history)
-			
+
 			if stats.Trend != tt.wantTrend {
 				t.Errorf("Trend = %s, want %s", stats.Trend, tt.wantTrend)
 			}
@@ -135,7 +135,7 @@ func TestCalculatePressureStats(t *testing.T) {
 			if !compareFloatPtr(stats.Delta3h, tt.wantDelta3h) {
 				t.Errorf("Delta3h = %v, want %v", stats.Delta3h, tt.wantDelta3h)
 			}
-			
+
 			if !compareFloatPtr(stats.Delta24h, tt.wantDelta24h) {
 				t.Errorf("Delta24h = %v, want %v", stats.Delta24h, tt.wantDelta24h)
 			}
@@ -154,7 +154,7 @@ func compareFloatPtr(a, b *float64) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	return abs(*a - *b) < 0.001
+	return abs(*a-*b) < 0.001
 }
 
 func abs(x float64) float64 {

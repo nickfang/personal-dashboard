@@ -39,9 +39,9 @@ type WeatherPoint struct {
 
 type PressureStats struct {
 	Timestamp time.Time `firestore:"timestamp"`
-	Delta01h  *float64  `firestore:"delta_01h"`
-	Delta03h  *float64  `firestore:"delta_03h"`
-	Delta06h  *float64  `firestore:"delta_06h"`
+	Delta1h   *float64  `firestore:"delta_01h"`
+	Delta3h   *float64  `firestore:"delta_03h"`
+	Delta6h   *float64  `firestore:"delta_06h"`
 	Delta12h  *float64  `firestore:"delta_12h"`
 	Delta24h  *float64  `firestore:"delta_24h"`
 	Trend     string    `firestore:"trend"`

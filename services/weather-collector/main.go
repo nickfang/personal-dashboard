@@ -72,9 +72,9 @@ type PressureStats struct {
 	// This allows the dashboard to distinguish between a 0.0 change and missing data,
 	// avoiding "Data Lies" where gaps are incorrectly represented as stable trends.
 	Timestamp time.Time `firestore:"timestamp"`
-	Delta01h  *float64  `firestore:"delta_01h"`
-	Delta03h  *float64  `firestore:"delta_03h"`
-	Delta06h  *float64  `firestore:"delta_06h"`
+	Delta1h   *float64  `firestore:"delta_01h"`
+	Delta3h   *float64  `firestore:"delta_03h"`
+	Delta6h   *float64  `firestore:"delta_06h"`
 	Delta12h  *float64  `firestore:"delta_12h"`
 	Delta24h  *float64  `firestore:"delta_24h"`
 	Trend     string    `firestore:"trend"`
@@ -382,9 +382,9 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 		return nil
 	}
 
-	stats.Delta01h = getDelta(1)
-	stats.Delta03h = getDelta(3)
-	stats.Delta06h = getDelta(6)
+	stats.Delta1h = getDelta(1)
+	stats.Delta3h = getDelta(3)
+	stats.Delta6h = getDelta(6)
 	stats.Delta12h = getDelta(12)
 	stats.Delta24h = getDelta(24)
 
@@ -398,8 +398,8 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 	// Simple trend logic with noise threshold
 	// NOTE: We rely exclusively on the 3-Hour Delta (Delta3h) to define the "Trend" string.
 	// This adheres to the World Meteorological Organization (WMO) definition of "Barometric Tendency".
-	if stats.Delta03h != nil {
-		d3 := *stats.Delta03h
+	if stats.Delta3h != nil {
+		d3 := *stats.Delta3h
 		if d3 > DELTA_NOISE_THRESHOLD {
 			stats.Trend = "rising"
 		} else if d3 < -DELTA_NOISE_THRESHOLD {

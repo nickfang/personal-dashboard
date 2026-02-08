@@ -54,15 +54,15 @@ func TestGetPressureStats_Mapping(t *testing.T) {
 	if resp.Stat.LocationId != "test-loc" {
 		t.Errorf("expected LocationId test-loc, got %s", resp.Stat.LocationId)
 	}
-	if resp.Stat.Delta_03H != 1.5 {
-		t.Errorf("expected Delta3h 1.5, got %f", resp.Stat.Delta_03H)
+	if resp.Stat.Delta_3H != 1.5 {
+		t.Errorf("expected Delta3h 1.5, got %f", resp.Stat.Delta_3H)
 	}
 	if resp.Stat.Trend != "rising" {
 		t.Errorf("expected Trend rising, got %s", resp.Stat.Trend)
 	}
 	// Verify that unmapped fields remain default
-	if resp.Stat.Delta_01H != 0 {
-		t.Errorf("expected Delta01h 0 (unset), got %f", resp.Stat.Delta_01H)
+	if resp.Stat.Delta_1H != 0 {
+		t.Errorf("expected Delta1h 0 (unset), got %f", resp.Stat.Delta_1H)
 	}
 }
 
