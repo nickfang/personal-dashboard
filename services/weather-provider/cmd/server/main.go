@@ -28,6 +28,8 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
 
+	slog.Info("Weather Provider starting", "version", "1.0.1", "debug", os.Getenv("DEBUG"))
+
 	// Load .env file if it exists (local development)
 	if err := godotenv.Load(); err != nil {
 		slog.Debug("No .env file found, using system environment variables", "error", err)
@@ -40,7 +42,7 @@ func main() {
 		port = "50051"
 	}
 	if projectID == "" {
-		slog.Error("Missing required env var: GCP_PROJECT_ID")
+		slog.Error("Missing required env var: GCP_PROJECT_ID", "env", os.Environ())
 		os.Exit(1)
 	}
 
