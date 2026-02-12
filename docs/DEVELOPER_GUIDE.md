@@ -7,29 +7,39 @@ Our `Makefile` acts as the entry point for common development tasks.
 *   **Default Target:** The `help` target MUST always be the first target defined. This ensures that running `make` without arguments displays the help menu rather than executing a destructive or long-running command.
 *   **Self-Documentation:** All targets should be documented with a `## Description` comment on the same line. The `help` target parses these comments to generate the menu.
 
+## Getting Started
+
+### Prerequisites
+1.  **Go**: v1.25+
+2.  **Node.js**: v20+
+3.  **Docker**: For running containerized services locally.
+4.  **Google Cloud SDK (`gcloud`)**: For authentication and deployment.
+5.  **Buf**: For gRPC linting and code generation.
+
 ## gRPC & API Contracts
 
 ### 1. Structure
-*   **`/services/protos` (The Source of Truth):** Contains raw `.proto` files. This is the centralized registry for all API contracts.
-*   **Service-Local `gen/` Directories:** Each service (e.g., `/services/weather-provider/gen`) contains its own copy of the generated Go code.
+*   **`/services/protos` (The Source of Truth):** Contains raw `.proto` files managed by **Buf**.
+*   **`/services/gen/go` (Shared Library):** A centralized Go module containing all generated gRPC code for the monorepo.
 
 ### 2. Checking in Generated Code
 **We commit all generated Go code to Git.**
-*   **Why:** This ensures the project can be built without requiring `protoc` to be installed on every machine (including CI/CD).
-*   **Docker Compatibility:** By keeping the generated code *inside* the service folder, each microservice is a self-contained unit. This allows us to run `docker build` from within the service directory, which is required for our "Bootstrap + CD" deployment pattern in GCP.
+*   **Why:** This ensures the project can be built without requiring `buf` to be installed on every machine (including CI/CD).
+*   **Docker Compatibility:** By using a shared library and building from the repository root, we maintain clear dependency management.
 
 ### 3. Generating Code
-We use a centralized `Makefile` at the root to handle code generation. It reads from the shared `/services/protos` registry and writes to the specific service's `gen/` folder.
+We use **Buf** for code generation.
 
 ```bash
-make proto
+# From the repository root
+make proto  # Which runs 'buf generate'
 ```
 
 ### 4. Usage in Services
-Services should import the generated code from their own internal `gen` package.
+Services should import the generated code from the shared package.
 
 ```go
-import "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
+import pb "github.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1"
 ```
 
 ## Development Workflow

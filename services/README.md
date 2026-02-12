@@ -49,10 +49,19 @@ The backend is built as a set of decoupled services communicating via Firestore 
 
 ## Local Development Guide
 
-### 1. Authentication
+### 1. Prerequisites
+*   **Go**: Version 1.25 or later.
+*   **Docker**: For running containerized services locally.
+*   **Google Cloud SDK (`gcloud`)**: Required for authentication.
+*   **Buf**: For gRPC management.
+    ```bash
+    brew install bufbuild/buf/buf
+    ```
+
+### 2. Authentication
 Run `gcloud auth application-default login` on your host machine. This creates the credentials needed for Firestore access.
 
-### 2. Configuration
+### 3. Configuration
 Copy the example files and fill in your values:
 
 ```bash
@@ -63,7 +72,7 @@ cp services/weather-collector/.env.example services/weather-collector/.env
 cp services/weather-provider/.env.example services/weather-provider/.env
 ```
 
-### 3. Running with Make
+### 4. Running with Make
 Use the root `Makefile` to run services.
 
 **Native Execution (Go):**

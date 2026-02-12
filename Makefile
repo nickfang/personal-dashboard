@@ -10,26 +10,11 @@ help: ## Show available commands
 # Global
 # ==============================================================================
 
-# gRPC Configuration
-PROTO_SRC_DIR := services/protos
-# This maps the central contract to the local service implementation folder
-WEATHER_PROVIDER_DIR := services/protos/weather-provider/v1
-WEATHER_PROVIDER_PROTO := weather_provider.proto
-WEATHER_PROVIDER_OUT := services/weather-provider/gen/v1
+proto: ## Generate Go code for all services via Buf
+	cd services && buf generate protos
 
-proto: proto-weather-provider ## Generate Go code for all services
-
-proto-weather-provider: ## Generate Go code for the weather-provider service
-	@mkdir -p $(WEATHER_PROVIDER_OUT)
-	protoc --proto_path=$(WEATHER_PROVIDER_DIR) \
-		--proto_path=$(PROTO_SRC_DIR) \
-		--go_out=$(WEATHER_PROVIDER_OUT) --go_opt=paths=source_relative \
-		--go-grpc_out=$(WEATHER_PROVIDER_OUT) --go-grpc_opt=paths=source_relative \
-		$(WEATHER_PROVIDER_PROTO)
-	@echo "  → Generated: Weather Provider (Server stubs)"
-
-clean-proto: ## Remove all generated proto files from service directories
-	rm -rf $(WEATHER_PROVIDER_OUT)/*.pb.go
+clean-proto: ## Remove all generated proto files
+	rm -rf services/gen/go/*
 
 test: ## Run all Go tests
 	@find services -name "go.mod" -exec dirname {} \; | while read dir; do \
@@ -69,7 +54,7 @@ dev-provider: ## Run Provider locally (Go)
 	-cd services/weather-provider && go run cmd/server/main.go
 
 docker-build-provider: ## Build Provider image
-	docker build -t weather-provider services/weather-provider
+	docker build -t weather-provider -f services/weather-provider/Dockerfile .
 
 docker-run-provider: docker-build-provider ## Run Provider container (Port 50051)
 	docker run --rm -it \

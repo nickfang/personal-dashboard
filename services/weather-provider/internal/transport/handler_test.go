@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
+	pb "github.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/service"
 )
