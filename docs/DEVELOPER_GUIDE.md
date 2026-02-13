@@ -55,11 +55,25 @@ We follow a **Trunk-Based Development** workflow with strict CI checks.
 2.  **Code:** Work locally.
     *   `make dev-provider`
     *   `make dev-collector`
+    
+    **Dashboard API (Aggregator)**
+    Runs on port **8080**.
+    ```bash
+    cd services/dashboard-api
+    go run main.go
+    ```
+    *   **Dependencies:** Requires `weather-provider` running on port 50051 (or `WEATHER_PROVIDER_ADDR` set).
+
 3.  **Test:** Run unit tests locally before pushing:
     ```bash
-    cd services/weather-collector
-    go test -v ./...
+    # Run all tests (Frontend + Backend)
+    make test
+    
+    # Run specific service tests
+    cd services/weather-collector && go test -v ./...
     ```
+    *   **Note:** `make test` runs `go test ./...` in each service directory, avoiding root-level module conflicts.
+
 4.  **Push:** Push your feature branch to GitHub.
 5.  **Verify (CI):** Open a Pull Request. GitHub Actions (`verify-*.yml`) will automatically run tests and build checks. You cannot merge if this fails.
 6.  **Deploy (CD):** Merge the PR into `main`. GitHub Actions (`deploy-*.yml`) will build the Docker image and update Cloud Run automatically.

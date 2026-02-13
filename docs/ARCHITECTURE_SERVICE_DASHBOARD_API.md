@@ -45,16 +45,19 @@ sequenceDiagram
 ### Folder Structure
 ```text
 services/dashboard-api/
-├── cmd/
-│   └── server/
-│       └── main.go        # Entry point, router setup
+├── main.go                # Entry point (Root)
 ├── internal/
+│   ├── app/               # Router & Server setup
 │   ├── handlers/          # HTTP Handlers (Controllers)
-│   ├── middleware/        # Auth & CORS middleware
+│   ├── middleware/        # Auth & Logging middleware
 │   └── clients/           # gRPC Client wrappers
 ├── go.mod
 └── Dockerfile
 ```
+
+### API Design Principles
+*   **Data API:** The API returns raw data with full precision (e.g., `1013.25482910`). Formatting (rounding, units) is the responsibility of the Frontend.
+*   **Aggregation:** The API aggregates data from multiple sources into a single JSON response, keyed by domain (e.g., `"pressure"`, `"pollen"`).
 
 ### Dependency Management
 *   **Contract First:** We use **Buf** to manage Protobuf files in `services/protos`.
@@ -84,8 +87,22 @@ services/gen/go/
     3.  **Docker Trade-off:** Requires running `docker build` from the repository root, but simplifies the Dockerfiles themselves (standard `COPY`).
     4.  **Security:** Copying all generated code to all containers is acceptable as internal API schemas are not sensitive secrets.
 
-## 7. Development Plan
+## 7. Future Considerations
 
+### 7.1. Pollen Service Integration
+*   **Purpose:** Provide daily pollen counts/risk levels.
+*   **Architecture:**
+    *   **Pollen Collector:** A separate Go service (similar to `weather-collector`) or an extension of the current collector.
+    *   **Storage:** Data will be stored in Firestore, potentially in a dedicated `pollen` collection.
+    *   **Frequency:** Unlike pressure data (hourly), pollen data is typically measured once per day.
+    *   **Terraform:** Cloud Scheduler will be updated to trigger the Pollen Collector on a daily cron schedule (e.g., `0 6 * * *`), separate from the hourly weather job.
+*   **Dashboard Aggregation:** The Dashboard API will call the future `pollen-service` (gRPC) and merge the result under a `pollen` key.
+
+### 7.2. Data Source Refinement
+*   **Current State:** The API currently pulls only "Pressure" statistics from the `weather-provider` cache.
+*   **Refinement:** Future iterations may fetch additional weather metrics (Temperature, Humidity, etc.) from external APIs via the `weather-provider` to provide a complete weather snapshot.
+
+## 8. Development Plan
 1.  **Scaffold:** Create directory structure and `go.mod`.
 2.  **Code Generation:** Update `Makefile` to generate `weather_provider.proto` into `services/dashboard-api/gen/weather/v1`.
 3.  **Router:** Set up `chi` with basic middleware.
