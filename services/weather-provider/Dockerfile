@@ -1,22 +1,14 @@
 # Stage 1: Build
 FROM golang:1.25.6-alpine AS builder
 
-# Set the working directory to the app root
 WORKDIR /app
 
-# Copy the shared library
-COPY services/gen/go services/gen/go
+# Copy ONLY the provider service (it is self-contained)
+COPY . .
 
-# Copy the provider service
-COPY services/weather-provider services/weather-provider
-
-# Build the provider
-WORKDIR /app/services/weather-provider
-
-# Use go mod edit to point to the local shared module
-RUN go mod edit -replace github.com/nickfang/personal-dashboard/services/gen/go=../gen/go
+# Build the provider service
 RUN go mod tidy
-RUN go build -o /app/weather-provider ./cmd/server/main.go
+RUN go build -o /app/weather-provider cmd/server/main.go
 
 # Stage 2: Final image
 FROM alpine:latest

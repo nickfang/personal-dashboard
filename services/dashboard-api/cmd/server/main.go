@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"context"
 
 	"github.com/joho/godotenv"
 	"github.com/nickfang/personal-dashboard/services/dashboard-api/internal/app"
@@ -33,7 +34,7 @@ func main() {
 	}
 
 	// 3. Initialize Clients
-	weatherClient, err := clients.NewWeatherClient(weatherAddr)
+	weatherClient, err := clients.NewWeatherClient(context.Background(), weatherAddr)
 	if err != nil {
 		slog.Error("Failed to initialize weather client", "error", err)
 		os.Exit(1)

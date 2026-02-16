@@ -20,26 +20,19 @@ Our `Makefile` acts as the entry point for common development tasks.
 
 ### 1. Structure
 *   **`/services/protos` (The Source of Truth):** Contains raw `.proto` files managed by **Buf**.
-*   **`/services/gen/go` (Shared Library):** A centralized Go module containing all generated gRPC code for the monorepo.
+*   **`/services/<service>/internal/gen` (Local Generation):** Each service generates its own copy of the gRPC code it needs. Each service has its own `buf.gen.yaml` that controls output paths.
 
 ### 2. Checking in Generated Code
 **We commit all generated Go code to Git.**
 *   **Why:** This ensures the project can be built without requiring `buf` to be installed on every machine (including CI/CD).
-*   **Docker Compatibility:** By using a shared library and building from the repository root, we maintain clear dependency management.
+*   **Decoupling:** Each service is self-contained. `dashboard-api` doesn't crash if `weather-provider` breaks its own build.
 
 ### 3. Generating Code
-We use **Buf** for code generation.
+We use **Buf** with distributed targets.
 
 ```bash
 # From the repository root
-make proto  # Which runs 'buf generate'
-```
-
-### 4. Usage in Services
-Services should import the generated code from the shared package.
-
-```go
-import pb "github.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1"
+make proto  # Runs 'buf generate' for ALL services
 ```
 
 ## Development Workflow

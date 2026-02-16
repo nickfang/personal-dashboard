@@ -50,7 +50,8 @@ services/dashboard-api/
 │   ├── app/               # Router & Server setup
 │   ├── handlers/          # HTTP Handlers (Controllers)
 │   ├── middleware/        # Auth & Logging middleware
-│   └── clients/           # gRPC Client wrappers
+│   ├── clients/           # gRPC Client wrappers
+│   └── gen/               # Local generated gRPC stubs
 ├── go.mod
 └── Dockerfile
 ```
@@ -61,51 +62,30 @@ services/dashboard-api/
 
 ### Dependency Management
 *   **Contract First:** We use **Buf** to manage Protobuf files in `services/protos`.
-*   **Shared Contracts:** This service imports gRPC client stubs from the centralized `services/gen/go` module.
-*   **Build Strategy:** Docker builds are executed from the **repository root** context to allow copying the shared `gen/` directory.
+*   **Distributed Contracts:** Code is generated directly into each service's `internal/gen` directory. This ensures each service is self-contained and has no external local dependencies during build time.
+*   **Build Strategy:** Docker builds are executed within the **service directory** context. No access to the repository root or shared modules is required.
 
 ---
 
-## 5. Shared Library Structure (`services/gen/go`)
-All services in the monorepo utilize this shared Go module for gRPC contracts.
+## 5. Architectural Decisions
 
-```text
-services/gen/go/
-├── go.mod
-├── weather/v1/   # Imported by Weather Provider & Dashboard API
-└── pollen/v1/    # Imported by Pollen Service & Dashboard API
-```
-
-## 6. Architectural Decisions
-
-### ADR-001: Shared Code Generation Strategy
+### ADR-001: Distributed Code Generation Strategy
 *   **Context:** We have multiple services (Providers) and one Aggregator (Dashboard API) that need access to the same gRPC contracts.
-*   **Decision:** We use a **Shared Gen Module** (`services/gen/go`) rather than generating code into every service individually.
+*   **Decision:** We use **Distributed Generation** (code lives in `internal/gen` of each service) rather than a shared Go module.
 *   **Rationale:**
-    1.  **Single Source of Truth:** Eliminates "Schema Drift" between client and server code.
-    2.  **Maintenance:** Adding a new service requires updating one Buf config, not scaffolding new make targets.
-    3.  **Docker Trade-off:** Requires running `docker build` from the repository root, but simplifies the Dockerfiles themselves (standard `COPY`).
-    4.  **Security:** Copying all generated code to all containers is acceptable as internal API schemas are not sensitive secrets.
+    1.  **Isolation:** Services are fully decoupled at build time. A service can be built and deployed without knowledge of other folders in the monorepo.
+    2.  **Simple Docker:** Dockerfiles use standard `COPY . .` patterns. No complex context mounting or root-level builds are needed.
+    3.  **Contract Integrity:** While the code is duplicated, the *source* (Protos) is centralized. Buf ensures that all services generate code from the same contract version.
 
-## 7. Future Considerations
+## 6. Future Considerations
 
-### 7.1. Pollen Service Integration
+### 6.1. Pollen Service Integration
 *   **Purpose:** Provide daily pollen counts/risk levels.
-*   **Architecture:**
-    *   **Pollen Collector:** A separate Go service (similar to `weather-collector`) or an extension of the current collector.
-    *   **Storage:** Data will be stored in Firestore, potentially in a dedicated `pollen` collection.
-    *   **Frequency:** Unlike pressure data (hourly), pollen data is typically measured once per day.
-    *   **Terraform:** Cloud Scheduler will be updated to trigger the Pollen Collector on a daily cron schedule (e.g., `0 6 * * *`), separate from the hourly weather job.
-*   **Dashboard Aggregation:** The Dashboard API will call the future `pollen-service` (gRPC) and merge the result under a `pollen` key.
+*   **Architecture:** Documented in `docs/ARCHITECTURE_SERVICE_POLLEN.md`.
 
-### 7.2. Data Source Refinement
-*   **Current State:** The API currently pulls only "Pressure" statistics from the `weather-provider` cache.
-*   **Refinement:** Future iterations may fetch additional weather metrics (Temperature, Humidity, etc.) from external APIs via the `weather-provider` to provide a complete weather snapshot.
-
-## 8. Development Plan
+## 7. Development Plan
 1.  **Scaffold:** Create directory structure and `go.mod`.
-2.  **Code Generation:** Update `Makefile` to generate `weather_provider.proto` into `services/dashboard-api/gen/weather/v1`.
+2.  **Code Generation:** Configure Buf to output to `internal/gen`.
 3.  **Router:** Set up `chi` with basic middleware.
 4.  **gRPC Client:** Implement the connection to `weather-provider`.
-    *   *Note:* Must support `insecure` (local) and `system-cert` (Cloud Run) credentials.
 5.  **Handler:** Create the aggregation logic.

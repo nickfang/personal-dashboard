@@ -5,7 +5,6 @@ go 1.25.6
 require (
 	cloud.google.com/go/firestore v1.21.0
 	github.com/joho/godotenv v1.5.1
-	github.com/nickfang/personal-dashboard/services/gen/go v0.0.0
 	google.golang.org/api v0.256.0
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
@@ -40,5 +39,3 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251111163417-95abcf5c77ba // indirect
 )
-
-replace github.com/nickfang/personal-dashboard/services/gen/go => ../gen/go

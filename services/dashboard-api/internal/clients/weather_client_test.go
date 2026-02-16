@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	pb "github.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1"
+	pb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
@@ -25,8 +25,19 @@ func (m *mockWeatherServer) GetPressureStats(ctx context.Context, req *pb.GetPre
 	}, nil
 }
 
-func TestWeatherClient_GetWeather(t *testing.T) {
-	// 1. Setup in-memory gRPC server
+func (m *mockWeatherServer) GetAllPressureStats(ctx context.Context, req *pb.GetAllPressureStatsRequest) (*pb.GetAllPressureStatsResponse, error) {
+	return &pb.GetAllPressureStatsResponse{
+		Stats: []*pb.PressureStat{
+			{LocationId: "house-nick", Trend: "rising", Delta_1H: 0.5},
+			{LocationId: "house-jane", Trend: "falling", Delta_1H: -0.3},
+		},
+	}, nil
+}
+
+// setupTestClient creates an in-memory gRPC server and returns a connected WeatherClient
+func setupTestClient(t *testing.T) *WeatherClient {
+	t.Helper()
+
 	lis := bufconn.Listen(1024 * 1024)
 	s := grpc.NewServer()
 	pb.RegisterPressureStatsServiceServer(s, &mockWeatherServer{})
@@ -35,32 +46,32 @@ func TestWeatherClient_GetWeather(t *testing.T) {
 			t.Errorf("Server exited with error: %v", err)
 		}
 	}()
-	defer s.Stop()
+	t.Cleanup(s.Stop)
 
-	// 2. Create the client using the in-memory connection
 	dialer := func(context.Context, string) (net.Conn, error) {
 		return lis.Dial()
 	}
 
-	conn, err := grpc.NewClient("bufnet",
+	conn, err := grpc.NewClient("passthrough://bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatalf("Failed to dial bufnet: %v", err)
 	}
-	defer conn.Close()
+	t.Cleanup(func() { conn.Close() })
 
-	// 3. Initialize your WeatherClient (This is what you will implement)
-	// Note: In your implementation, NewWeatherClient should accept the address.
-	// For this test, we wrap the mock connection.
-	client := &WeatherClient{
+	return &WeatherClient{
+		conn:   conn,
 		client: pb.NewPressureStatsServiceClient(conn),
 	}
+}
 
-	// 4. Test the call
+func TestWeatherClient_GetWeatherStat(t *testing.T) {
+	client := setupTestClient(t)
+
 	resp, err := client.GetWeatherStat(context.Background(), "house-nick")
 	if err != nil {
-		t.Fatalf("GetWeather failed: %v", err)
+		t.Fatalf("GetWeatherStat failed: %v", err)
 	}
 
 	if resp.LocationId != "house-nick" {
@@ -68,5 +79,25 @@ func TestWeatherClient_GetWeather(t *testing.T) {
 	}
 	if resp.Trend != "rising" {
 		t.Errorf("Expected trend rising, got %s", resp.Trend)
+	}
+}
+
+func TestWeatherClient_GetWeatherStats(t *testing.T) {
+	client := setupTestClient(t)
+
+	stats, err := client.GetWeatherStats(context.Background())
+	if err != nil {
+		t.Fatalf("GetWeatherStats failed: %v", err)
+	}
+
+	if len(stats) != 2 {
+		t.Fatalf("Expected 2 stats, got %d", len(stats))
+	}
+
+	if stats[0].LocationId != "house-nick" {
+		t.Errorf("Expected first location house-nick, got %s", stats[0].LocationId)
+	}
+	if stats[1].LocationId != "house-jane" {
+		t.Errorf("Expected second location house-jane, got %s", stats[1].LocationId)
 	}
 }

@@ -1,7 +1,7 @@
-# Pollen Service Architecture (Future)
+# Pollen Provider Architecture (Future)
 
 ## 1. Overview
-The **Pollen Service** is a planned microservice responsible for collecting and serving daily pollen count and allergy risk data. It follows the same architectural pattern as the Weather Collector but operates on a much lower frequency (daily vs. hourly).
+The **Pollen Provider** is a planned microservice subsystem responsible for collecting and serving daily pollen count and allergy risk data. It follows the same architectural pattern as the Weather subsystem but operates on a much lower frequency (daily vs. hourly).
 
 ## 2. Requirements
 
@@ -35,13 +35,13 @@ sequenceDiagram
 
 ### Components
 1.  **Pollen Collector (Job):**
-    *   A Go binary running in Cloud Run (Job).
+    *   A Go binary running in Google Cloud Run (Job).
     *   Triggered by Cloud Scheduler.
     *   Responsible for fetching and normalizing external data.
 
-2.  **Pollen Provider (Server) [Optional]:**
-    *   Could be a separate gRPC service if logic is complex.
-    *   **Alternative:** The existing `weather-provider` could be extended to serve pollen data if the domain overlaps significantly (both are "environmental conditions").
+2.  **Pollen Provider (Server):**
+    *   A gRPC service that serves the collected pollen data.
+    *   **Decision:** This may be implemented as a standalone service or as an extension of the `weather-provider` if the domain logic remains simple.
 
 ### Infrastructure Changes
 *   **Terraform:**
@@ -49,8 +49,14 @@ sequenceDiagram
     *   New `google_cloud_run_v2_job` resource for the collector container.
     *   IAM roles for the new service account.
 
+### Dependency Management
+*   **Contract First:** Managed via Buf in `services/protos`.
+*   **Local Contracts:** Following the **Distributed Generation** strategy, this service will generate its own copy of gRPC stubs in `internal/gen/go`.
+*   **Build Strategy:** Self-contained Docker builds from the service directory context.
+
 ## 5. Decision Log
 *   **Why separate from Weather Collector?**
     *   Different frequency (Daily vs Hourly).
     *   Different failure modes (Pollen API might be down while Weather is up).
     *   Separation of Concerns: Maintain modularity for easier debugging.
+*   **Naming Convention:** Renamed from `pollen-service` to `pollen-provider` to align with the `weather-provider` pattern.

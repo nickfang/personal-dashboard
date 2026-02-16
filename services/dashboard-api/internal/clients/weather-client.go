@@ -3,10 +3,14 @@ package clients
 import (
 	"context"
 	"log/slog"
+	"strings"
 
-	pb "github.com/nickfang/personal-dashboard/services/gen/go/weather-provider/v1"
+	pb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
+	"google.golang.org/api/idtoken"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials/oauth"
 )
 
 type WeatherClient struct {
@@ -14,10 +18,35 @@ type WeatherClient struct {
 	client pb.PressureStatsServiceClient
 }
 
-func NewWeatherClient(address string) (*WeatherClient, error) {
-	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewWeatherClient(ctx context.Context, address string) (*WeatherClient, error) {
+	var opts []grpc.DialOption
+
+	if strings.HasSuffix(address, ":443") {
+		// Cloud Run gRPC always uses port 443 with TLS + ID tokens.
+		audience := "https://" + strings.TrimSuffix(address, ":443")
+
+		// Create an ID Token source for the target audience
+		tokenSource, err := idtoken.NewTokenSource(ctx, audience)
+		if err != nil {
+			slog.Error("Failed to create token source", "error", err, "audience", audience)
+			return nil, err
+		}
+
+		// Use system certs + ID token
+		opts = append(opts, 
+			grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")),
+			grpc.WithPerRPCCredentials(oauth.TokenSource{TokenSource: tokenSource}),
+		)
+		slog.Info("Using Google ID Token authentication", "address", address, "audience", audience)
+	} else {
+		// Local development or Docker Compose: no TLS, no auth.
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		slog.Info("Using insecure gRPC credentials", "address", address)
+	}
+
+	conn, err := grpc.NewClient(address, opts...)
 	if err != nil {
-		slog.Error("Failed to create gRPC client", "error", err)
+		slog.Error("Failed to create gRPC client", "error", err, "address", address)
 		return nil, err
 	}
 	client := pb.NewPressureStatsServiceClient(conn)
