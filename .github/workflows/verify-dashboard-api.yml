@@ -1,0 +1,32 @@
+name: Verify Dashboard API
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'services/dashboard-api/**'
+      - '.github/workflows/verify-dashboard-api.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Verify Dependencies
+        working-directory: ./services/dashboard-api
+        run: go mod verify
+
+      - name: Run Unit Tests
+        working-directory: ./services/dashboard-api
+        run: go test -v ./...
+
+      - name: Verify Build
+        working-directory: ./services/dashboard-api
+        run: go build -v ./...
