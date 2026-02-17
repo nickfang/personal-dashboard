@@ -42,10 +42,6 @@ resource "google_cloud_run_v2_service" "dashboard_api" {
         container_port = 8080
       }
       env {
-        name  = "PORT"
-        value = "8080"
-      }
-      env {
         name  = "WEATHER_PROVIDER_ADDR"
         value = "${trimprefix(google_cloud_run_v2_service.weather_provider.uri, "https://")}:443"
       }
