@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
-	"context"
 
 	"github.com/joho/godotenv"
 	"github.com/nickfang/personal-dashboard/services/dashboard-api/internal/app"
@@ -55,9 +57,25 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	slog.Info("Dashboard API starting", "port", port, "weather_addr", weatherAddr)
-	if err := server.ListenAndServe(); err != nil {
-		slog.Error("Server failed", "error", err)
+	go func() {
+		slog.Info("Dashboard API starting", "port", port, "weather_addr", weatherAddr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	slog.Info("Shutting down server gracefully...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		slog.Error("Shutdown error", "error", err)
 		os.Exit(1)
 	}
+	slog.Info("Server stopped")
 }
