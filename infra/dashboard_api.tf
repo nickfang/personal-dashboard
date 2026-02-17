@@ -51,8 +51,6 @@ resource "google_cloud_run_v2_service" "dashboard_api" {
   lifecycle {
     ignore_changes = [
       template[0].containers[0].image,
-      client,
-      client_version,
       template[0].labels,
       template[0].annotations
     ]
