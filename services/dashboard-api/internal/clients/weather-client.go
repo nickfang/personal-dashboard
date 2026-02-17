@@ -33,7 +33,7 @@ func NewWeatherClient(ctx context.Context, address string) (*WeatherClient, erro
 		}
 
 		// Use system certs + ID token
-		opts = append(opts, 
+		opts = append(opts,
 			grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(nil, "")),
 			grpc.WithPerRPCCredentials(oauth.TokenSource{TokenSource: tokenSource}),
 		)
@@ -58,7 +58,7 @@ func (c *WeatherClient) Close() error {
 	return c.conn.Close()
 }
 
-func (c *WeatherClient) GetWeatherStats(ctx context.Context) ([]*pb.PressureStat, error) {
+func (c *WeatherClient) GetPressureStats(ctx context.Context) ([]*pb.PressureStat, error) {
 	resp, err := c.client.GetAllPressureStats(ctx, &pb.GetAllPressureStatsRequest{})
 	if err != nil {
 		slog.Error("Failed to get weather stats", "error", err)
@@ -67,7 +67,7 @@ func (c *WeatherClient) GetWeatherStats(ctx context.Context) ([]*pb.PressureStat
 	return resp.Stats, nil
 }
 
-func (c *WeatherClient) GetWeatherStat(ctx context.Context, locationId string) (*pb.PressureStat, error) {
+func (c *WeatherClient) GetPressureStat(ctx context.Context, locationId string) (*pb.PressureStat, error) {
 	resp, err := c.client.GetPressureStats(ctx, &pb.GetPressureStatsRequest{LocationId: locationId})
 	if err != nil {
 		slog.Error("Failed to get weather stat", "error", err)

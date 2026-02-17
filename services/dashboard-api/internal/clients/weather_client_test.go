@@ -29,7 +29,7 @@ func (m *mockWeatherServer) GetAllPressureStats(ctx context.Context, req *pb.Get
 	return &pb.GetAllPressureStatsResponse{
 		Stats: []*pb.PressureStat{
 			{LocationId: "house-nick", Trend: "rising", Delta_1H: 0.5},
-			{LocationId: "house-jane", Trend: "falling", Delta_1H: -0.3},
+			{LocationId: "house-nita", Trend: "falling", Delta_1H: -0.3},
 		},
 	}, nil
 }
@@ -66,12 +66,12 @@ func setupTestClient(t *testing.T) *WeatherClient {
 	}
 }
 
-func TestWeatherClient_GetWeatherStat(t *testing.T) {
+func TestWeatherClient_GetPressureStat(t *testing.T) {
 	client := setupTestClient(t)
 
-	resp, err := client.GetWeatherStat(context.Background(), "house-nick")
+	resp, err := client.GetPressureStat(context.Background(), "house-nick")
 	if err != nil {
-		t.Fatalf("GetWeatherStat failed: %v", err)
+		t.Fatalf("GetPressureStat failed: %v", err)
 	}
 
 	if resp.LocationId != "house-nick" {
@@ -82,12 +82,12 @@ func TestWeatherClient_GetWeatherStat(t *testing.T) {
 	}
 }
 
-func TestWeatherClient_GetWeatherStats(t *testing.T) {
+func TestWeatherClient_GetPressureStats(t *testing.T) {
 	client := setupTestClient(t)
 
-	stats, err := client.GetWeatherStats(context.Background())
+	stats, err := client.GetPressureStats(context.Background())
 	if err != nil {
-		t.Fatalf("GetWeatherStats failed: %v", err)
+		t.Fatalf("GetPressureStats failed: %v", err)
 	}
 
 	if len(stats) != 2 {
@@ -97,7 +97,7 @@ func TestWeatherClient_GetWeatherStats(t *testing.T) {
 	if stats[0].LocationId != "house-nick" {
 		t.Errorf("Expected first location house-nick, got %s", stats[0].LocationId)
 	}
-	if stats[1].LocationId != "house-jane" {
-		t.Errorf("Expected second location house-jane, got %s", stats[1].LocationId)
+	if stats[1].LocationId != "house-nita" {
+		t.Errorf("Expected second location house-nita, got %s", stats[1].LocationId)
 	}
 }

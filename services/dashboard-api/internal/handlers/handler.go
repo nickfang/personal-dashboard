@@ -11,8 +11,8 @@ import (
 
 // WeatherFetcher defines the dependency on the weather client
 type WeatherFetcher interface {
-	GetWeatherStat(ctx context.Context, locationID string) (*pb.PressureStat, error)
-	GetWeatherStats(ctx context.Context) ([]*pb.PressureStat, error)
+	GetPressureStat(ctx context.Context, locationID string) (*pb.PressureStat, error)
+	GetPressureStats(ctx context.Context) ([]*pb.PressureStat, error)
 }
 
 type DashboardHandler struct {
@@ -44,7 +44,7 @@ func aggregatePressureStats(pressureStats []*pb.PressureStat) (map[string]json.R
 
 func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	// 1. Fetch data from weather client
-	pressureStats, err := h.weatherClient.GetWeatherStats(r.Context())
+	pressureStats, err := h.weatherClient.GetPressureStats(r.Context())
 	if err != nil {
 		RespondWithGrpcError(w, err, "Failed to fetch weather statistics")
 		return

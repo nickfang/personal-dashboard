@@ -16,7 +16,7 @@ import (
 // Mock implementation that returns successful responses
 type mockWeatherClient struct{}
 
-func (m *mockWeatherClient) GetWeatherStat(ctx context.Context, locationID string) (*pb.PressureStat, error) {
+func (m *mockWeatherClient) GetPressureStat(ctx context.Context, locationID string) (*pb.PressureStat, error) {
 	return &pb.PressureStat{
 		LocationId: locationID,
 		Trend:      "rising",
@@ -24,7 +24,7 @@ func (m *mockWeatherClient) GetWeatherStat(ctx context.Context, locationID strin
 	}, nil
 }
 
-func (m *mockWeatherClient) GetWeatherStats(ctx context.Context) ([]*pb.PressureStat, error) {
+func (m *mockWeatherClient) GetPressureStats(ctx context.Context) ([]*pb.PressureStat, error) {
 	return []*pb.PressureStat{
 		{
 			LocationId: "house-nick",
@@ -39,11 +39,11 @@ type errorWeatherClient struct {
 	err error
 }
 
-func (m *errorWeatherClient) GetWeatherStat(ctx context.Context, locationID string) (*pb.PressureStat, error) {
+func (m *errorWeatherClient) GetPressureStat(ctx context.Context, locationID string) (*pb.PressureStat, error) {
 	return nil, m.err
 }
 
-func (m *errorWeatherClient) GetWeatherStats(ctx context.Context) ([]*pb.PressureStat, error) {
+func (m *errorWeatherClient) GetPressureStats(ctx context.Context) ([]*pb.PressureStat, error) {
 	return nil, m.err
 }
 
