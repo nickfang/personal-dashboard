@@ -9,7 +9,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
-	pb "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
+	pb "github.com/nickfang/personal-dashboard/services/weather-provider/internal/gen/go/weather-provider/v1"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/service"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/transport"

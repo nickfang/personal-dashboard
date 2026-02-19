@@ -4,7 +4,8 @@ package weather_provider.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1";
+// Each service's buf.gen.yaml overrides this to its own internal/gen path.
+option go_package = "weather_provider/v1";
 
 service PressureStatsService {
   rpc GetAllPressureStats(GetAllPressureStatsRequest) returns (GetAllPressureStatsResponse);

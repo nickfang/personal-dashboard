@@ -1,80 +1,95 @@
-.PHONY: help proto clean-proto test \
-	dev-frontend \
-	dev-collector docker-build-collector docker-run-collector \
-	dev-provider docker-build-provider docker-run-provider
+.PHONY: help \
+	compose-up compose-down compose-logs \
+	proto-gen proto-clean test-go \
+	wc-dev wc-build wc-run wc-test \
+	wp-dev wp-build wp-test \
+	da-dev da-build da-test \
+	fe-dev fe-test \
 
 help: ## Show available commands
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  make %-20s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$|^##@' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; /^##@/{printf "\n\033[1m%s\033[0m\n", substr($$0, 4); next} {printf "  make %-20s %s\n", $$1, $$2}'
 
 # ==============================================================================
 # Global
 # ==============================================================================
+##@ Global
+compose-up: ## Start all services via Docker Compose
+	docker compose up --build
 
-# gRPC Configuration
-PROTO_SRC_DIR := services/protos
-# This maps the central contract to the local service implementation folder
-WEATHER_PROVIDER_DIR := services/protos/weather-provider/v1
-WEATHER_PROVIDER_PROTO := weather_provider.proto
-WEATHER_PROVIDER_OUT := services/weather-provider/gen/v1
+compose-down: ## Stop all services
+	docker compose down
 
-proto: proto-weather-provider ## Generate Go code for all services
+compose-logs: ## View logs for all services
+	docker compose logs -f
 
-proto-weather-provider: ## Generate Go code for the weather-provider service
-	@mkdir -p $(WEATHER_PROVIDER_OUT)
-	protoc --proto_path=$(WEATHER_PROVIDER_DIR) \
-		--proto_path=$(PROTO_SRC_DIR) \
-		--go_out=$(WEATHER_PROVIDER_OUT) --go_opt=paths=source_relative \
-		--go-grpc_out=$(WEATHER_PROVIDER_OUT) --go-grpc_opt=paths=source_relative \
-		$(WEATHER_PROVIDER_PROTO)
-	@echo "  → Generated: Weather Provider (Server stubs)"
-
-clean-proto: ## Remove all generated proto files from service directories
-	rm -rf $(WEATHER_PROVIDER_OUT)/*.pb.go
-
-test: ## Run all Go tests
+test-go: ## Run all Go tests
 	@find services -name "go.mod" -exec dirname {} \; | while read dir; do \
 		echo "Testing $$dir..."; \
 		(cd $$dir && go test ./...); \
 	done
 
-# ==============================================================================
-# Frontend
-# ==============================================================================
+##@ Proto
+proto: ## Generate Go code for all services via Buf
+	cd services/weather-provider && buf generate ../protos
+	cd services/dashboard-api && buf generate ../protos
 
-dev-frontend: ## Run the Svelte frontend
-	cd frontend && npm run dev
+proto-clean: ## Remove all generated proto files
+	rm -rf services/weather-provider/internal/gen/go/*
+	rm -rf services/dashboard-api/internal/gen/go/*
 
 # ==============================================================================
 # Service: Weather Collector (Job)
 # ==============================================================================
-
-dev-collector: ## Run Collector locally (Go)
+##@ Weather Collector
+wc-dev: ## Run Collector locally (Go)
 	-cd services/weather-collector && go run main.go
 
-docker-build-collector: ## Build Collector image
+wc-build: ## Build Weather Collector image
 	docker build -t weather-collector services/weather-collector
 
-docker-run-collector: docker-build-collector ## Run Collector container (One-off job)
+wc-run: wc-build ## Run Weather Collector container (One-off job)
 	docker run --rm -it \
 		--env-file services/weather-collector/.env \
 		-v ~/.config/gcloud:/root/.config/gcloud \
 		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
 		weather-collector
 
+wc-test: ## Run Weather Collector tests
+	cd services/weather-collector && go test ./...
+
 # ==============================================================================
 # Service: Weather Provider (Server)
 # ==============================================================================
-
-dev-provider: ## Run Provider locally (Go)
+##@ Weather Provider
+wp-dev: ## Run Weather Provider locally (Go)
 	-cd services/weather-provider && go run cmd/server/main.go
 
-docker-build-provider: ## Build Provider image
+wp-build: ## Build Weather Provider image
 	docker build -t weather-provider services/weather-provider
 
-docker-run-provider: docker-build-provider ## Run Provider container (Port 50051)
-	docker run --rm -it \
-		--env-file services/weather-provider/.env \
-		-p 50051:50051 \
-		-v ~/.config/gcloud:/root/.config/gcloud \
-		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
-		weather-provider
+wp-test: ## Run Weather Provider tests
+	cd services/weather-provider && go test ./...
+
+# ==============================================================================
+# Service: Dashboard API (Aggregator)
+# ==============================================================================
+##@ Dashboard API
+da-dev: ## Run Dashboard API locally (Go)
+	-cd services/dashboard-api && go run cmd/server/main.go
+
+da-build: ## Build Dashboard API image
+	docker build -t dashboard-api services/dashboard-api
+
+da-test: ## Run Dashboard API tests
+	cd services/dashboard-api && go test ./...
+
+
+# ==============================================================================
+# Frontend
+# ==============================================================================
+##@ Frontend
+fe-dev: ## Run the Svelte frontend
+	cd frontend && npm run dev
+
+fe-test: ## Run the Svelte frontend tests
+	cd frontend && npm test

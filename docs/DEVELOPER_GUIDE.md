@@ -7,29 +7,32 @@ Our `Makefile` acts as the entry point for common development tasks.
 *   **Default Target:** The `help` target MUST always be the first target defined. This ensures that running `make` without arguments displays the help menu rather than executing a destructive or long-running command.
 *   **Self-Documentation:** All targets should be documented with a `## Description` comment on the same line. The `help` target parses these comments to generate the menu.
 
+## Getting Started
+
+### Prerequisites
+1.  **Go**: v1.25+
+2.  **Node.js**: v20+
+3.  **Docker**: For running containerized services locally.
+4.  **Google Cloud SDK (`gcloud`)**: For authentication and deployment.
+5.  **Buf**: For gRPC linting and code generation.
+
 ## gRPC & API Contracts
 
 ### 1. Structure
-*   **`/services/protos` (The Source of Truth):** Contains raw `.proto` files. This is the centralized registry for all API contracts.
-*   **Service-Local `gen/` Directories:** Each service (e.g., `/services/weather-provider/gen`) contains its own copy of the generated Go code.
+*   **`/services/protos` (The Source of Truth):** Contains raw `.proto` files managed by **Buf**.
+*   **`/services/<service>/internal/gen` (Local Generation):** Each service generates its own copy of the gRPC code it needs. Each service has its own `buf.gen.yaml` that controls output paths.
 
 ### 2. Checking in Generated Code
 **We commit all generated Go code to Git.**
-*   **Why:** This ensures the project can be built without requiring `protoc` to be installed on every machine (including CI/CD).
-*   **Docker Compatibility:** By keeping the generated code *inside* the service folder, each microservice is a self-contained unit. This allows us to run `docker build` from within the service directory, which is required for our "Bootstrap + CD" deployment pattern in GCP.
+*   **Why:** This ensures the project can be built without requiring `buf` to be installed on every machine (including CI/CD).
+*   **Decoupling:** Each service is self-contained. `dashboard-api` doesn't crash if `weather-provider` breaks its own build.
 
 ### 3. Generating Code
-We use a centralized `Makefile` at the root to handle code generation. It reads from the shared `/services/protos` registry and writes to the specific service's `gen/` folder.
+We use **Buf** with distributed targets.
 
 ```bash
-make proto
-```
-
-### 4. Usage in Services
-Services should import the generated code from their own internal `gen` package.
-
-```go
-import "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
+# From the repository root
+make proto  # Runs 'buf generate' for ALL services
 ```
 
 ## Development Workflow
@@ -45,11 +48,25 @@ We follow a **Trunk-Based Development** workflow with strict CI checks.
 2.  **Code:** Work locally.
     *   `make dev-provider`
     *   `make dev-collector`
+    
+    **Dashboard API (Aggregator)**
+    Runs on port **8080**.
+    ```bash
+    cd services/dashboard-api
+    go run main.go
+    ```
+    *   **Dependencies:** Requires `weather-provider` running on port 50051 (or `WEATHER_PROVIDER_ADDR` set).
+
 3.  **Test:** Run unit tests locally before pushing:
     ```bash
-    cd services/weather-collector
-    go test -v ./...
+    # Run all tests (Frontend + Backend)
+    make test
+    
+    # Run specific service tests
+    cd services/weather-collector && go test -v ./...
     ```
+    *   **Note:** `make test` runs `go test ./...` in each service directory, avoiding root-level module conflicts.
+
 4.  **Push:** Push your feature branch to GitHub.
 5.  **Verify (CI):** Open a Pull Request. GitHub Actions (`verify-*.yml`) will automatically run tests and build checks. You cannot merge if this fails.
 6.  **Deploy (CD):** Merge the PR into `main`. GitHub Actions (`deploy-*.yml`) will build the Docker image and update Cloud Run automatically.

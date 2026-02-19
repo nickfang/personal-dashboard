@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	pb "github.com/nickfang/personal-dashboard/services/weather-provider/gen/v1"
+	pb "github.com/nickfang/personal-dashboard/services/weather-provider/internal/gen/go/weather-provider/v1"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/service"
 	"google.golang.org/grpc/codes"
