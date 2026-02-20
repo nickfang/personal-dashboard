@@ -29,12 +29,17 @@ test-go: ## Run all Go tests
 	done
 
 ##@ Proto
-proto: ## Generate Go code for all services via Buf
-	cd services/weather-provider && buf generate ../protos
-	cd services/dashboard-api && buf generate ../protos
+## Note: We use the --path flag to specify the path to the proto files.
+## Clients need multiple paths to get all the client protos.
+	cd services/weather-provider && buf generate ../protos --path ../protos/weather-provider
+	cd services/pollen-provider && buf generate ../protos --path ../protos/pollen-provider
+	cd services/dashboard-api && buf generate ../protos \
+		--path ../protos/weather-provider \
+		--path ../protos/pollen-provider
 
 proto-clean: ## Remove all generated proto files
 	rm -rf services/weather-provider/internal/gen/go/*
+	rm -rf services/pollen-provider/internal/gen/go/*
 	rm -rf services/dashboard-api/internal/gen/go/*
 
 # ==============================================================================

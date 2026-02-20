@@ -245,15 +245,20 @@ plugins:
     opt: paths=source_relative
 ```
 
-**Important:** The existing weather override uses a default path match (applies to all protos). With two proto packages, we now need explicit `path:` matchers to route each proto to the correct Go package. Verify the weather stubs still generate correctly after this change.
+**Note:** The dashboard-api uses explicit `path:` matchers on its overrides because it generates stubs for multiple proto packages, and each needs a different `go_package`. Single-service configs (weather-provider, pollen-provider) don't need `path:` matchers since they only generate one proto package.
 
 ### Step 1.4: Generate Code
 
+Proto generation is scoped per service using the `--path` flag. This prevents Buf from generating stubs for *all* protos in the `protos/` module into every service. The `--path` flag filters which proto subdirectory is generated, while the `buf.gen.yaml` in each service controls the output location and `go_package` mapping.
+
 ```bash
-# From repository root
-cd services/pollen-provider && buf generate ../protos
-cd ../dashboard-api && buf generate ../protos
+# From repository root (or use `make proto`)
+cd services/weather-provider && buf generate ../protos --path ../protos/weather-provider
+cd services/pollen-provider && buf generate ../protos --path ../protos/pollen-provider
+cd services/dashboard-api && buf generate ../protos
 ```
+
+**Why `--path` instead of `inputs` in `buf.gen.yaml`?** The `protos/` directory is a single Buf module (defined by `protos/buf.yaml`). Buf does not allow subdirectories of a module to be used as standalone `inputs`. The `--path` flag filters within the module at generation time. For a future service that needs a subset of protos, add multiple `--path` flags (e.g., `--path ../protos/pollen-provider --path ../protos/air-quality-provider`).
 
 Update the `Makefile` proto target (see Phase 6).
 
@@ -1809,10 +1814,10 @@ Add the following sections. Note that `docker build` commands now use `-f` to sp
 #   pc-dev pc-build pc-run pc-test
 #   pp-dev pp-build pp-test
 
-# Update proto target:
+# Update proto target (--path scopes generation to each service's proto package):
 proto: ## Generate Go code for all services via Buf
-	cd services/weather-provider && buf generate ../protos
-	cd services/pollen-provider && buf generate ../protos
+	cd services/weather-provider && buf generate ../protos --path ../protos/weather-provider
+	cd services/pollen-provider && buf generate ../protos --path ../protos/pollen-provider
 	cd services/dashboard-api && buf generate ../protos
 
 proto-clean: ## Remove all generated proto files
