@@ -5,10 +5,14 @@ go 1.25.6
 require (
 	cloud.google.com/go/firestore v1.21.0
 	github.com/joho/godotenv v1.5.1
+	github.com/nickfang/personal-dashboard/services/shared v0.0.0
 	google.golang.org/api v0.256.0
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 )
+
+// Required for Docker builds, which don't use go.work.
+replace github.com/nickfang/personal-dashboard/services/shared => ../shared
 
 require (
 	cloud.google.com/go v0.123.0 // indirect

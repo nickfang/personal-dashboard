@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/weather-provider/**'
+      - 'services/shared/**'
       - '.github/workflows/deploy-weather-provider.yml'
 
 env:
@@ -43,7 +44,7 @@ jobs:
           # Use the git SHA as the tag for immutability and easy rollbacks
           IMAGE_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
-          docker build -t "$IMAGE_TAG" services/weather-provider
+          docker build -t "$IMAGE_TAG" -f services/weather-provider/Dockerfile services
           docker push "$IMAGE_TAG"
 
           # Also update 'latest' so the registry reflects the current state

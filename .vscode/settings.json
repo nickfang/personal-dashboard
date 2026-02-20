@@ -8,5 +8,6 @@
   },
   "gopls": {
     "formatting.gofumpt": true
-  }
+  },
+  "makefile.configureOnOpen": false
 }

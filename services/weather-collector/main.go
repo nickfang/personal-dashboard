@@ -12,21 +12,15 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/joho/godotenv"
+	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
 const (
-	MAX_HISTORY_POINTS       = 48
-	DELTA_TOLERANCE          = 45 * time.Minute
-	DELTA_NOISE_THRESHOLD    = 0.5 // mb
-	WEATHER_RAW_COLLECTION   = "weather_raw"
-	WEATHER_CACHE_COLLECTION = "weather_cache"
+	MAX_HISTORY_POINTS    = 48
+	DELTA_TOLERANCE       = 45 * time.Minute
+	DELTA_NOISE_THRESHOLD = 0.5 // mb
+	WEATHER_RAW_COLLECTION = "weather_raw"
 )
-
-type WeatherLocation struct {
-	ID   string
-	lat  float64
-	long float64
-}
 
 type WeatherPoint struct {
 	Location  string    `firestore:"location"`
@@ -87,24 +81,6 @@ type CacheDoc struct {
 	History      []PressurePoint `firestore:"history"`
 }
 
-var locations = []WeatherLocation{
-	{
-		ID:   "house-nick",
-		lat:  30.260543381977474,
-		long: -97.66768538740229,
-	},
-	{
-		ID:   "house-nita",
-		lat:  30.29420179895202,
-		long: -97.6958691874014,
-	},
-	{
-		ID:   "distribution-hall",
-		lat:  30.261932944618565,
-		long: -97.72816923158192,
-	},
-}
-
 // WeatherAPIResponse matches the Google Weather API JSON structure
 type WeatherAPIResponse struct {
 	Temperature struct {
@@ -145,14 +121,7 @@ type WeatherAPIResponse struct {
 
 func main() {
 	// Setup Structured Logging
-	opts := &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}
-	if os.Getenv("DEBUG") == "true" {
-		opts.Level = slog.LevelDebug
-	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-	slog.SetDefault(logger)
+	shared.InitLogging()
 
 	// Load .env file if it exists (local development)
 	if err := godotenv.Load(); err != nil {
@@ -168,14 +137,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	client, err := firestore.NewClientWithDatabase(ctx, projectID, "weather-log")
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
 	if err != nil {
 		slog.Error("Failed to create firestore client", "error", err)
 		os.Exit(1)
 	}
 	defer client.Close()
 
-	for _, loc := range locations {
+	for _, loc := range shared.Locations {
 		wp, err := fetchWeatherWithRetry(apiKey, loc)
 		if err != nil {
 			// Structured logging for GCP Error Reporting
@@ -194,7 +163,7 @@ func main() {
 		}
 
 		// 2. Update Hot Cache (Transaction)
-		cacheRef := client.Collection(WEATHER_CACHE_COLLECTION).Doc(loc.ID)
+		cacheRef := client.Collection(shared.WeatherCacheCollection).Doc(loc.ID)
 		err = client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 			cache, err := getUpdatedCacheDoc(cacheRef, wp, tx)
 			if err != nil {
@@ -212,7 +181,7 @@ func main() {
 	}
 }
 
-func fetchWeatherWithRetry(apiKey string, loc WeatherLocation) (*WeatherPoint, error) {
+func fetchWeatherWithRetry(apiKey string, loc shared.Location) (*WeatherPoint, error) {
 	var lastErr error
 	backoffs := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
 
@@ -230,12 +199,12 @@ func fetchWeatherWithRetry(apiKey string, loc WeatherLocation) (*WeatherPoint, e
 	return nil, fmt.Errorf("exhausted retries: %w", lastErr)
 }
 
-func fetchWeather(apiKey string, loc WeatherLocation) (*WeatherPoint, error) {
+func fetchWeather(apiKey string, loc shared.Location) (*WeatherPoint, error) {
 	baseUrl := "https://weather.googleapis.com/v1/currentConditions:lookup"
 	queryParams := url.Values{
 		"key":                {apiKey},
-		"location.latitude":  {fmt.Sprintf("%f", loc.lat)},
-		"location.longitude": {fmt.Sprintf("%f", loc.long)},
+		"location.latitude":  {fmt.Sprintf("%f", loc.Lat)},
+		"location.longitude": {fmt.Sprintf("%f", loc.Long)},
 		// "unitsSystem":        {"imperial"},
 	}
 	url := baseUrl + "?" + queryParams.Encode()

@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/nickfang/personal-dashboard/services/shared"
 	pb "github.com/nickfang/personal-dashboard/services/weather-provider/internal/gen/go/weather-provider/v1"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/service"
@@ -21,12 +22,7 @@ import (
 
 func main() {
 	// 1. Setup Logging
-	opts := &slog.HandlerOptions{Level: slog.LevelInfo}
-	if os.Getenv("DEBUG") == "true" {
-		opts.Level = slog.LevelDebug
-	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-	slog.SetDefault(logger)
+	shared.InitLogging()
 
 	slog.Info("Weather Provider starting", "version", "1.0.1", "debug", os.Getenv("DEBUG"))
 
