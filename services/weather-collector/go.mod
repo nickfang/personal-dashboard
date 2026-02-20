@@ -4,6 +4,7 @@ go 1.25.6
 
 require github.com/nickfang/personal-dashboard/services/shared v0.0.0
 
+// Required for Docker builds, which don't use go.work.
 replace github.com/nickfang/personal-dashboard/services/shared => ../shared
 
 require (

@@ -11,6 +11,7 @@ require (
 	google.golang.org/protobuf v1.36.11
 )
 
+// Required for Docker builds, which don't use go.work.
 replace github.com/nickfang/personal-dashboard/services/shared => ../shared
 
 require (

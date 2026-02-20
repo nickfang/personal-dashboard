@@ -295,7 +295,7 @@ require github.com/nickfang/personal-dashboard/services/shared v0.0.0
 replace github.com/nickfang/personal-dashboard/services/shared => ../shared
 ```
 
-The `replace` directive tells Go to resolve the shared module from the local filesystem instead of a module proxy. This is how `go.work` monorepos handle inter-module dependencies.
+The `replace` directive tells Go to resolve the shared module from the local filesystem instead of a module proxy. This is required for Docker builds, which don't use `go.work`. During local development, `go.work` provides its own module resolution (via the `use` block), so `replace` is technically redundant locally — but it must stay in `go.mod` for container builds to work.
 
 ### Step 2.2: Create .env.example
 
@@ -1752,7 +1752,7 @@ use (
 )
 ```
 
-**Note:** `go.work` resolves `replace` directives locally, so `go build`, `go test`, and IDE support work without any manual steps. Docker builds don't use `go.work` — they rely on the `replace` directive in each service's `go.mod` instead.
+**Note:** `go.work` and `replace` are two independent mechanisms for local module resolution. `go.work` is for the developer's environment — it tells `go build`, `go test`, and IDEs to resolve modules listed in its `use` block directly from disk. The `replace` directive in each service's `go.mod` serves tooling that is not workspace-aware, such as Docker builds (which copy `go.mod` but not `go.work`).
 
 ### Step 6.2: Update `docker-compose.yml`
 
