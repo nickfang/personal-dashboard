@@ -45,7 +45,7 @@ wc-dev: ## Run Collector locally (Go)
 	-cd services/weather-collector && go run main.go
 
 wc-build: ## Build Weather Collector image
-	docker build -t weather-collector services/weather-collector
+	docker build -t weather-collector -f services/weather-collector/Dockerfile services
 
 wc-run: wc-build ## Run Weather Collector container (One-off job)
 	docker run --rm -it \
@@ -65,7 +65,7 @@ wp-dev: ## Run Weather Provider locally (Go)
 	-cd services/weather-provider && go run cmd/server/main.go
 
 wp-build: ## Build Weather Provider image
-	docker build -t weather-provider services/weather-provider
+	docker build -t weather-provider -f services/weather-provider/Dockerfile services
 
 wp-test: ## Run Weather Provider tests
 	cd services/weather-provider && go test ./...
@@ -78,7 +78,7 @@ da-dev: ## Run Dashboard API locally (Go)
 	-cd services/dashboard-api && go run cmd/server/main.go
 
 da-build: ## Build Dashboard API image
-	docker build -t dashboard-api services/dashboard-api
+	docker build -t dashboard-api -f services/dashboard-api/Dockerfile services
 
 da-test: ## Run Dashboard API tests
 	cd services/dashboard-api && go test ./...

@@ -6,12 +6,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/nickfang/personal-dashboard/services/shared"
 	"google.golang.org/api/iterator"
-)
-
-const (
-	WEATHER_CACHE_COLLECTION = "weather_cache"
-	DATABASE_ID              = "weather-log"
 )
 
 // Internal Firestore Models (Match weather-collector)
@@ -59,7 +55,7 @@ type FirestoreRepository struct {
 }
 
 func NewFirestoreRepository(ctx context.Context, projectID string) (*FirestoreRepository, error) {
-	client, err := firestore.NewClientWithDatabase(ctx, projectID, DATABASE_ID)
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +70,7 @@ func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 	var results []CacheDoc
 	// Safety: Limit query to 100 documents to prevent OOM.
 	// In production, this should use pagination (cursors).
-	iter := r.client.Collection(WEATHER_CACHE_COLLECTION).Limit(100).Documents(ctx)
+	iter := r.client.Collection(shared.WeatherCacheCollection).Limit(100).Documents(ctx)
 	defer iter.Stop()
 
 	for {
@@ -99,7 +95,7 @@ func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 }
 
 func (r *FirestoreRepository) GetByID(ctx context.Context, id string) (*CacheDoc, error) {
-	doc, err := r.client.Collection(WEATHER_CACHE_COLLECTION).Doc(id).Get(ctx)
+	doc, err := r.client.Collection(shared.WeatherCacheCollection).Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
 	}

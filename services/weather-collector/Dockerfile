@@ -1,28 +1,23 @@
-# Use the official Golang image to create a build artifact.
-FROM golang:1.24 AS builder
+# Stage 1: Build
+FROM golang:1.25.6-alpine AS builder
 
 WORKDIR /app
 
-# Retrieve application dependencies.
-# This allows the container build to reuse cached dependencies.
-COPY go.mod go.sum ./
-RUN go mod download
+# Copy shared module first (changes less often → better layer caching)
+COPY shared/ ./shared/
 
-# Copy local code to the container image.
-COPY . ./
+# Copy service code
+COPY weather-collector/ ./weather-collector/
 
-# Build the binary.
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o server
+WORKDIR /app/weather-collector
+RUN go mod tidy
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/weather-collector/bin main.go
 
-# Use the official Alpine image for a lean production container.
-# https://hub.docker.com/_/alpine
-# https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
+# Stage 2: Final image
 FROM alpine:3
 
 RUN apk add --no-cache ca-certificates
 
-# Copy the binary to the production image from the builder stage.
-COPY --from=builder /app/server /server
+COPY --from=builder /app/weather-collector/bin /server
 
-# Run the web service on container startup.
 CMD ["/server"]

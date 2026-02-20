@@ -13,12 +13,12 @@ import (
 	"github.com/nickfang/personal-dashboard/services/dashboard-api/internal/app"
 	"github.com/nickfang/personal-dashboard/services/dashboard-api/internal/clients"
 	"github.com/nickfang/personal-dashboard/services/dashboard-api/internal/handlers"
+	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
 func main() {
 	// 1. Setup Logging
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	slog.SetDefault(logger)
+	shared.InitLogging()
 
 	// 2. Load Config
 	if err := godotenv.Load(); err != nil {

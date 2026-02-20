@@ -1,6 +1,10 @@
 module personal-dashboard/services/weather-collector
 
-go 1.24.0
+go 1.25.6
+
+require github.com/nickfang/personal-dashboard/services/shared v0.0.0
+
+replace github.com/nickfang/personal-dashboard/services/shared => ../shared
 
 require (
 	cloud.google.com/go/firestore v1.21.0

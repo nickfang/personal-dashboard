@@ -5,9 +5,13 @@ go 1.25.6
 require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/joho/godotenv v1.5.1
+	github.com/nickfang/personal-dashboard/services/shared v0.0.0
+	google.golang.org/api v0.266.0
 	google.golang.org/grpc v1.79.0
 	google.golang.org/protobuf v1.36.11
 )
+
+replace github.com/nickfang/personal-dashboard/services/shared => ../shared
 
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
@@ -30,6 +34,5 @@ require (
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
-	google.golang.org/api v0.266.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
 )
