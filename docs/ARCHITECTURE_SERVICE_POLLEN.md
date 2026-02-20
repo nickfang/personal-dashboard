@@ -14,7 +14,7 @@ The **Pollen Provider** is a microservice subsystem responsible for collecting a
 
 ### Non-Functional Requirements
 *   **Latency:** Provider reads from `pollen_cache` — single Firestore document read (<100ms).
-*   **Cost:** Google Pollen API at $10/1000 requests. 6 calls/day (3 locations × 2 runs) = ~180/month. Well within the 5,000/month free tier.
+*   **Cost:** Google Pollen API provides 5,000 free requests/month, then $10 per 1,000 after that. At 6 calls/day (3 locations × 2 runs) = ~180/month, we use 3.6% of the free tier. **Expected cost: $0.**
 *   **Statelessness:** Provider is horizontally scalable (Cloud Run).
 *   **Testability:** Core logic unit-testable without live Firestore.
 
@@ -171,10 +171,28 @@ message PollenPlant {
     }
     ```
 
+### Shared Module (`services/shared/`)
+
+Cross-cutting concerns live in a local Go module with **zero external dependencies** (stdlib only). Each service imports it via a `replace` directive in `go.mod`.
+
+```text
+services/shared/
+├── go.mod           # module github.com/.../services/shared (stdlib only)
+├── locations.go     # Location struct + Locations slice (single source of truth)
+├── constants.go     # DatabaseID, WeatherCacheCollection, PollenCacheCollection
+└── logging.go       # InitLogging() — slog JSON handler with DEBUG toggle
+```
+
+**What stays in each service (by design):**
+*   Retry logic — local to each collector (see [Issue #25](https://github.com/nickfang/personal-dashboard/issues/25) for future generic extraction).
+*   gRPC client TLS/auth — only exists in dashboard-api, pulls heavy gRPC deps.
+*   Domain models, proto stubs, Firestore schemas — each service owns its own internal types.
+*   `_raw` collection names — only used by their respective collector.
+
 ### Dependency Management
 *   **Contract First:** Managed via Buf in `services/protos`.
 *   **Distributed Generation:** Each service (pollen-provider, dashboard-api) generates its own copy of gRPC stubs into `internal/gen/go`.
-*   **Build Strategy:** Self-contained Docker builds from the service directory context.
+*   **Build Strategy:** Docker builds use `services/` as the build context (not individual service dirs) so the shared module is available during `go mod tidy`.
 
 ### Locations
 All 3 locations are fetched separately (4–6 km apart, different 1km grid cells):
@@ -204,11 +222,11 @@ Same "Bootstrap + CD" pattern as weather services: Terraform creates the initial
 
 ## 7. Continuous Deployment (GitHub Actions)
 
-Four new workflow files:
+Four new workflow files (all include `services/shared/**` in path triggers so shared module changes rebuild downstream services):
 *   `.github/workflows/verify-pollen-collector.yml` — PR checks (test + build).
-*   `.github/workflows/deploy-pollen-collector.yml` — Deploys on push to `main` (paths: `services/pollen-collector/**`). Uses `gcloud run jobs update`.
+*   `.github/workflows/deploy-pollen-collector.yml` — Deploys on push to `main` (paths: `services/pollen-collector/**`, `services/shared/**`). Uses `gcloud run jobs update`.
 *   `.github/workflows/verify-pollen-provider.yml` — PR checks (test + build).
-*   `.github/workflows/deploy-pollen-provider.yml` — Deploys on push to `main` (paths: `services/pollen-provider/**`). Uses `gcloud run services update`.
+*   `.github/workflows/deploy-pollen-provider.yml` — Deploys on push to `main` (paths: `services/pollen-provider/**`, `services/shared/**`). Uses `gcloud run services update`.
 
 ## 8. Decision Log
 
@@ -217,7 +235,7 @@ Four new workflow files:
 *   **Alternatives Considered:**
     *   **AccuWeather Pollen API** — Provides daily counts by category (Tree/Ragweed/Mold/Grass). Rejected: requires a separate API key, a new vendor account, and a separate billing relationship. Free tier has limited calls.
     *   **Ambee Pollen API** — REST-based with species-level data. Rejected: new vendor dependency, unclear mold support, additional secret management.
-*   **Rationale:** Reuses the existing `GOOGLE_MAPS_API_KEY` already in Secret Manager. Same GCP billing account. No new vendor onboarding. Provides the richest plant-level detail (15 species including Juniper/Cedar — critical for Austin allergy monitoring). Pricing ($10/1000 requests, 5,000 free/month) is well within budget at ~180 calls/month.
+*   **Rationale:** Reuses the existing `GOOGLE_MAPS_API_KEY` already in Secret Manager. Same GCP billing account. No new vendor onboarding. Provides the richest plant-level detail (15 species including Juniper/Cedar — critical for Austin allergy monitoring). Pricing: 5,000 free requests/month, then $10/1000 after that. At ~180 calls/month we stay well within the free tier ($0 cost).
 
 ### ADR-002: Mold Data — Deferred
 *   **Decision:** Do not include mold spore data in this implementation.
@@ -297,3 +315,11 @@ Four new workflow files:
 ### ADR-013: Naming Convention
 *   **Decision:** `pollen-provider` and `pollen-collector`.
 *   **Rationale:** Aligns with `weather-provider` and `weather-collector`. The `-provider` suffix indicates a read-only gRPC service. The `-collector` suffix indicates a write-heavy background job.
+
+### ADR-014: Shared Module — Local `go.work` Module
+*   **Decision:** Create `services/shared/` as a local Go module (stdlib-only) containing locations, constants (database ID, cache collection names), and logging setup. Each service references it via a `replace` directive. Retry logic is excluded for now (see [Issue #25](https://github.com/nickfang/personal-dashboard/issues/25)).
+*   **Alternatives Considered:**
+    *   **Published Go module** — Push `services/shared` to a Go module proxy (or use the GitHub repo path). Rejected: adds a publish/version/tag workflow for code that only this repo consumes. Overengineered for an internal monorepo.
+    *   **Code generation (`make setup`)** — A Makefile target copies shared files into each service at build time. Rejected: generated files drift if someone edits a copy directly, requires discipline to never modify the output, and `go.work` is the idiomatic Go solution for this exact problem.
+    *   **No shared module (keep duplicating)** — Each service defines its own locations, constants, and logging. Rejected: locations and database ID fall in the "dangerous duplication" category — a typo or drift causes silent failures (e.g., collector writes to one collection name, provider reads from another).
+*   **Rationale:** `go.work` is the idiomatic Go monorepo pattern. Zero-dependency shared module keeps the dependency graph clean (only consumers pull in gRPC, Firestore, etc.). Validated against three growth scenarios: (1) adding more data providers — shared locations and constants scale to N services, (2) multi-region/dynamic locations — single place to update, (3) shared infrastructure (auth, observability) — the module is already in place to absorb new cross-cutting concerns. Docker builds expand context from service dir to `services/` so the shared module is available during `go mod tidy`.

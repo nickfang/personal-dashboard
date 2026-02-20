@@ -23,6 +23,108 @@ For the original high-level design, see [ARCHITECTURE_SERVICE_POLLEN.md](./ARCHI
 | 10 | Schedule | 2x/day at 6:00 AM + 2:00 PM Central |
 | 11 | Dashboard API | Separate `"pollen"` key alongside `"pressure"` |
 | 12 | Infrastructure | Separate Cloud Run Job for pollen-collector |
+| 13 | Shared code | Local `services/shared/` Go module (locations, constants, logging) |
+
+---
+
+## Phase 0: Shared Module
+
+**Goal:** Create the `services/shared/` Go module that all services will import for locations, constants, and logging setup. This phase is done first because subsequent phases depend on these imports.
+
+### Step 0.1: Initialize the Shared Module
+
+```bash
+mkdir -p services/shared
+cd services/shared
+go mod init github.com/nickfang/personal-dashboard/services/shared
+```
+
+### Step 0.2: Create `locations.go`
+
+Single source of truth for all monitored locations. Both collectors import this instead of defining their own location slices.
+
+```go
+package shared
+
+// Location represents a monitored geographic point.
+type Location struct {
+	ID   string
+	Lat  float64
+	Long float64
+}
+
+// Locations is the canonical list used by all collector services.
+var Locations = []Location{
+	{ID: "house-nick", Lat: 30.260543381977474, Long: -97.66768538740229},
+	{ID: "house-nita", Lat: 30.29420179895202, Long: -97.6958691874014},
+	{ID: "distribution-hall", Lat: 30.261932944618565, Long: -97.72816923158192},
+}
+```
+
+### Step 0.3: Create `constants.go`
+
+Database ID and cache collection names shared between collectors (writers) and providers (readers).
+
+```go
+package shared
+
+const (
+	// DatabaseID is the Firestore database used by all services.
+	DatabaseID = "weather-log"
+
+	// Cache collection names — shared between each collector/provider pair.
+	WeatherCacheCollection = "weather_cache"
+	PollenCacheCollection  = "pollen_cache"
+)
+```
+
+**Why collection names are here:** The `_cache` collection name is a contract between each collector and its provider. A typo or drift in either side causes a silent failure (writer writes to one name, reader reads from another). The `_raw` collection names stay local to each collector since no other service references them.
+
+### Step 0.4: Create `logging.go`
+
+Standardized structured logging setup. Ensures every service uses JSON output to stdout (required for GCP Cloud Run) and supports the `DEBUG` env var toggle.
+
+```go
+package shared
+
+import (
+	"log/slog"
+	"os"
+)
+
+// InitLogging configures the global slog logger with JSON output.
+// Set DEBUG=true env var for debug-level logging.
+func InitLogging() {
+	level := slog.LevelInfo
+	if os.Getenv("DEBUG") == "true" {
+		level = slog.LevelDebug
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	slog.SetDefault(logger)
+}
+```
+
+### Step 0.5: Update `go.work`
+
+```
+go 1.25.6
+
+use (
+    ./services/dashboard-api
+    ./services/pollen-collector
+    ./services/pollen-provider
+    ./services/shared
+    ./services/weather-collector
+    ./services/weather-provider
+)
+```
+
+### Step 0.6: Verify
+
+```bash
+# From repo root — go.work resolves the shared module automatically
+cd services/shared && go build ./...
+```
 
 ---
 
@@ -185,6 +287,16 @@ cd services/pollen-collector
 go mod init github.com/nickfang/personal-dashboard/services/pollen-collector
 ```
 
+Add the shared module dependency to `go.mod`:
+
+```
+require github.com/nickfang/personal-dashboard/services/shared v0.0.0
+
+replace github.com/nickfang/personal-dashboard/services/shared => ../shared
+```
+
+The `replace` directive tells Go to resolve the shared module from the local filesystem instead of a module proxy. This is how `go.work` monorepos handle inter-module dependencies.
+
 ### Step 2.2: Create .env.example
 
 ```env
@@ -218,26 +330,18 @@ import (
 
     "cloud.google.com/go/firestore"
     "github.com/joho/godotenv"
+    "github.com/nickfang/personal-dashboard/services/shared"
 )
 
 const (
-    MAX_HISTORY_POINTS       = 28 // 14 days × 2 readings/day
-    POLLEN_RAW_COLLECTION    = "pollen_raw"
-    POLLEN_CACHE_COLLECTION  = "pollen_cache"
-    DATABASE_ID              = "weather-log"
+    MAX_HISTORY_POINTS    = 28 // 14 days × 2 readings/day
+    POLLEN_RAW_COLLECTION = "pollen_raw"
 )
 
-type PollenLocation struct {
-    ID   string
-    Lat  float64
-    Long float64
-}
-
-var locations = []PollenLocation{
-    {ID: "house-nick", Lat: 30.260543381977474, Long: -97.66768538740229},
-    {ID: "house-nita", Lat: 30.29420179895202, Long: -97.6958691874014},
-    {ID: "distribution-hall", Lat: 30.261932944618565, Long: -97.72816923158192},
-}
+// Locations come from shared.Locations (see Phase 0).
+// Database ID comes from shared.DatabaseID.
+// Cache collection name comes from shared.PollenCacheCollection.
+// POLLEN_RAW_COLLECTION stays local — no other service reads from it.
 ```
 
 #### Google Pollen API Response Types
@@ -326,7 +430,7 @@ type PollenCacheDoc struct {
 Matches the weather-collector retry pattern (3 attempts, exponential backoff).
 
 ```go
-func fetchPollenWithRetry(apiKey string, loc PollenLocation) (*PollenAPIResponse, error) {
+func fetchPollenWithRetry(apiKey string, loc shared.Location) (*PollenAPIResponse, error) {
     var lastErr error
     backoffs := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
 
@@ -343,7 +447,7 @@ func fetchPollenWithRetry(apiKey string, loc PollenLocation) (*PollenAPIResponse
     return nil, fmt.Errorf("exhausted retries: %w", lastErr)
 }
 
-func fetchPollen(apiKey string, loc PollenLocation) (*PollenAPIResponse, error) {
+func fetchPollen(apiKey string, loc shared.Location) (*PollenAPIResponse, error) {
     url := fmt.Sprintf(
         "https://pollen.googleapis.com/v1/forecast:lookup?key=%s&location.latitude=%f&location.longitude=%f&days=1",
         apiKey, loc.Lat, loc.Long,
@@ -428,7 +532,7 @@ func saveRawPollenData(ctx context.Context, client *firestore.Client, snapshot P
 }
 
 func updatePollenCache(ctx context.Context, client *firestore.Client, locationID string, snapshot PollenSnapshot) error {
-    cacheRef := client.Collection(POLLEN_CACHE_COLLECTION).Doc(locationID)
+    cacheRef := client.Collection(shared.PollenCacheCollection).Doc(locationID)
 
     return client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
         doc, err := tx.Get(cacheRef)
@@ -458,12 +562,7 @@ func updatePollenCache(ctx context.Context, client *firestore.Client, locationID
 
 ```go
 func main() {
-    opts := &slog.HandlerOptions{Level: slog.LevelInfo}
-    if os.Getenv("DEBUG") == "true" {
-        opts.Level = slog.LevelDebug
-    }
-    logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-    slog.SetDefault(logger)
+    shared.InitLogging()
 
     if err := godotenv.Load(); err != nil {
         slog.Debug("No .env file found, using system environment variables", "error", err)
@@ -478,14 +577,14 @@ func main() {
         os.Exit(1)
     }
 
-    client, err := firestore.NewClientWithDatabase(ctx, projectID, DATABASE_ID)
+    client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
     if err != nil {
         slog.Error("Failed to create Firestore client", "error", err)
         os.Exit(1)
     }
     defer client.Close()
 
-    for _, loc := range locations {
+    for _, loc := range shared.Locations {
         apiResp, err := fetchPollenWithRetry(apiKey, loc)
         if err != nil {
             slog.Error("Failed to fetch pollen after retries",
@@ -514,22 +613,33 @@ func main() {
 
 ### Step 2.4: Create Dockerfile
 
+The Docker build context is `services/` (not `services/pollen-collector/`) so the shared module is available for `go mod tidy`.
+
 ```dockerfile
 FROM golang:1.25.6-alpine AS builder
 
 WORKDIR /app
-COPY . .
+
+# Copy shared module first (changes less often → better layer caching)
+COPY shared/ ./shared/
+
+# Copy service code
+COPY pollen-collector/ ./pollen-collector/
+
+WORKDIR /app/pollen-collector
 RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/pollen-collector main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/pollen-collector/bin main.go
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
-COPY --from=builder /app/pollen-collector .
+COPY --from=builder /app/pollen-collector/bin ./pollen-collector
 
 CMD ["./pollen-collector"]
 ```
+
+**Note:** The Dockerfile path is still `services/pollen-collector/Dockerfile`, but it's built with `-f` from the `services/` context (see Phase 6 for docker-compose and Makefile changes).
 
 ### Step 2.5: Unit Tests (main_test.go)
 
@@ -630,6 +740,14 @@ cd services/pollen-provider
 go mod init github.com/nickfang/personal-dashboard/services/pollen-provider
 ```
 
+Add the shared module dependency to `go.mod`:
+
+```
+require github.com/nickfang/personal-dashboard/services/shared v0.0.0
+
+replace github.com/nickfang/personal-dashboard/services/shared => ../shared
+```
+
 ### Step 3.2: Create .env.example
 
 ```env
@@ -664,12 +782,8 @@ import (
     "time"
 
     "cloud.google.com/go/firestore"
+    "github.com/nickfang/personal-dashboard/services/shared"
     "google.golang.org/api/iterator"
-)
-
-const (
-    POLLEN_CACHE_COLLECTION = "pollen_cache"
-    DATABASE_ID             = "weather-log"
 )
 
 // Firestore models — match the shapes written by pollen-collector.
@@ -709,7 +823,7 @@ type FirestoreRepository struct {
 }
 
 func NewFirestoreRepository(ctx context.Context, projectID string) (*FirestoreRepository, error) {
-    client, err := firestore.NewClientWithDatabase(ctx, projectID, DATABASE_ID)
+    client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
     if err != nil {
         return nil, err
     }
@@ -722,7 +836,7 @@ func (r *FirestoreRepository) Close() error {
 
 func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
     var results []CacheDoc
-    iter := r.client.Collection(POLLEN_CACHE_COLLECTION).Limit(100).Documents(ctx)
+    iter := r.client.Collection(shared.PollenCacheCollection).Limit(100).Documents(ctx)
     defer iter.Stop()
 
     for {
@@ -747,7 +861,7 @@ func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 }
 
 func (r *FirestoreRepository) GetByID(ctx context.Context, id string) (*CacheDoc, error) {
-    doc, err := r.client.Collection(POLLEN_CACHE_COLLECTION).Doc(id).Get(ctx)
+    doc, err := r.client.Collection(shared.PollenCacheCollection).Doc(id).Get(ctx)
     if err != nil {
         return nil, err
     }
@@ -1061,6 +1175,7 @@ import (
     "syscall"
 
     "github.com/joho/godotenv"
+    "github.com/nickfang/personal-dashboard/services/shared"
     pb "github.com/nickfang/personal-dashboard/services/pollen-provider/internal/gen/go/pollen-provider/v1"
     "github.com/nickfang/personal-dashboard/services/pollen-provider/internal/repository"
     "github.com/nickfang/personal-dashboard/services/pollen-provider/internal/service"
@@ -1073,12 +1188,7 @@ import (
 
 func main() {
     // 1. Setup Logging
-    opts := &slog.HandlerOptions{Level: slog.LevelInfo}
-    if os.Getenv("DEBUG") == "true" {
-        opts.Level = slog.LevelDebug
-    }
-    logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-    slog.SetDefault(logger)
+    shared.InitLogging()
 
     slog.Info("Pollen Provider starting", "version", "1.0.0", "debug", os.Getenv("DEBUG"))
 
@@ -1150,19 +1260,28 @@ func main() {
 
 ### Step 3.7: Dockerfile
 
+Same wider-context pattern as the collector — build context is `services/`.
+
 ```dockerfile
 FROM golang:1.25.6-alpine AS builder
 
 WORKDIR /app
-COPY . .
+
+# Copy shared module first (changes less often → better layer caching)
+COPY shared/ ./shared/
+
+# Copy service code
+COPY pollen-provider/ ./pollen-provider/
+
+WORKDIR /app/pollen-provider
 RUN go mod tidy
-RUN go build -o /app/pollen-provider cmd/server/main.go
+RUN go build -o /app/pollen-provider/bin cmd/server/main.go
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
-COPY --from=builder /app/pollen-provider .
+COPY --from=builder /app/pollen-provider/bin ./pollen-provider
 
 ENV PORT=50052
 
@@ -1253,7 +1372,7 @@ func (c *PollenClient) GetPollenReport(ctx context.Context, locationID string) (
 }
 ```
 
-**Note about DRY:** The TLS/auth logic in `NewPollenClient` is nearly identical to `NewWeatherClient`. This is an intentional duplication — each client is self-contained and independently testable. If a third service is added in the future, extracting a shared `grpcDialOptions(address)` helper would be appropriate. For two clients, the duplication is acceptable.
+**Note about DRY:** The TLS/auth logic in `NewPollenClient` is nearly identical to `NewWeatherClient`. This duplication is intentional — the shared module (`services/shared/`) is stdlib-only by design, and gRPC client auth pulls in heavy dependencies (`google.golang.org/grpc`, `google.golang.org/api/idtoken`). If a third gRPC client is added, extracting a shared `grpcDialOptions(address)` helper into its own module (or into `shared/` with an accepted dependency cost) would be appropriate.
 
 ### Step 4.2: Update Handler Interface & Aggregation
 
@@ -1456,7 +1575,8 @@ resource "google_secret_manager_secret_iam_member" "pollen_secret_access" {
 resource "null_resource" "pollen_collector_bootstrap" {
   provisioner "local-exec" {
     command = <<EOT
-      gcloud builds submit ../services/pollen-collector \
+      gcloud builds submit ../services \
+        --config ../services/pollen-collector/cloudbuild.yaml \
         --tag ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/pollen-collector:latest \
         --project ${var.project_id}
     EOT
@@ -1546,7 +1666,8 @@ resource "google_project_iam_member" "pollen_firestore_reader" {
 resource "null_resource" "pollen_provider_bootstrap" {
   provisioner "local-exec" {
     command = <<EOT
-      gcloud builds submit ../services/pollen-provider \
+      gcloud builds submit ../services \
+        --config ../services/pollen-provider/cloudbuild.yaml \
         --tag ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/pollen-provider:latest \
         --project ${var.project_id}
     EOT
@@ -1625,18 +1746,24 @@ use (
     ./services/dashboard-api
     ./services/pollen-collector
     ./services/pollen-provider
+    ./services/shared
     ./services/weather-collector
     ./services/weather-provider
 )
 ```
 
+**Note:** `go.work` resolves `replace` directives locally, so `go build`, `go test`, and IDE support work without any manual steps. Docker builds don't use `go.work` — they rely on the `replace` directive in each service's `go.mod` instead.
+
 ### Step 6.2: Update `docker-compose.yml`
+
+All services now use `context: ./services` with a `dockerfile:` path so the shared module is available during builds.
 
 ```yaml
 services:
   weather-provider:
     build:
-      context: ./services/weather-provider
+      context: ./services
+      dockerfile: weather-provider/Dockerfile
     ports:
       - "50051:50051"
     env_file:
@@ -1646,7 +1773,8 @@ services:
 
   pollen-provider:
     build:
-      context: ./services/pollen-provider
+      context: ./services
+      dockerfile: pollen-provider/Dockerfile
     ports:
       - "50052:50052"
     env_file:
@@ -1656,7 +1784,8 @@ services:
 
   dashboard-api:
     build:
-      context: ./services/dashboard-api
+      context: ./services
+      dockerfile: dashboard-api/Dockerfile
     ports:
       - "8080:8080"
     env_file:
@@ -1669,9 +1798,11 @@ services:
       - pollen-provider
 ```
 
+**Important:** This is a breaking change for the existing weather-provider and dashboard-api Dockerfiles too. They will also need to be updated to use the `COPY shared/ ./shared/` pattern. See the note at the end of this phase.
+
 ### Step 6.3: Update `Makefile`
 
-Add the following sections:
+Add the following sections. Note that `docker build` commands now use `-f` to specify the Dockerfile while building from the `services/` context.
 
 ```makefile
 # Add to .PHONY at top:
@@ -1697,7 +1828,7 @@ pc-dev: ## Run Pollen Collector locally (Go)
 	-cd services/pollen-collector && go run main.go
 
 pc-build: ## Build Pollen Collector image
-	docker build -t pollen-collector services/pollen-collector
+	docker build -t pollen-collector -f services/pollen-collector/Dockerfile services
 
 pc-run: pc-build ## Run Pollen Collector container (One-off job)
 	docker run --rm -it \
@@ -1717,11 +1848,13 @@ pp-dev: ## Run Pollen Provider locally (Go)
 	-cd services/pollen-provider && go run cmd/server/main.go
 
 pp-build: ## Build Pollen Provider image
-	docker build -t pollen-provider services/pollen-provider
+	docker build -t pollen-provider -f services/pollen-provider/Dockerfile services
 
 pp-test: ## Run Pollen Provider tests
 	cd services/pollen-provider && go test ./...
 ```
+
+**Existing services affected:** The `wc-build`, `wp-build`, and `da-build` Makefile targets also need updating to the `-f` pattern once their Dockerfiles are updated to use the shared module. This should happen in a prerequisite PR before the pollen implementation begins.
 
 ---
 
@@ -1737,6 +1870,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/pollen-collector/**'
+      - 'services/shared/**'
       - '.github/workflows/verify-pollen-collector.yml'
 
 jobs:
@@ -1774,6 +1908,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/pollen-collector/**'
+      - 'services/shared/**'
       - '.github/workflows/deploy-pollen-collector.yml'
 
 env:
@@ -1811,7 +1946,7 @@ jobs:
         run: |
           IMAGE_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
-          docker build -t "$IMAGE_TAG" services/pollen-collector
+          docker build -t "$IMAGE_TAG" -f services/pollen-collector/Dockerfile services
           docker push "$IMAGE_TAG"
 
           docker tag "$IMAGE_TAG" "${{ env.IMAGE_NAME }}:latest"
@@ -1834,6 +1969,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/pollen-provider/**'
+      - 'services/shared/**'
       - '.github/workflows/verify-pollen-provider.yml'
 
 jobs:
@@ -1871,6 +2007,7 @@ on:
     branches: [ main ]
     paths:
       - 'services/pollen-provider/**'
+      - 'services/shared/**'
       - '.github/workflows/deploy-pollen-provider.yml'
 
 env:
@@ -1908,7 +2045,7 @@ jobs:
         run: |
           IMAGE_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
-          docker build -t "$IMAGE_TAG" services/pollen-provider
+          docker build -t "$IMAGE_TAG" -f services/pollen-provider/Dockerfile services
           docker push "$IMAGE_TAG"
 
           docker tag "$IMAGE_TAG" "${{ env.IMAGE_NAME }}:latest"
@@ -1993,13 +2130,23 @@ grpcurl -plaintext -d '{}' localhost:50052 pollen_provider.v1.PollenService/GetA
 
 | Phase | Service(s) | What | PR(s) |
 |---|---|---|---|
+| 0 | shared, root | Shared module + go.work + update existing Dockerfiles/Makefile/CI | **Must be first — prerequisite PR** |
 | 1 | protos, pollen-provider, dashboard-api | Proto contract + code generation | Can be its own PR |
 | 2 | pollen-collector | Collector binary + tests | Can be its own PR |
 | 3 | pollen-provider | Provider service (all layers) + tests | Can be its own PR |
 | 4 | dashboard-api | Pollen client + handler integration | Can be its own PR |
 | 5 | infra | Terraform resources for both services | Can be its own PR |
-| 6 | root | go.work, docker-compose, Makefile | Include with Phase 1 or 3 |
+| 6 | root | docker-compose, Makefile (pollen targets) | Include with Phase 1 or 3 |
 | 7 | .github/workflows | CI/CD pipelines (4 files) | Include with Phase 2 and 3 |
 | 8 | — | Verification (local + cloud) | Post-deploy |
 
-**Recommended PR sequence:** Phase 1 + 6 → Phase 2 + 7 (collector workflows) → Phase 3 + 7 (provider workflows) → Phase 4 → Phase 5
+**Recommended PR sequence:** Phase 0 (shared module + existing service updates) → Phase 1 + 6 → Phase 2 + 7 (collector workflows) → Phase 3 + 7 (provider workflows) → Phase 4 → Phase 5
+
+**Phase 0 scope (prerequisite PR):**
+*   Create `services/shared/` module (locations.go, constants.go, logging.go)
+*   Update `go.work` to include shared
+*   Update existing services (weather-collector, weather-provider, dashboard-api) to import from shared
+*   Update all existing Dockerfiles to use `services/` build context
+*   Update existing Makefile build targets for `-f` pattern
+*   Update existing CI/CD workflows to include `services/shared/**` in path triggers
+*   Update `docker-compose.yml` contexts
