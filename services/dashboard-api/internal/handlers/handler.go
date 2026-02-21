@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"golang.org/x/sync/errgroup"
+
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
 	pressurePb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -64,14 +66,24 @@ func aggregatePollenReports(pollenReports []*pollenPb.PollenReport) (map[string]
 
 func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	// 1. Fetch data from clients
-	pressureStats, err := h.weatherClient.GetPressureStats(r.Context())
-	if err != nil {
-		RespondWithGrpcError(w, err, "Failed to fetch weather statistics")
-		return
-	}
-	pollenReports, err := h.pollenClient.GetPollenReports(r.Context())
-	if err != nil {
-		RespondWithGrpcError(w, err, "Failed to fetch pollen reports")
+	var pressureStats []*pressurePb.PressureStat
+	var pollenReports []*pollenPb.PollenReport
+
+	g, ctx := errgroup.WithContext(r.Context())
+
+	g.Go(func() error {
+		var err error
+		pressureStats, err = h.weatherClient.GetPressureStats(ctx)
+		return err
+	})
+	g.Go(func() error {
+		var err error
+		pollenReports, err = h.pollenClient.GetPollenReports(ctx)
+		return err
+	})
+
+	if err := g.Wait(); err != nil {
+		RespondWithGrpcError(w, err, "Failed to fetch dashboard data")
 		return
 	}
 
@@ -84,6 +96,7 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 	aggregatedPollen, err := aggregatePollenReports(pollenReports)
 	if err != nil {
 		http.Error(w, "Failed to encode pollen response", http.StatusInternalServerError)
+		return
 	}
 
 	// 3. Respond with JSON (encoding/json handles json.RawMessage values

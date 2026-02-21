@@ -69,7 +69,7 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("Dashboard API starting", "port", port, "weather_addr", weatherAddr)
+		slog.Info("Dashboard API starting", "port", port, "weather_addr", weatherAddr, "pollen_addr", pollenAddr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed", "error", err)
 			os.Exit(1)
