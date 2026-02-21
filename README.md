@@ -8,6 +8,8 @@ This repository contains the frontend dashboard and backend services for the Per
 - **`services/`**: Backend microservices and jobs (primarily **Go**).
   - **`weather-collector`**: A Cloud Run Job that fetches weather data.
   - **`weather-provider`**: A gRPC Service that serves weather data.
+  - **`pollen-collector`**: A Cloud Run Job that fetches pollen data from the Google Pollen API.
+  - **`pollen-provider`**: A gRPC Service that serves pollen/allergy risk data.
   - **`dashboard-api`**: An HTTP Aggregator (BFF) that talks to internal gRPC services.
 - **`infra/`**: Terraform configuration for GCP infrastructure.
 
@@ -45,6 +47,7 @@ make up
 ```
 - **Dashboard API:** http://localhost:8080/api/v1/dashboard
 - **Weather Provider:** localhost:50051 (gRPC)
+- **Pollen Provider:** localhost:50052 (gRPC)
 - **Stop services:** `make down`
 
 ### 3. Native Go (Individual Development)

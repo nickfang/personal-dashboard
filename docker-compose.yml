@@ -9,6 +9,16 @@ services:
       - services/weather-provider/.env
     volumes:
       - ~/.config/gcloud:/root/.config/gcloud
+  pollen-provider:
+    build:
+      context: ./services
+      dockerfile: pollen-provider/Dockerfile
+    ports:
+      - "50052:50052"
+    env_file:
+      - services/pollen-provider/.env
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud
 
   dashboard-api:
     build:
@@ -20,5 +30,7 @@ services:
       - services/dashboard-api/.env
     environment:
       - WEATHER_PROVIDER_ADDR=weather-provider:50051
+      - POLLEN_PROVIDER_ADDR=pollen-provider:50052
     depends_on:
       - weather-provider
+      - pollen-provider

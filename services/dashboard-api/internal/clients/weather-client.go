@@ -46,7 +46,7 @@ func NewWeatherClient(ctx context.Context, address string) (*WeatherClient, erro
 
 	conn, err := grpc.NewClient(address, opts...)
 	if err != nil {
-		slog.Error("Failed to create gRPC client", "error", err, "address", address)
+		slog.Error("Failed to create gRPC weather client", "error", err, "address", address)
 		return nil, err
 	}
 	client := pb.NewPressureStatsServiceClient(conn)
