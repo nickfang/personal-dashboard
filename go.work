@@ -2,6 +2,8 @@ go 1.25.6
 
 use (
 	./services/dashboard-api
+	./services/pollen-collector
+	./services/pollen-provider
 	./services/shared
 	./services/weather-collector
 	./services/weather-provider

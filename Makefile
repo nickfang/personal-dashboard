@@ -31,6 +31,7 @@ test-go: ## Run all Go tests
 ##@ Proto
 ## Note: We use the --path flag to specify the path to the proto files.
 ## Clients need multiple paths to get all the client protos.
+proto: ## Generate Go code for all services via Buf
 	cd services/weather-provider && buf generate ../protos --path ../protos/weather-provider
 	cd services/pollen-provider && buf generate ../protos --path ../protos/pollen-provider
 	cd services/dashboard-api && buf generate ../protos \
@@ -74,6 +75,16 @@ wp-build: ## Build Weather Provider image
 
 wp-test: ## Run Weather Provider tests
 	cd services/weather-provider && go test ./...
+
+# ==============================================================================
+# Service: Pollen Collector (Job)
+# ==============================================================================
+##@ Pollen Collector
+pc-dev: ## Run Pollen Collector locally (Go)
+	-cd services/pollen-collector && go run main.go
+
+pc-build: ## Build Pollen Collector image
+	docker build -t pollen-collector -f services/pollen-collector/Dockerfile services
 
 # ==============================================================================
 # Service: Dashboard API (Aggregator)

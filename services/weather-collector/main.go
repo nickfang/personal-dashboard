@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	MAX_HISTORY_POINTS    = 48
-	DELTA_TOLERANCE       = 45 * time.Minute
-	DELTA_NOISE_THRESHOLD = 0.5 // mb
-	WEATHER_RAW_COLLECTION = "weather_raw"
+	MAX_HISTORY_POINTS     = 48
+	DELTA_TOLERANCE        = 45 * time.Minute
+	DELTA_NOISE_THRESHOLD  = 0.5 // mb
+	WEATHER_RAW_COLLECTION = shared.WeatherRawCollection
 )
 
 type WeatherPoint struct {
@@ -172,7 +172,6 @@ func main() {
 
 			return tx.Set(cacheRef, cache)
 		})
-
 		if err != nil {
 			slog.Error("Error updating cache", "location", loc.ID, "error", err)
 		}
@@ -209,7 +208,6 @@ func fetchWeather(apiKey string, loc shared.Location) (*WeatherPoint, error) {
 	}
 	url := baseUrl + "?" + queryParams.Encode()
 	resp, err := http.Get(url)
-
 	if err != nil {
 		return nil, err
 	}

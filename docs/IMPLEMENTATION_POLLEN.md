@@ -621,6 +621,7 @@ func main() {
 The Docker build context is `services/` (not `services/pollen-collector/`) so the shared module is available for `go mod tidy`.
 
 ```dockerfile
+# Stage 1: Build
 FROM golang:1.25.6-alpine AS builder
 
 WORKDIR /app
@@ -633,9 +634,10 @@ COPY pollen-collector/ ./pollen-collector/
 
 WORKDIR /app/pollen-collector
 RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/pollen-collector/bin main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/pollen-collector/bin main.go
 
-FROM alpine:latest
+# Stage 2: Final image
+FROM alpine:3
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
@@ -1268,6 +1270,7 @@ func main() {
 Same wider-context pattern as the collector — build context is `services/`.
 
 ```dockerfile
+# Stage 1: Build
 FROM golang:1.25.6-alpine AS builder
 
 WORKDIR /app
@@ -1280,9 +1283,10 @@ COPY pollen-provider/ ./pollen-provider/
 
 WORKDIR /app/pollen-provider
 RUN go mod tidy
-RUN go build -o /app/pollen-provider/bin cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/pollen-provider/bin cmd/server/main.go
 
-FROM alpine:latest
+# Stage 2: Final image
+FROM alpine:3
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
