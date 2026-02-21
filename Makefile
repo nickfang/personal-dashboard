@@ -86,6 +86,29 @@ pc-dev: ## Run Pollen Collector locally (Go)
 pc-build: ## Build Pollen Collector image
 	docker build -t pollen-collector -f services/pollen-collector/Dockerfile services
 
+pc-run: pc-build ## Run Pollen Collector container (One-off job)
+	docker run --rm -it \
+		--env-file services/pollen-collector/.env \
+		-v ~/.config/gcloud:/root/.config/gcloud \
+		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		pollen-collector
+
+pc-test: ## Run Pollen Collector tests
+	cd services/pollen-collector && go test ./...
+
+# ==============================================================================
+# Service: Pollen Provider (Server)
+# ==============================================================================
+##@ Pollen Provider
+pp-dev: ## Run Pollen Provider locally (Go)
+	-cd services/pollen-provider && go run cmd/server/main.go
+
+pp-build: ## Build Pollen Provider image
+	docker build -t pollen-provider -f services/pollen-provider/Dockerfile services
+
+pp-test: ## Run Pollen Provider tests
+	cd services/pollen-provider && go test ./...
+
 # ==============================================================================
 # Service: Dashboard API (Aggregator)
 # ==============================================================================
