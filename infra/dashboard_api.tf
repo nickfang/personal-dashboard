@@ -12,6 +12,14 @@ resource "google_cloud_run_v2_service_iam_member" "weather_provider_invoker" {
   member   = "serviceAccount:${google_service_account.dashboard_api_sa.email}"
 }
 
+# Allow Dashboard API to call Pollen Provider
+resource "google_cloud_run_v2_service_iam_member" "pollen_provider_invoker" {
+  name     = google_cloud_run_v2_service.pollen_provider.name
+  location = google_cloud_run_v2_service.pollen_provider.location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.dashboard_api_sa.email}"
+}
+
 # Bootstrap Docker Image for Dashboard API
 # This resource serves as a "Bootstrap" step. It ensures an image exists so Terraform
 # can successfully create the Cloud Run Service initially (Disaster Recovery).
@@ -44,6 +52,10 @@ resource "google_cloud_run_v2_service" "dashboard_api" {
       env {
         name  = "WEATHER_PROVIDER_ADDR"
         value = "${trimprefix(google_cloud_run_v2_service.weather_provider.uri, "https://")}:443"
+      }
+      env {
+        name  = "POLLEN_PROVIDER_ADDR"
+        value = "${trimprefix(google_cloud_run_v2_service.pollen_provider.uri, "https://")}:443"
       }
     }
   }

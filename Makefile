@@ -43,6 +43,13 @@ proto-clean: ## Remove all generated proto files
 	rm -rf services/pollen-provider/internal/gen/go/*
 	rm -rf services/dashboard-api/internal/gen/go/*
 
+proto-align-versions:
+	cd services/weather-collector && go get -u google.golang.org/grpc
+	cd services/weather-provider && go get -u google.golang.org/grpc
+	cd services/dashboard-api && go get -u google.golang.org/grpc
+	cd services/pollen-collector && go get -u google.golang.org/grpc
+	cd services/pollen-provider && go get -u google.golang.org/grpc
+
 # ==============================================================================
 # Service: Weather Collector (Job)
 # ==============================================================================
@@ -132,3 +139,10 @@ fe-dev: ## Run the Svelte frontend
 
 fe-test: ## Run the Svelte frontend tests
 	cd frontend && npm test
+
+# ==============================================================================
+# Utilities
+# ==============================================================================
+##@ Utilities
+util-proto-align-versions: ## Align the versions of the proto packages
+	make proto-align-versions
