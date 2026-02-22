@@ -78,6 +78,13 @@ func (m *mockPollenClient) GetPollenReports(ctx context.Context) ([]*pollenPb.Po
 			OverallIndex:    4,
 			OverallCategory: "High",
 			DominantType:    "TREE",
+			Types: []*pollenPb.PollenType{
+				{Code: "TREE", Index: 4, Category: "High", InSeason: true},
+				{Code: "GRASS", Index: 1, Category: "Very Low", InSeason: false},
+			},
+			Plants: []*pollenPb.PollenPlant{
+				{Code: "JUNIPER", DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
+			},
 		},
 	}, nil
 }
@@ -293,9 +300,58 @@ func TestDashboardHandler_GetDashboard_PollenProtojsonFormat(t *testing.T) {
 	}
 }
 
-func TestDashboardHandler_GetDashboard_PollenError(t *testing.T) {
-	// Weather succeeds but pollen fails — should still return an error
-	handler := NewDashboardHandler(&mockWeatherClient{}, &errorPollenClient{err: status.Error(codes.Unavailable, "pollen-provider down")})
+func TestDashboardHandler_GetDashboard_PollenGrpcError(t *testing.T) {
+	tests := []struct {
+		name           string
+		grpcErr        error
+		expectedStatus int
+	}{
+		{
+			name:           "Unavailable returns 503",
+			grpcErr:        status.Error(codes.Unavailable, "pollen-provider down"),
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "DeadlineExceeded returns 504",
+			grpcErr:        status.Error(codes.DeadlineExceeded, "timeout"),
+			expectedStatus: http.StatusGatewayTimeout,
+		},
+		{
+			name:           "Unknown returns 500",
+			grpcErr:        status.Error(codes.Unknown, "unknown"),
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           "Non-gRPC error returns 500",
+			grpcErr:        fmt.Errorf("connection refused"),
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewDashboardHandler(&mockWeatherClient{}, &errorPollenClient{err: tt.grpcErr})
+
+			req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rr := httptest.NewRecorder()
+
+			handler.GetDashboard(rr, req)
+
+			if rr.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, rr.Code)
+			}
+		})
+	}
+}
+
+func TestDashboardHandler_GetDashboard_BothServicesFail(t *testing.T) {
+	handler := NewDashboardHandler(
+		&errorWeatherClient{err: status.Error(codes.Unavailable, "weather down")},
+		&errorPollenClient{err: status.Error(codes.DeadlineExceeded, "pollen timeout")},
+	)
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -306,7 +362,7 @@ func TestDashboardHandler_GetDashboard_PollenError(t *testing.T) {
 	handler.GetDashboard(rr, req)
 
 	if rr.Code == http.StatusOK {
-		t.Errorf("expected error status when pollen fails, got 200")
+		t.Errorf("expected error status when both services fail, got 200")
 	}
 }
 

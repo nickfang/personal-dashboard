@@ -7,26 +7,13 @@ import (
 	"time"
 
 	"github.com/nickfang/personal-dashboard/services/pollen-provider/internal/repository"
+	"github.com/nickfang/personal-dashboard/services/pollen-provider/internal/testutil"
 )
-
-// MockRepository implements repository.PollenReader
-type MockRepository struct {
-	GetAllFunc  func(ctx context.Context) ([]repository.CacheDoc, error)
-	GetByIDFunc func(ctx context.Context, id string) (*repository.CacheDoc, error)
-}
-
-func (m *MockRepository) GetAll(ctx context.Context) ([]repository.CacheDoc, error) {
-	return m.GetAllFunc(ctx)
-}
-
-func (m *MockRepository) GetByID(ctx context.Context, id string) (*repository.CacheDoc, error) {
-	return m.GetByIDFunc(ctx, id)
-}
 
 func TestGetReportByID(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		now := time.Now()
-		mockRepo := &MockRepository{
+		mockRepo := &testutil.MockReader{
 			GetByIDFunc: func(ctx context.Context, id string) (*repository.CacheDoc, error) {
 				return &repository.CacheDoc{
 					LocationID:  id,
@@ -56,7 +43,7 @@ func TestGetReportByID(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		mockRepo := &MockRepository{
+		mockRepo := &testutil.MockReader{
 			GetByIDFunc: func(ctx context.Context, id string) (*repository.CacheDoc, error) {
 				return nil, errors.New("db error")
 			},
@@ -74,7 +61,7 @@ func TestGetReportByID(t *testing.T) {
 func TestGetAllReports(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		now := time.Now()
-		mockRepo := &MockRepository{
+		mockRepo := &testutil.MockReader{
 			GetAllFunc: func(ctx context.Context) ([]repository.CacheDoc, error) {
 				return []repository.CacheDoc{
 					{LocationID: "house-nick", LastUpdated: now},
@@ -99,7 +86,7 @@ func TestGetAllReports(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		mockRepo := &MockRepository{
+		mockRepo := &testutil.MockReader{
 			GetAllFunc: func(ctx context.Context) ([]repository.CacheDoc, error) {
 				return nil, errors.New("db error")
 			},

@@ -6,6 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/joho/godotenv v1.5.1
 	github.com/nickfang/personal-dashboard/services/shared v0.0.0
+	golang.org/x/sync v0.19.0
 	google.golang.org/api v0.266.0
 	google.golang.org/grpc v1.79.0
 	google.golang.org/protobuf v1.36.11

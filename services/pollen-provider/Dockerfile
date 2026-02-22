@@ -9,7 +9,7 @@ WORKDIR /app/pollen-provider
 RUN go mod tidy
 RUN go build -o /app/pollen-provider/bin cmd/server/main.go
 
-FROM alpine:latest
+FROM alpine:3
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/

@@ -9,25 +9,12 @@ import (
 	pb "github.com/nickfang/personal-dashboard/services/pollen-provider/internal/gen/go/pollen-provider/v1"
 	"github.com/nickfang/personal-dashboard/services/pollen-provider/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/pollen-provider/internal/service"
+	"github.com/nickfang/personal-dashboard/services/pollen-provider/internal/testutil"
 )
-
-// MockReader implements repository.PollenReader for handler tests
-type MockReader struct {
-	GetByIDFunc func(ctx context.Context, id string) (*repository.CacheDoc, error)
-	GetAllFunc  func(ctx context.Context) ([]repository.CacheDoc, error)
-}
-
-func (m *MockReader) GetAll(ctx context.Context) ([]repository.CacheDoc, error) {
-	return m.GetAllFunc(ctx)
-}
-
-func (m *MockReader) GetByID(ctx context.Context, id string) (*repository.CacheDoc, error) {
-	return m.GetByIDFunc(ctx, id)
-}
 
 func TestGetPollenReport_Mapping(t *testing.T) {
 	now := time.Now()
-	mockRepo := &MockReader{
+	mockRepo := &testutil.MockReader{
 		GetByIDFunc: func(ctx context.Context, id string) (*repository.CacheDoc, error) {
 			return &repository.CacheDoc{
 				LocationID:  id,
@@ -114,7 +101,7 @@ func TestGetPollenReport_Mapping(t *testing.T) {
 
 func TestGetAllPollenReports(t *testing.T) {
 	now := time.Now()
-	mockRepo := &MockReader{
+	mockRepo := &testutil.MockReader{
 		GetAllFunc: func(ctx context.Context) ([]repository.CacheDoc, error) {
 			return []repository.CacheDoc{
 				{
@@ -167,7 +154,7 @@ func TestGetAllPollenReports(t *testing.T) {
 }
 
 func TestGetPollenReport_Error(t *testing.T) {
-	mockRepo := &MockReader{
+	mockRepo := &testutil.MockReader{
 		GetByIDFunc: func(ctx context.Context, id string) (*repository.CacheDoc, error) {
 			return nil, fmt.Errorf("firestore unavailable")
 		},

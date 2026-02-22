@@ -37,7 +37,7 @@ func main() {
 		port = "50052"
 	}
 	if projectID == "" {
-		slog.Error("Missing required env var: GCP_PROJECT_ID", "env", os.Environ())
+		slog.Error("Missing required env var: GCP_PROJECT_ID")
 		os.Exit(1)
 	}
 
@@ -73,19 +73,24 @@ func main() {
 	}
 
 	// 5. Graceful Shutdown
+	serveErr := make(chan error, 1)
 	go func() {
 		slog.Info("Pollen Provider Server listening", "port", port)
 		if err := grpcServer.Serve(lis); err != nil {
-			slog.Error("Failed to serve gRPC", "error", err)
-			os.Exit(1)
+			serveErr <- err
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 
-	slog.Info("Shutting down server gracefully...")
+	select {
+	case <-quit:
+		slog.Info("Shutting down server gracefully...")
+	case err := <-serveErr:
+		slog.Error("gRPC server failed", "error", err)
+		os.Exit(1)
+	}
 	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 	grpcServer.GracefulStop()
 	slog.Info("Server stopped")

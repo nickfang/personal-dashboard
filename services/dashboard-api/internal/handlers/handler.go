@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-// WeatherFetcher defines the dependency on the weather client
 type WeatherFetcher interface {
 	GetPressureStat(ctx context.Context, locationID string) (*pressurePb.PressureStat, error)
 	GetPressureStats(ctx context.Context) ([]*pressurePb.PressureStat, error)
@@ -100,12 +99,16 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// 3. Respond with JSON (encoding/json handles json.RawMessage values
-	// by embedding them verbatim, so the protojson output passes through)
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]any{
+	// by embedding them verbatim, so the protojson output passes through).
+	// Marshal to buffer first so we can return a clean 500 if encoding fails.
+	buf, err := json.Marshal(map[string]any{
 		"pressure": aggregatedPressure,
 		"pollen":   aggregatedPollen,
-	}); err != nil {
+	})
+	if err != nil {
 		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(buf)
 }

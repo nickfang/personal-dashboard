@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,6 +14,8 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/joho/godotenv"
 	"github.com/nickfang/personal-dashboard/services/shared"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -144,6 +147,7 @@ func main() {
 	}
 	defer client.Close()
 
+	successCount := 0
 	for _, loc := range shared.Locations {
 		wp, err := fetchWeatherWithRetry(apiKey, loc)
 		if err != nil {
@@ -174,11 +178,22 @@ func main() {
 		})
 		if err != nil {
 			slog.Error("Error updating cache", "location", loc.ID, "error", err)
+			continue
 		}
 
+		successCount++
 		slog.Info("Processed weather", "location", loc.ID)
 	}
+
+	if successCount == 0 {
+		slog.Error("All locations failed", "total", len(shared.Locations))
+		os.Exit(1)
+	}
+	slog.Info("Weather collection complete", "succeeded", successCount, "total", len(shared.Locations))
 }
+
+// nonRetryable wraps errors that should not be retried (e.g. 401, 403, bad JSON).
+type nonRetryable struct{ error }
 
 func fetchWeatherWithRetry(apiKey string, loc shared.Location) (*WeatherPoint, error) {
 	var lastErr error
@@ -189,7 +204,10 @@ func fetchWeatherWithRetry(apiKey string, loc shared.Location) (*WeatherPoint, e
 		if err == nil {
 			return wp, nil
 		}
-
+		var nr *nonRetryable
+		if errors.As(err, &nr) {
+			return nil, err
+		}
 		lastErr = err
 		if i < len(backoffs) {
 			time.Sleep(backoffs[i])
@@ -197,6 +215,8 @@ func fetchWeatherWithRetry(apiKey string, loc shared.Location) (*WeatherPoint, e
 	}
 	return nil, fmt.Errorf("exhausted retries: %w", lastErr)
 }
+
+var httpClient = &http.Client{Timeout: 15 * time.Second}
 
 func fetchWeather(apiKey string, loc shared.Location) (*WeatherPoint, error) {
 	baseUrl := "https://weather.googleapis.com/v1/currentConditions:lookup"
@@ -207,19 +227,23 @@ func fetchWeather(apiKey string, loc shared.Location) (*WeatherPoint, error) {
 		// "unitsSystem":        {"imperial"},
 	}
 	url := baseUrl + "?" + queryParams.Encode()
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API request failed with status: %s", resp.Status)
+		err := fmt.Errorf("API request failed with status: %s", resp.Status)
+		if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode < 500 {
+			return nil, &nonRetryable{err}
+		}
+		return nil, err
 	}
 
 	var data WeatherAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, fmt.Errorf("failed to decode JSON: %w", err)
+		return nil, &nonRetryable{fmt.Errorf("failed to decode JSON: %w", err)}
 	}
 
 	return mapToWeatherPoint(loc.ID, data)
@@ -382,12 +406,14 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 func getUpdatedCacheDoc(cacheRef *firestore.DocumentRef, wp *WeatherPoint, tx *firestore.Transaction) (CacheDoc, error) {
 	doc, err := tx.Get(cacheRef)
 	var cache CacheDoc
-	if err == nil {
+	if status.Code(err) == codes.NotFound {
+		cache = CacheDoc{History: []PressurePoint{}}
+	} else if err != nil {
+		return cache, fmt.Errorf("reading cache doc: %w", err)
+	} else {
 		if err := doc.DataTo(&cache); err != nil {
 			return cache, err
 		}
-	} else {
-		cache = CacheDoc{History: []PressurePoint{}}
 	}
 	newPoint := PressurePoint{
 		TimeStamp:       wp.Timestamp,

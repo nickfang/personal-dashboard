@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,11 +13,12 @@ import (
 	"cloud.google.com/go/firestore"
 	"github.com/joho/godotenv"
 	"github.com/nickfang/personal-dashboard/services/shared"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
-	MAX_HISTORY_POINTS    = 28 // 14 days × 2 readings/day
-	POLLEN_RAW_COLLECTION = shared.PollenRawCollection
+	MaxHistoryPoints = 28 // 14 days × 2 readings/day
 )
 
 // Google Pollen API response types
@@ -87,6 +89,9 @@ type PollenCacheDoc struct {
 	History     []PollenSnapshot `firestore:"history"`
 }
 
+// nonRetryable wraps errors that should not be retried (e.g. 401, 403, bad JSON).
+type nonRetryable struct{ error }
+
 func fetchPollenWithRetry(apiKey string, loc shared.Location) (*PollenAPIResponse, error) {
 	var lastErr error
 	backoffs := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
@@ -96,6 +101,10 @@ func fetchPollenWithRetry(apiKey string, loc shared.Location) (*PollenAPIRespons
 		if err == nil {
 			return data, nil
 		}
+		var nr *nonRetryable
+		if errors.As(err, &nr) {
+			return nil, err
+		}
 		lastErr = err
 		if i < len(backoffs) {
 			time.Sleep(backoffs[i])
@@ -104,29 +113,36 @@ func fetchPollenWithRetry(apiKey string, loc shared.Location) (*PollenAPIRespons
 	return nil, fmt.Errorf("exhausted retries: %w", lastErr)
 }
 
+var httpClient = &http.Client{Timeout: 15 * time.Second}
+
 func fetchPollen(apiKey string, loc shared.Location) (*PollenAPIResponse, error) {
 	url := fmt.Sprintf(
 		"https://pollen.googleapis.com/v1/forecast:lookup?key=%s&location.latitude=%f&location.longitude=%f&days=1",
 		apiKey, loc.Lat, loc.Long,
 	)
 
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Pollen API returned status: %s", resp.Status)
+		err := fmt.Errorf("pollen API returned status: %s", resp.Status)
+		// Only retry on 429 (rate limit) and 5xx (server errors)
+		if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode < 500 {
+			return nil, &nonRetryable{err}
+		}
+		return nil, err
 	}
 
 	var data PollenAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, fmt.Errorf("failed to decode pollen JSON: %w", err)
+		return nil, &nonRetryable{fmt.Errorf("failed to decode pollen JSON: %w", err)}
 	}
 
 	if len(data.DailyInfo) == 0 {
-		return nil, fmt.Errorf("no daily info returned for %s", loc.ID)
+		return nil, &nonRetryable{fmt.Errorf("no daily info returned for %s", loc.ID)}
 	}
 
 	return &data, nil
@@ -176,7 +192,7 @@ func mapToSnapshot(locationID string, apiResp *PollenAPIResponse) PollenSnapshot
 }
 
 func saveRawPollenData(ctx context.Context, client *firestore.Client, snapshot PollenSnapshot) error {
-	_, _, err := client.Collection(POLLEN_RAW_COLLECTION).Add(ctx, snapshot)
+	_, _, err := client.Collection(shared.PollenRawCollection).Add(ctx, snapshot)
 	return err
 }
 
@@ -186,17 +202,19 @@ func updatePollenCache(ctx context.Context, client *firestore.Client, locationID
 	return client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		doc, err := tx.Get(cacheRef)
 		var cache PollenCacheDoc
-		if err == nil {
+		if status.Code(err) == codes.NotFound {
+			cache = PollenCacheDoc{History: []PollenSnapshot{}}
+		} else if err != nil {
+			return fmt.Errorf("reading cache doc: %w", err)
+		} else {
 			if err := doc.DataTo(&cache); err != nil {
 				return err
 			}
-		} else {
-			cache = PollenCacheDoc{History: []PollenSnapshot{}}
 		}
 
 		cache.History = append(cache.History, snapshot)
-		if len(cache.History) > MAX_HISTORY_POINTS {
-			cache.History = cache.History[len(cache.History)-MAX_HISTORY_POINTS:]
+		if len(cache.History) > MaxHistoryPoints {
+			cache.History = cache.History[len(cache.History)-MaxHistoryPoints:]
 		}
 
 		cache.LastUpdated = snapshot.CollectedAt
@@ -229,6 +247,7 @@ func main() {
 	}
 	defer client.Close()
 
+	successCount := 0
 	for _, loc := range shared.Locations {
 		apiResp, err := fetchPollenWithRetry(apiKey, loc)
 		if err != nil {
@@ -247,6 +266,13 @@ func main() {
 			continue
 		}
 
+		successCount++
 		slog.Info("Processed pollen", "location", loc.ID, "overall_index", snapshot.OverallIndex, "dominant", snapshot.DominantType)
 	}
+
+	if successCount == 0 {
+		slog.Error("All locations failed", "total", len(shared.Locations))
+		os.Exit(1)
+	}
+	slog.Info("Pollen collection complete", "succeeded", successCount, "total", len(shared.Locations))
 }

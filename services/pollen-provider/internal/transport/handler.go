@@ -25,7 +25,7 @@ func (h *GrpcHandler) GetAllPollenReports(ctx context.Context, req *pb.GetAllPol
 	docs, err := h.svc.GetAllReports(ctx)
 	if err != nil {
 		slog.Error("Failed to retrieve pollen data", "error", err)
-		return nil, status.Errorf(codes.Unknown, "Failed to retrieve pollen data: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to retrieve pollen data: %v", err)
 	}
 
 	var reports []*pb.PollenReport
@@ -36,10 +36,16 @@ func (h *GrpcHandler) GetAllPollenReports(ctx context.Context, req *pb.GetAllPol
 }
 
 func (h *GrpcHandler) GetPollenReport(ctx context.Context, req *pb.GetPollenReportRequest) (*pb.GetPollenReportResponse, error) {
+	if req.LocationId == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "location_id is required")
+	}
 	doc, err := h.svc.GetReportByID(ctx, req.LocationId)
 	if err != nil {
-		slog.Error("Failed to retrieve pollen data", "error", err)
-		return nil, status.Errorf(codes.Unknown, "Failed to retrieve pollen data: %v", err)
+		slog.Error("Failed to retrieve pollen data", "error", err, "location_id", req.LocationId)
+		if status.Code(err) == codes.NotFound {
+			return nil, status.Errorf(codes.NotFound, "pollen data not found for location: %s", req.LocationId)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to retrieve pollen data: %v", err)
 	}
 
 	return &pb.GetPollenReportResponse{Report: mapToProto(doc)}, nil

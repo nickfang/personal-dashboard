@@ -115,7 +115,9 @@ All pollen data lives in the existing **`weather-log`** database (same as weathe
         │   │   └── reader.go         # PollenReader interface
         │   ├── service/
         │   │   ├── pollen.go         # Business logic
-        │   │   └── pollen_test.go    # Tests with MockRepository
+        │   │   └── pollen_test.go    # Tests with mock repo
+        │   ├── testutil/
+        │   │   └── mocks.go          # Shared MockReader for all test packages
         │   └── transport/
         │       ├── handler.go        # gRPC handler + proto mapping
         │       └── handler_test.go   # Handler tests

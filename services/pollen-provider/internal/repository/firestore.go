@@ -60,6 +60,8 @@ func (r *FirestoreRepository) Close() error {
 
 func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 	var results []CacheDoc
+	// Safety limit to prevent unbounded reads. Currently 3 locations;
+	// increase if the number of monitored locations grows significantly.
 	iter := r.client.Collection(shared.PollenCacheCollection).Limit(100).Documents(ctx)
 	defer iter.Stop()
 
