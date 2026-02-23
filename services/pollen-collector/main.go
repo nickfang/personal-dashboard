@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -85,7 +86,7 @@ type PollenSnapshot struct {
 
 type PollenCacheDoc struct {
 	LastUpdated time.Time        `firestore:"last_updated"`
-	Current     PollenSnapshot   `firestore:"current"`
+	CurrentValue PollenSnapshot  `firestore:"current"`
 	History     []PollenSnapshot `firestore:"history"`
 }
 
@@ -116,12 +117,21 @@ func fetchPollenWithRetry(apiKey string, loc shared.Location) (*PollenAPIRespons
 var httpClient = &http.Client{Timeout: 15 * time.Second}
 
 func fetchPollen(apiKey string, loc shared.Location) (*PollenAPIResponse, error) {
-	url := fmt.Sprintf(
-		"https://pollen.googleapis.com/v1/forecast:lookup?key=%s&location.latitude=%f&location.longitude=%f&days=1",
-		apiKey, loc.Lat, loc.Long,
-	)
+	baseUrl := "https://pollen.googleapis.com/v1/forecast:lookup"
+	queryParams := url.Values{
+		"location.latitude":  {fmt.Sprintf("%f", loc.Lat)},
+		"location.longitude": {fmt.Sprintf("%f", loc.Long)},
+		"days":               {"1"},
+	}
+	url := baseUrl + "?" + queryParams.Encode()
 
-	resp, err := httpClient.Get(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Goog-Api-Key", apiKey)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +228,7 @@ func updatePollenCache(ctx context.Context, client *firestore.Client, locationID
 		}
 
 		cache.LastUpdated = snapshot.CollectedAt
-		cache.Current = snapshot
+		cache.CurrentValue = snapshot
 
 		return tx.Set(cacheRef, cache)
 	})

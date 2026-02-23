@@ -19,10 +19,9 @@ import (
 )
 
 const (
-	MAX_HISTORY_POINTS     = 48
-	DELTA_TOLERANCE        = 45 * time.Minute
-	DELTA_NOISE_THRESHOLD  = 0.5 // mb
-	WEATHER_RAW_COLLECTION = shared.WeatherRawCollection
+	MaxHistoryPoints    = 48
+	DeltaTolerance      = 45 * time.Minute
+	DeltaNoiseThreshold = 0.5 // mb
 )
 
 type WeatherPoint struct {
@@ -221,13 +220,19 @@ var httpClient = &http.Client{Timeout: 15 * time.Second}
 func fetchWeather(apiKey string, loc shared.Location) (*WeatherPoint, error) {
 	baseUrl := "https://weather.googleapis.com/v1/currentConditions:lookup"
 	queryParams := url.Values{
-		"key":                {apiKey},
 		"location.latitude":  {fmt.Sprintf("%f", loc.Lat)},
 		"location.longitude": {fmt.Sprintf("%f", loc.Long)},
 		// "unitsSystem":        {"imperial"},
 	}
 	url := baseUrl + "?" + queryParams.Encode()
-	resp, err := httpClient.Get(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Goog-Api-Key", apiKey)
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +336,7 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 		targetTime := current.TimeStamp.Add(time.Duration(-hoursAgo) * time.Hour)
 		// 45 minute tolerance allows us to find the closest point even if
 		// some cycles were missed or delayed.
-		tolerance := DELTA_TOLERANCE
+		tolerance := DeltaTolerance
 
 		var bestMatch *PressurePoint
 		minDiff := tolerance + (1 * time.Second)
@@ -381,7 +386,6 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 
 	// Log the timestamp and value audit info at INFO level
 	slog.Info("Pressure Analysis Diagnostics",
-		"location", current.TimeStamp,
 		"current_time", current.TimeStamp.Format(time.RFC3339),
 		"analysis", audit,
 	)
@@ -391,9 +395,9 @@ func calculatePressureStats(history []PressurePoint) PressureStats {
 	// This adheres to the World Meteorological Organization (WMO) definition of "Barometric Tendency".
 	if stats.Delta3h != nil {
 		d3 := *stats.Delta3h
-		if d3 > DELTA_NOISE_THRESHOLD {
+		if d3 > DeltaNoiseThreshold {
 			stats.Trend = "rising"
-		} else if d3 < -DELTA_NOISE_THRESHOLD {
+		} else if d3 < -DeltaNoiseThreshold {
 			stats.Trend = "falling"
 		} else {
 			stats.Trend = "stable"
@@ -427,8 +431,8 @@ func getUpdatedCacheDoc(cacheRef *firestore.DocumentRef, wp *WeatherPoint, tx *f
 		DewpointF:       wp.DewpointF,
 	}
 	cache.History = append(cache.History, newPoint)
-	if len(cache.History) > MAX_HISTORY_POINTS {
-		cache.History = cache.History[len(cache.History)-48:]
+	if len(cache.History) > MaxHistoryPoints {
+		cache.History = cache.History[len(cache.History)-MaxHistoryPoints:]
 	}
 
 	cache.LastUpdated = wp.Timestamp
@@ -439,9 +443,6 @@ func getUpdatedCacheDoc(cacheRef *firestore.DocumentRef, wp *WeatherPoint, tx *f
 }
 
 func saveRawWeatherData(ctx context.Context, client *firestore.Client, wp *WeatherPoint) error {
-	_, _, err := client.Collection(WEATHER_RAW_COLLECTION).Add(ctx, wp)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, _, err := client.Collection(shared.WeatherRawCollection).Add(ctx, wp)
+	return err
 }

@@ -24,12 +24,12 @@ func TestGetPollenReport_Mapping(t *testing.T) {
 					OverallIndex:    4,
 					OverallCategory: "High",
 					DominantType:    "TREE",
-					Types: []repository.StorePollenType{
+					Types: []repository.StoredPollenType{
 						{Code: "TREE", Index: 4, Category: "High", InSeason: true},
 						{Code: "GRASS", Index: 1, Category: "Very Low", InSeason: false},
 						{Code: "WEED", Index: 0, Category: "None", InSeason: false},
 					},
-					Plants: []repository.StorePollenPlant{
+					Plants: []repository.StoredPollenPlant{
 						{Code: "JUNIPER", DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
 						{Code: "OAK", DisplayName: "Oak", Index: 0, Category: "None", InSeason: false},
 					},

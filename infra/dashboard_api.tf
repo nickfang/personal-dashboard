@@ -27,8 +27,9 @@ resource "google_cloud_run_v2_service_iam_member" "pollen_provider_invoker" {
 resource "null_resource" "dashboard_api_bootstrap" {
   provisioner "local-exec" {
     command = <<EOT
-      gcloud builds submit ../services/dashboard-api \
-        --tag ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/dashboard-api:latest \
+      gcloud builds submit ../services \
+        --config ../services/dashboard-api/cloudbuild.yaml \
+        --substitutions=_IMAGE_TAG=${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/dashboard-api:latest \
         --project ${var.project_id}
     EOT
   }

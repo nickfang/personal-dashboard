@@ -7,7 +7,7 @@ COPY pollen-provider/ ./pollen-provider/
 
 WORKDIR /app/pollen-provider
 RUN go mod tidy
-RUN go build -o /app/pollen-provider/bin cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/pollen-provider/bin cmd/server/main.go
 
 FROM alpine:3
 RUN apk --no-cache add ca-certificates

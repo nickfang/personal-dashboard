@@ -33,8 +33,9 @@ resource "google_secret_manager_secret_iam_member" "pollen_secret_access" {
 resource "null_resource" "pollen_collector_bootstrap" {
   provisioner "local-exec" {
     command = <<EOT
-      gcloud builds submit ../services/pollen-collector \
-        --tag ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/pollen-collector:latest \
+      gcloud builds submit ../services \
+        --config ../services/pollen-collector/cloudbuild.yaml \
+        --substitutions=_IMAGE_TAG=${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/pollen-collector:latest \
         --project ${var.project_id}
     EOT
   }

@@ -11,13 +11,6 @@ resource "google_project_iam_member" "pollen_firestore_reader" {
   member  = "serviceAccount:${google_service_account.pollen_provider_sa.email}"
 }
 
-# Grant permission to invoke Cloud Run services
-resource "google_project_iam_member" "pollen_provider_invoker" {
-  project = var.project_id
-  role    = "roles/run.invoker"
-  member  = "serviceAccount:${google_service_account.pollen_provider_sa.email}"
-}
-
 # Build and Push Docker Image using Cloud Build
 # This resource serves as a "Bootstrap" step. It ensures an image exists so Terraform
 # can successfully create the Cloud Run Service initially (Disaster Recovery).
@@ -25,8 +18,9 @@ resource "google_project_iam_member" "pollen_provider_invoker" {
 resource "null_resource" "pollen_provider_bootstrap" {
   provisioner "local-exec" {
     command = <<EOT
-      gcloud builds submit ../services/pollen-provider \
-        --tag ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/pollen-provider:latest \
+      gcloud builds submit ../services \
+        --config ../services/pollen-provider/cloudbuild.yaml \
+        --substitutions=_IMAGE_TAG=${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/pollen-provider:latest \
         --project ${var.project_id}
     EOT
   }
