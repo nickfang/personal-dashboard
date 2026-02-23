@@ -70,3 +70,24 @@ resource "google_service_account_iam_member" "github_sa_act_as_weather_provider_
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.github_sa.email}"
 }
+
+# 5. Service Account User (To run the job AS the pollen-collector-sa)
+resource "google_service_account_iam_member" "github_sa_act_as_pollen_collector_sa" {
+  service_account_id = google_service_account.pollen_collector_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.github_sa.email}"
+}
+
+# 6. Service Account User (To run the service AS the pollen-provider-sa)
+resource "google_service_account_iam_member" "github_sa_act_as_pollen_provider_sa" {
+  service_account_id = google_service_account.pollen_provider_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.github_sa.email}"
+}
+
+# 7. Service Account User (To run the service AS the dashboard-api-sa)
+resource "google_service_account_iam_member" "github_sa_act_as_dashboard_api_sa" {
+  service_account_id = google_service_account.dashboard_api_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.github_sa.email}"
+}
