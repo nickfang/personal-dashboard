@@ -47,8 +47,9 @@ resource "google_secret_manager_secret_iam_member" "secret_access" {
 resource "null_resource" "weather_collector_bootstrap" {
   provisioner "local-exec" {
     command = <<EOT
-      gcloud builds submit ../services/weather-collector \
-        --tag ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/weather-collector:latest \
+      gcloud builds submit ../services \
+        --config ../services/weather-collector/cloudbuild.yaml \
+        --substitutions=_IMAGE_TAG=${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/weather-collector:latest \
         --project ${var.project_id}
     EOT
   }

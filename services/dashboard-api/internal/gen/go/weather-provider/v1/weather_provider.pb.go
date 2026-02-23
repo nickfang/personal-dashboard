@@ -315,8 +315,8 @@ const file_weather_provider_v1_weather_provider_proto_rawDesc = "" +
 	"\x04stat\x18\x01 \x01(\v2!.weather_provider.v1.PressureStatR\x04stat2\x81\x02\n" +
 	"\x14PressureStatsService\x12x\n" +
 	"\x13GetAllPressureStats\x12/.weather_provider.v1.GetAllPressureStatsRequest\x1a0.weather_provider.v1.GetAllPressureStatsResponse\x12o\n" +
-	"\x10GetPressureStats\x12,.weather_provider.v1.GetPressureStatsRequest\x1a-.weather_provider.v1.GetPressureStatsResponseB\xf2\x01\n" +
-	"\x17com.weather_provider.v1B\x14WeatherProviderProtoP\x01ZXgithub.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather/v1\xa2\x02\x03WXX\xaa\x02\x12WeatherProvider.V1\xca\x02\x12WeatherProvider\\V1\xe2\x02\x1eWeatherProvider\\V1\\GPBMetadata\xea\x02\x13WeatherProvider::V1b\x06proto3"
+	"\x10GetPressureStats\x12,.weather_provider.v1.GetPressureStatsRequest\x1a-.weather_provider.v1.GetPressureStatsResponseB\xfb\x01\n" +
+	"\x17com.weather_provider.v1B\x14WeatherProviderProtoP\x01Zagithub.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1\xa2\x02\x03WXX\xaa\x02\x12WeatherProvider.V1\xca\x02\x12WeatherProvider\\V1\xe2\x02\x1eWeatherProvider\\V1\\GPBMetadata\xea\x02\x13WeatherProvider::V1b\x06proto3"
 
 var (
 	file_weather_provider_v1_weather_provider_proto_rawDescOnce sync.Once

@@ -3,7 +3,7 @@ managed:
   enabled: true
   override:
     - file_option: go_package
-      value: github.com/nickfang/personal-dashboard/services/weather-provider/internal/gen/go/weather/v1
+      value: github.com/nickfang/personal-dashboard/services/weather-provider/internal/gen/go/weather-provider/v1
 plugins:
   - local: protoc-gen-go
     out: internal/gen/go

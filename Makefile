@@ -29,13 +29,26 @@ test-go: ## Run all Go tests
 	done
 
 ##@ Proto
+## Note: We use the --path flag to specify the path to the proto files.
+## Clients need multiple paths to get all the client protos.
 proto: ## Generate Go code for all services via Buf
-	cd services/weather-provider && buf generate ../protos
-	cd services/dashboard-api && buf generate ../protos
+	cd services/weather-provider && buf generate ../protos --path ../protos/weather-provider
+	cd services/pollen-provider && buf generate ../protos --path ../protos/pollen-provider
+	cd services/dashboard-api && buf generate ../protos \
+		--path ../protos/weather-provider \
+		--path ../protos/pollen-provider
 
 proto-clean: ## Remove all generated proto files
 	rm -rf services/weather-provider/internal/gen/go/*
+	rm -rf services/pollen-provider/internal/gen/go/*
 	rm -rf services/dashboard-api/internal/gen/go/*
+
+proto-align-versions:
+	cd services/weather-collector && go get -u google.golang.org/grpc && go mod tidy
+	cd services/weather-provider && go get -u google.golang.org/grpc && go mod tidy
+	cd services/dashboard-api && go get -u google.golang.org/grpc && go mod tidy
+	cd services/pollen-collector && go get -u google.golang.org/grpc && go mod tidy
+	cd services/pollen-provider && go get -u google.golang.org/grpc && go mod tidy
 
 # ==============================================================================
 # Service: Weather Collector (Job)
@@ -71,6 +84,39 @@ wp-test: ## Run Weather Provider tests
 	cd services/weather-provider && go test ./...
 
 # ==============================================================================
+# Service: Pollen Collector (Job)
+# ==============================================================================
+##@ Pollen Collector
+pc-dev: ## Run Pollen Collector locally (Go)
+	-cd services/pollen-collector && go run main.go
+
+pc-build: ## Build Pollen Collector image
+	docker build -t pollen-collector -f services/pollen-collector/Dockerfile services
+
+pc-run: pc-build ## Run Pollen Collector container (One-off job)
+	docker run --rm -it \
+		--env-file services/pollen-collector/.env \
+		-v ~/.config/gcloud:/root/.config/gcloud \
+		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		pollen-collector
+
+pc-test: ## Run Pollen Collector tests
+	cd services/pollen-collector && go test ./...
+
+# ==============================================================================
+# Service: Pollen Provider (Server)
+# ==============================================================================
+##@ Pollen Provider
+pp-dev: ## Run Pollen Provider locally (Go)
+	-cd services/pollen-provider && go run cmd/server/main.go
+
+pp-build: ## Build Pollen Provider image
+	docker build -t pollen-provider -f services/pollen-provider/Dockerfile services
+
+pp-test: ## Run Pollen Provider tests
+	cd services/pollen-provider && go test ./...
+
+# ==============================================================================
 # Service: Dashboard API (Aggregator)
 # ==============================================================================
 ##@ Dashboard API
@@ -93,3 +139,10 @@ fe-dev: ## Run the Svelte frontend
 
 fe-test: ## Run the Svelte frontend tests
 	cd frontend && npm test
+
+# ==============================================================================
+# Utilities
+# ==============================================================================
+##@ Utilities
+util-proto-align-versions: ## Align the versions of the proto packages
+	make proto-align-versions

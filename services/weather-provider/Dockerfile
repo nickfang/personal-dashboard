@@ -11,10 +11,10 @@ COPY weather-provider/ ./weather-provider/
 
 WORKDIR /app/weather-provider
 RUN go mod tidy
-RUN go build -o /app/weather-provider/bin cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/weather-provider/bin cmd/server/main.go
 
 # Stage 2: Final image
-FROM alpine:latest
+FROM alpine:3
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/

@@ -15,9 +15,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/weather-collector/bin main.go
 
 # Stage 2: Final image
 FROM alpine:3
+RUN apk --no-cache add ca-certificates
 
-RUN apk add --no-cache ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/weather-collector/bin ./weather-collector
 
-COPY --from=builder /app/weather-collector/bin /server
-
-CMD ["/server"]
+CMD ["./weather-collector"]

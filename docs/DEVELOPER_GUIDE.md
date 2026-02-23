@@ -55,7 +55,7 @@ We follow a **Trunk-Based Development** workflow with strict CI checks.
     cd services/dashboard-api
     go run main.go
     ```
-    *   **Dependencies:** Requires `weather-provider` running on port 50051 (or `WEATHER_PROVIDER_ADDR` set).
+    *   **Dependencies:** Requires `weather-provider` running on port 50051 (or `WEATHER_PROVIDER_ADDR` set) and `pollen-provider` running on port 50052 (or `POLLEN_PROVIDER_ADDR` set).
 
 3.  **Test:** Run unit tests locally before pushing:
     ```bash

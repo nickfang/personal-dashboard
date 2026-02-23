@@ -1,0 +1,58 @@
+name: Deploy Pollen Provider
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'services/pollen-provider/**'
+      - 'services/shared/**'
+      - '.github/workflows/deploy-pollen-provider.yml'
+
+env:
+  GCP_REGION: us-central1
+  SERVICE_NAME: pollen-provider-service
+  IMAGE_NAME: us-central1-docker.pkg.dev/fang-gcp/personal-dashboard/pollen-provider
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: 'fang-gcp'
+          workload_identity_provider: 'projects/964768292331/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider'
+          service_account: 'github-actions-sa@fang-gcp.iam.gserviceaccount.com'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Docker Auth'
+        run: |
+          gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+      - name: 'Build and Push Image'
+        run: |
+          # Use the git SHA as the tag for immutability and easy rollbacks
+          IMAGE_TAG="${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+          docker build -t "$IMAGE_TAG" -f services/pollen-provider/Dockerfile services
+          docker push "$IMAGE_TAG"
+
+          # Also update 'latest' so the registry reflects the current state
+          docker tag "$IMAGE_TAG" "${{ env.IMAGE_NAME }}:latest"
+          docker push "${{ env.IMAGE_NAME }}:latest"
+
+      - name: 'Deploy to Cloud Run'
+        run: |
+          gcloud run services update ${{ env.SERVICE_NAME }} \
+            --image "${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            --region ${{ env.GCP_REGION }}

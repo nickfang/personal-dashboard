@@ -32,6 +32,16 @@ The backend is built as a set of decoupled services communicating via Firestore 
 **Role:** Periodically fetches raw weather data from external APIs.
 *   **Architecture:** [ARCHITECTURE_SERVICE_WEATHER_COLLECTOR.md](../docs/ARCHITECTURE_SERVICE_WEATHER_COLLECTOR.md)
 
+### 4. Pollen Provider (`services/pollen-provider`)
+**Type:** Cloud Run Service (gRPC)
+**Role:** Serves pollen count and allergy risk data from Firestore.
+*   **Architecture:** [ARCHITECTURE_SERVICE_POLLEN.md](../docs/ARCHITECTURE_SERVICE_POLLEN.md)
+
+### 5. Pollen Collector (`services/pollen-collector`)
+**Type:** Cloud Run Job (Batch)
+**Role:** Fetches pollen data from the Google Pollen API twice daily.
+*   **Architecture:** [ARCHITECTURE_SERVICE_POLLEN.md](../docs/ARCHITECTURE_SERVICE_POLLEN.md)
+
 ---
 
 ## gRPC Contracts (Buf)
@@ -60,11 +70,15 @@ Use the root `Makefile` targets:
 
 | Service | Dev (Go) | Prod-like (Docker) |
 | :--- | :--- | :--- |
-| **Dashboard API** | `make dev-dashboard` | `make docker-run-dashboard` |
-| **Weather Provider** | `make dev-provider` | `make docker-run-provider` |
-| **Weather Collector** | `make dev-collector` | `make docker-run-collector` |
+| **Dashboard API** | `make da-dev` | `make da-build` |
+| **Weather Provider** | `make wp-dev` | `make wp-build` |
+| **Weather Collector** | `make wc-dev` | `make wc-build` |
+| **Pollen Provider** | `make pp-dev` | `make pp-build` |
+| **Pollen Collector** | `make pc-dev` | `make pc-build` |
 
 ### 4. Port Reference
-*   **Dashboard API:** `8080` (HTTP)
-*   **Weather Provider:** `50051` (gRPC)
-*   **Pollen Provider:** `50052` (gRPC - planned)
+| Service | Port | Protocol |
+| :--- | :--- | :--- |
+| **Dashboard API** | `8080` | HTTP/REST |
+| **Weather Provider** | `50051` | gRPC |
+| **Pollen Provider** | `50052` | gRPC |

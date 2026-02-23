@@ -8,6 +8,8 @@ This repository contains the frontend dashboard and backend services for the Per
 - **`services/`**: Backend microservices and jobs (primarily **Go**).
   - **`weather-collector`**: A Cloud Run Job that fetches weather data.
   - **`weather-provider`**: A gRPC Service that serves weather data.
+  - **`pollen-collector`**: A Cloud Run Job that fetches pollen data from the Google Pollen API.
+  - **`pollen-provider`**: A gRPC Service that serves pollen/allergy risk data.
   - **`dashboard-api`**: An HTTP Aggregator (BFF) that talks to internal gRPC services.
 - **`infra/`**: Terraform configuration for GCP infrastructure.
 
@@ -41,33 +43,34 @@ Each service in `services/` contains a `.env.example` file.
 ### 2. Docker Compose (Full Stack - Recommended)
 The easiest way to run the entire backend with networking pre-configured.
 ```bash
-make up
+make compose-up
 ```
 - **Dashboard API:** http://localhost:8080/api/v1/dashboard
 - **Weather Provider:** localhost:50051 (gRPC)
-- **Stop services:** `make down`
+- **Pollen Provider:** localhost:50052 (gRPC)
+- **Stop services:** `make compose-down`
 
 ### 3. Native Go (Individual Development)
 Useful for rapid iteration on a single service.
 ```bash
-make dev-provider   # Runs weather-provider
-make dev-dashboard  # Runs dashboard-api
+make wp-dev   # Runs weather-provider
+make pp-dev   # Runs pollen-provider
+make da-dev   # Runs dashboard-api
 ```
 - **Constraint:** When running natively, services use `localhost` to communicate. Ensure your `.env` files reflect this.
 
 ### 4. Frontend
 ```bash
-make dev-frontend
+make fe-dev
 # Opens at http://localhost:5173
 ```
 
 ## Testing
 ```bash
-make test
+make test-go
 ```
 This command runs tests across all backend services and the shared library.
 
 ## Documentation
 *   [Developer Guide (Workflows, gRPC, Testing)](./docs/DEVELOPER_GUIDE.md)
-*   [Dashboard API Implementation](./docs/IMPLEMENTATION_PROGRESS_DASHBOARD_API.md)
 *   [Infrastructure Architecture](./docs/ARCHITECTURE_INFRASTRUCTURE.md)

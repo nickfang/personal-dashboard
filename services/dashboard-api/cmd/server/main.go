@@ -35,16 +35,27 @@ func main() {
 		weatherAddr = "localhost:50051"
 	}
 
+	pollenAddr := os.Getenv("POLLEN_PROVIDER_ADDR")
+	if pollenAddr == "" {
+		pollenAddr = "localhost:50052"
+	}
+
 	// 3. Initialize Clients
 	weatherClient, err := clients.NewWeatherClient(context.Background(), weatherAddr)
 	if err != nil {
 		slog.Error("Failed to initialize weather client", "error", err)
 		os.Exit(1)
 	}
+	pollenClient, err := clients.NewPollenClient(context.Background(), pollenAddr)
+	if err != nil {
+		slog.Error("Failed to initialize pollen client", "error", err)
+		os.Exit(1)
+	}
 	defer weatherClient.Close()
+	defer pollenClient.Close()
 
 	// 4. Initialize Handlers
-	dashboardHandler := handlers.NewDashboardHandler(weatherClient)
+	dashboardHandler := handlers.NewDashboardHandler(weatherClient, pollenClient)
 
 	// 5. Initialize Router
 	router := app.NewRouter(dashboardHandler)
@@ -58,7 +69,7 @@ func main() {
 	}
 
 	go func() {
-		slog.Info("Dashboard API starting", "port", port, "weather_addr", weatherAddr)
+		slog.Info("Dashboard API starting", "port", port, "weather_addr", weatherAddr, "pollen_addr", pollenAddr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("Server failed", "error", err)
 			os.Exit(1)

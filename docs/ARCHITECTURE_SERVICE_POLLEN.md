@@ -115,7 +115,9 @@ All pollen data lives in the existing **`weather-log`** database (same as weathe
         │   │   └── reader.go         # PollenReader interface
         │   ├── service/
         │   │   ├── pollen.go         # Business logic
-        │   │   └── pollen_test.go    # Tests with MockRepository
+        │   │   └── pollen_test.go    # Tests with mock repo
+        │   ├── testutil/
+        │   │   └── mocks.go          # Shared MockReader for all test packages
         │   └── transport/
         │       ├── handler.go        # gRPC handler + proto mapping
         │       └── handler_test.go   # Handler tests
@@ -244,6 +246,15 @@ Four new workflow files (all include `services/shared/**` in path triggers so sh
     *   **Ambee** — Has pollen data but no clearly documented standalone mold endpoint.
     *   **National Allergy Bureau (NAB)** — Gold standard for mold spore counts, but it's a lab-based reporting system (microscope analysis of air samples), not a public REST API.
 *   **Rationale:** No clean, standalone mold spore REST API exists that meets our quality bar. Mold is deferred as a future enhancement if a suitable API emerges.
+
+### ADR-002b: Grain Count Sources — Researched, Deferred
+*   **Decision:** Defer integration of raw grain count (gr/m³) data sources. Record findings for future pollen data lake.
+*   **Sources Investigated:**
+    *   **KVUE-TV (Austin)** — Operates a manual air sampler on their studio roof. Reports raw grain counts per species (e.g., Cedar: 221 gr/m³). Updated daily ~7 AM. No API; data is published to their article page and loaded dynamically (would require scraping). Only TV station in Austin that takes its own daily pollen counts.
+    *   **KXAN-TV / PollenSense (Austin)** — Uses a PollenSense automated AI-powered sensor that counts pollen every minute, 24/7/365. No confirmed public API; their website blocks automated access (403).
+    *   **austinpollen.com** — Aggregates 20+ sources (KVUE, KXAN, Pollen.com, AAAAI stations, PurpleAir, NWS, etc.). Normalizes data into a 0–1000 reference scale. Tracks trees (Cedar, Elm, Hackberry, Oak), weeds, grasses, molds, and air quality. No public API.
+    *   **Pollen.com (IQVIA)** — Owned by IQVIA. Uses an index-based system. Has an undocumented API (`pollen.com/api/`) visible in page source, but unofficial and could break or get blocked.
+*   **Rationale:** No source offers a clean, stable API for raw grain counts. All would require scraping, undocumented API usage, or hardware investment. The Google Pollen API (UPI 0–5 index) is the only production-grade option. Future plan: build a pollen data lake that aggregates multiple sources over time, with on-demand extraction when users request it.
 
 ### ADR-003: Data Depth — Types + All Plant UPIs
 *   **Decision:** Store all 3 pollen types (Tree/Grass/Weed) with UPI values AND all plant-level UPI values. No health recommendations or plant descriptions.
