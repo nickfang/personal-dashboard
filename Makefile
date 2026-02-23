@@ -44,11 +44,11 @@ proto-clean: ## Remove all generated proto files
 	rm -rf services/dashboard-api/internal/gen/go/*
 
 proto-align-versions:
-	cd services/weather-collector && go get -u google.golang.org/grpc
-	cd services/weather-provider && go get -u google.golang.org/grpc
-	cd services/dashboard-api && go get -u google.golang.org/grpc
-	cd services/pollen-collector && go get -u google.golang.org/grpc
-	cd services/pollen-provider && go get -u google.golang.org/grpc
+	cd services/weather-collector && go get -u google.golang.org/grpc && go mod tidy
+	cd services/weather-provider && go get -u google.golang.org/grpc && go mod tidy
+	cd services/dashboard-api && go get -u google.golang.org/grpc && go mod tidy
+	cd services/pollen-collector && go get -u google.golang.org/grpc && go mod tidy
+	cd services/pollen-provider && go get -u google.golang.org/grpc && go mod tidy
 
 # ==============================================================================
 # Service: Weather Collector (Job)
