@@ -6,7 +6,7 @@ The **Dashboard API** (`services/dashboard-api`) is the **Backend-for-Frontend (
 ## 2. Requirements
 
 ### Functional Requirements
-*   **Aggregation:** Fetch data from `weather-provider` (gRPC) and future services in parallel.
+*   **Aggregation:** Fetch data from `weather-provider` and `pollen-provider` (gRPC) in parallel.
 *   **Translation:** Convert internal gRPC binary structures into frontend-friendly JSON.
 *   **Authentication:** Validate AWS Cognito JWTs from the frontend.
 *   **CORS:** Handle Cross-Origin requests from the Svelte app.
@@ -24,20 +24,22 @@ The **Dashboard API** (`services/dashboard-api`) is the **Backend-for-Frontend (
 sequenceDiagram
     participant FE as Frontend (Svelte)
     participant API as Dashboard API (Chi)
-    participant WP as Weather Provider (gRPC)
-    
+    participant WP as Weather Provider (gRPC :50051)
+    participant PP as Pollen Provider (gRPC :50052)
+
     FE->>API: GET /api/v1/dashboard (Auth Header)
     API->>API: Middleware: Validate Cognito JWT
-    
+
     par Fetch Data
-        API->>WP: GetWeatherHistory()
         API->>WP: GetPressureStats()
+        API->>PP: GetAllPollenReports()
     end
-    
+
     WP-->>API: Protobuf Response
-    
+    PP-->>API: Protobuf Response
+
     API->>API: Map Proto -> JSON
-    API-->>FE: aggregated_dashboard.json
+    API-->>FE: {"pressure": {...}, "pollen": {...}}
 ```
 
 ## 4. Implementation Strategy
@@ -45,13 +47,16 @@ sequenceDiagram
 ### Folder Structure
 ```text
 services/dashboard-api/
-├── main.go                # Entry point (Root)
+├── cmd/server/
+│   └── main.go            # Entry point
 ├── internal/
 │   ├── app/               # Router & Server setup
 │   ├── handlers/          # HTTP Handlers (Controllers)
 │   ├── middleware/        # Auth & Logging middleware
-│   ├── clients/           # gRPC Client wrappers
-│   └── gen/               # Local generated gRPC stubs
+│   ├── clients/           # gRPC Client wrappers (weather, pollen)
+│   └── gen/go/            # Local generated gRPC stubs
+│       ├── weather-provider/v1/
+│       └── pollen-provider/v1/
 ├── go.mod
 └── Dockerfile
 ```
@@ -77,15 +82,11 @@ services/dashboard-api/
     2.  **Simple Docker:** Dockerfiles use standard `COPY . .` patterns. No complex context mounting or root-level builds are needed.
     3.  **Contract Integrity:** While the code is duplicated, the *source* (Protos) is centralized. Buf ensures that all services generate code from the same contract version.
 
-## 6. Future Considerations
+## 6. Integrated Services
 
-### 6.1. Pollen Service Integration
-*   **Purpose:** Provide daily pollen counts/risk levels.
-*   **Architecture:** Documented in `docs/ARCHITECTURE_SERVICE_POLLEN.md`.
+| Service | Address Env Var | Default | Protocol |
+|---------|----------------|---------|----------|
+| Weather Provider | `WEATHER_PROVIDER_ADDR` | `localhost:50051` | gRPC (h2c) |
+| Pollen Provider | `POLLEN_PROVIDER_ADDR` | `localhost:50052` | gRPC (h2c) |
 
-## 7. Development Plan
-1.  **Scaffold:** Create directory structure and `go.mod`.
-2.  **Code Generation:** Configure Buf to output to `internal/gen`.
-3.  **Router:** Set up `chi` with basic middleware.
-4.  **gRPC Client:** Implement the connection to `weather-provider`.
-5.  **Handler:** Create the aggregation logic.
+Both clients use Google ID tokens for authentication when connecting over port 443 (Cloud Run), and insecure credentials for local development.
