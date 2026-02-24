@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
 	weatherPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
@@ -363,6 +364,102 @@ func TestDashboardHandler_GetDashboard_BothServicesFail(t *testing.T) {
 
 	if rr.Code == http.StatusOK {
 		t.Errorf("expected error status when both services fail, got 200")
+	}
+}
+
+// --- Per-RPC deadline tests ---
+
+// slowWeatherClient simulates a provider that takes longer than the per-RPC timeout.
+type slowWeatherClient struct {
+	delay time.Duration
+}
+
+func (m *slowWeatherClient) GetPressureStat(ctx context.Context, locationID string) (*weatherPb.PressureStat, error) {
+	select {
+	case <-time.After(m.delay):
+		return &weatherPb.PressureStat{LocationId: locationID}, nil
+	case <-ctx.Done():
+		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
+	}
+}
+
+func (m *slowWeatherClient) GetPressureStats(ctx context.Context) ([]*weatherPb.PressureStat, error) {
+	select {
+	case <-time.After(m.delay):
+		return []*weatherPb.PressureStat{{LocationId: "house-nick"}}, nil
+	case <-ctx.Done():
+		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
+	}
+}
+
+// slowPollenClient simulates a provider that takes longer than the per-RPC timeout.
+type slowPollenClient struct {
+	delay time.Duration
+}
+
+func (m *slowPollenClient) GetPollenReport(ctx context.Context, locationID string) (*pollenPb.PollenReport, error) {
+	select {
+	case <-time.After(m.delay):
+		return &pollenPb.PollenReport{LocationId: locationID}, nil
+	case <-ctx.Done():
+		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
+	}
+}
+
+func (m *slowPollenClient) GetPollenReports(ctx context.Context) ([]*pollenPb.PollenReport, error) {
+	select {
+	case <-time.After(m.delay):
+		return []*pollenPb.PollenReport{{LocationId: "house-nick"}}, nil
+	case <-ctx.Done():
+		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
+	}
+}
+
+func TestDashboardHandler_GetDashboard_SlowWeatherTimesOut(t *testing.T) {
+	handler := NewDashboardHandler(
+		&slowWeatherClient{delay: 10 * time.Second},
+		&mockPollenClient{},
+	)
+
+	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	start := time.Now()
+	handler.GetDashboard(rr, req)
+	elapsed := time.Since(start)
+
+	if rr.Code != http.StatusGatewayTimeout {
+		t.Errorf("expected status 504, got %d", rr.Code)
+	}
+	if elapsed > 5*time.Second {
+		t.Errorf("expected per-RPC timeout to fire within 5s, but took %s", elapsed)
+	}
+}
+
+func TestDashboardHandler_GetDashboard_SlowPollenTimesOut(t *testing.T) {
+	handler := NewDashboardHandler(
+		&mockWeatherClient{},
+		&slowPollenClient{delay: 10 * time.Second},
+	)
+
+	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	start := time.Now()
+	handler.GetDashboard(rr, req)
+	elapsed := time.Since(start)
+
+	if rr.Code != http.StatusGatewayTimeout {
+		t.Errorf("expected status 504, got %d", rr.Code)
+	}
+	if elapsed > 5*time.Second {
+		t.Errorf("expected per-RPC timeout to fire within 5s, but took %s", elapsed)
 	}
 }
 

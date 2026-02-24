@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 
@@ -72,12 +73,16 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 
 	g.Go(func() error {
 		var err error
-		pressureStats, err = h.weatherClient.GetPressureStats(ctx)
+		rpcCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		pressureStats, err = h.weatherClient.GetPressureStats(rpcCtx)
 		return err
 	})
 	g.Go(func() error {
 		var err error
-		pollenReports, err = h.pollenClient.GetPollenReports(ctx)
+		rpcCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		pollenReports, err = h.pollenClient.GetPollenReports(rpcCtx)
 		return err
 	})
 
