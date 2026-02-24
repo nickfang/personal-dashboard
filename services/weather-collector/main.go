@@ -139,7 +139,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.WeatherDatabaseID)
 	if err != nil {
 		slog.Error("Failed to create firestore client", "error", err)
 		os.Exit(1)

@@ -55,7 +55,7 @@ type FirestoreRepository struct {
 }
 
 func NewFirestoreRepository(ctx context.Context, projectID string) (*FirestoreRepository, error) {
-	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.WeatherDatabaseID)
 	if err != nil {
 		return nil, err
 	}

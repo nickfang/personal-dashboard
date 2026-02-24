@@ -48,7 +48,7 @@ sequenceDiagram
 
 ## 4. Data Strategy (Firestore)
 
-All pollen data lives in the existing **`weather-log`** database (same as weather collections).
+All pollen data lives in a dedicated **`pollen-log`** Firestore database, separate from the weather collections in `weather-log`. Each data domain has its own database for cleaner isolation (see ADR-007).
 
 ### Collection 1: `pollen_raw` (The Archive)
 *   **Purpose:** Append-only history. Every reading is preserved for future analysis (seasonal trends, BigQuery export).
@@ -181,7 +181,7 @@ Cross-cutting concerns live in a local Go module with **zero external dependenci
 services/shared/
 ├── go.mod           # module github.com/.../services/shared (stdlib only)
 ├── locations.go     # Location struct + Locations slice (single source of truth)
-├── constants.go     # DatabaseID, WeatherCacheCollection, PollenCacheCollection
+├── constants.go     # WeatherDatabaseID, PollenDatabaseID, collection names
 └── logging.go       # InitLogging() — slog JSON handler with DEBUG toggle
 ```
 
@@ -203,6 +203,10 @@ All 3 locations are fetched separately (4–6 km apart, different 1km grid cells
 *   `distribution-hall` (Lat: 30.2619, Long: -97.7282)
 
 ## 6. Infrastructure (Terraform)
+
+### Firestore Database (`infra/firestore.tf`)
+*   **Database:** `pollen-log` — dedicated Firestore Native database for pollen collections.
+*   **Terraform Resource:** `google_firestore_database.pollen_database` alongside the existing `weather-log` database.
 
 ### Pollen Collector (`infra/pollen_collector.tf`)
 *   **Service Account:** `pollen-collector-sa` with `roles/datastore.user` (Firestore write).
@@ -283,11 +287,13 @@ Four new workflow files (all include `services/shared/**` in path triggers so sh
     *   **Single collection (`pollen_history`, one doc per day)** — Date-keyed documents. Rejected: diverges from the weather subsystem pattern without a compelling reason. Adds query complexity for the provider.
 *   **Rationale:** Consistent with the weather subsystem's dual-write strategy. `pollen_raw` is a flat, append-only archive for BigQuery export and seasonal analysis. `pollen_cache` is a read-optimized single-doc-per-location view for the dashboard.
 
-### ADR-007: Firestore Database — Reuse `weather-log`
-*   **Decision:** Pollen collections live in the existing `weather-log` database alongside weather collections.
+### ADR-007: Firestore Database — Dedicated `pollen-log` *(Revised)*
+*   **Decision:** Pollen collections live in a dedicated `pollen-log` Firestore database, separate from the `weather-log` database used by weather services.
+*   **Original Decision (Superseded):** Pollen data initially shared the `weather-log` database for simplicity. This was revisited after the initial implementation proved stable ([Issue #36](https://github.com/nickfang/personal-dashboard/issues/36)).
 *   **Alternatives Considered:**
-    *   **New database (`dashboard-data`)** — Cleaner name. Rejected: requires a new Terraform resource, new IAM bindings, and either migrating weather data or having services connect to two different databases. The name `weather-log` is a legacy artifact — it's functionally the "dashboard data" database.
-*   **Rationale:** Simpler. No new Terraform resources, same client connection, same service account permissions. The database already exists and is in production.
+    *   **Keep sharing `weather-log`** — No infrastructure changes needed. Rejected: mixing domains in one database limits independent BigQuery exports, makes IAM least-privilege harder, and sets a poor precedent for future domains (e.g., SAT words).
+    *   **Single `dashboard-data` database** — Rename `weather-log` to a generic name and keep everything together. Rejected: requires migrating existing weather data and updating all weather service references for no functional benefit.
+*   **Rationale:** Each data domain gets its own Firestore database. This enables independent BigQuery exports per domain, cleaner IAM boundaries if needed in the future, and sets the pattern for future data domains. The change is minimal — only the database ID passed to `firestore.NewClientWithDatabase()` changes. No data migration is needed (only one reading exists). IAM roles are project-level and work across all databases.
 
 ### ADR-008: Cache History Depth — 14 Days
 *   **Decision:** The `pollen_cache` history array keeps a rolling 14-day window (28 entries at 2 readings/day).
@@ -328,7 +334,7 @@ Four new workflow files (all include `services/shared/**` in path triggers so sh
 *   **Rationale:** Aligns with `weather-provider` and `weather-collector`. The `-provider` suffix indicates a read-only gRPC service. The `-collector` suffix indicates a write-heavy background job.
 
 ### ADR-014: Shared Module — Local `go.work` Module
-*   **Decision:** Create `services/shared/` as a local Go module (stdlib-only) containing locations, constants (database ID, cache collection names), and logging setup. Each service references it via a `replace` directive. Retry logic is excluded for now (see [Issue #25](https://github.com/nickfang/personal-dashboard/issues/25)).
+*   **Decision:** Create `services/shared/` as a local Go module (stdlib-only) containing locations, constants (per-domain database IDs and cache collection names), and logging setup. Each service references it via a `replace` directive. Retry logic is excluded for now (see [Issue #25](https://github.com/nickfang/personal-dashboard/issues/25)).
 *   **Alternatives Considered:**
     *   **Published Go module** — Push `services/shared` to a Go module proxy (or use the GitHub repo path). Rejected: adds a publish/version/tag workflow for code that only this repo consumes. Overengineered for an internal monorepo.
     *   **Code generation (`make setup`)** — A Makefile target copies shared files into each service at build time. Rejected: generated files drift if someone edits a copy directly, requires discipline to never modify the output, and `go.work` is the idiomatic Go solution for this exact problem.
