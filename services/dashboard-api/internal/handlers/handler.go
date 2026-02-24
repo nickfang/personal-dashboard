@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"golang.org/x/sync/errgroup"
 
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
 	pressurePb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
+	"github.com/nickfang/personal-dashboard/services/shared"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -73,14 +73,14 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 
 	g.Go(func() error {
 		var err error
-		rpcCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
 		defer cancel()
 		pressureStats, err = h.weatherClient.GetPressureStats(rpcCtx)
 		return err
 	})
 	g.Go(func() error {
 		var err error
-		rpcCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
 		defer cancel()
 		pollenReports, err = h.pollenClient.GetPollenReports(rpcCtx)
 		return err

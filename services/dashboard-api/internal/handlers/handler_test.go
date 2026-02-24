@@ -11,6 +11,7 @@ import (
 
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
 	weatherPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
+	"github.com/nickfang/personal-dashboard/services/shared"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -375,8 +376,10 @@ type slowWeatherClient struct {
 }
 
 func (m *slowWeatherClient) GetPressureStat(ctx context.Context, locationID string) (*weatherPb.PressureStat, error) {
+	timer := time.NewTimer(m.delay)
+	defer timer.Stop()
 	select {
-	case <-time.After(m.delay):
+	case <-timer.C:
 		return &weatherPb.PressureStat{LocationId: locationID}, nil
 	case <-ctx.Done():
 		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
@@ -384,8 +387,10 @@ func (m *slowWeatherClient) GetPressureStat(ctx context.Context, locationID stri
 }
 
 func (m *slowWeatherClient) GetPressureStats(ctx context.Context) ([]*weatherPb.PressureStat, error) {
+	timer := time.NewTimer(m.delay)
+	defer timer.Stop()
 	select {
-	case <-time.After(m.delay):
+	case <-timer.C:
 		return []*weatherPb.PressureStat{{LocationId: "house-nick"}}, nil
 	case <-ctx.Done():
 		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
@@ -398,8 +403,10 @@ type slowPollenClient struct {
 }
 
 func (m *slowPollenClient) GetPollenReport(ctx context.Context, locationID string) (*pollenPb.PollenReport, error) {
+	timer := time.NewTimer(m.delay)
+	defer timer.Stop()
 	select {
-	case <-time.After(m.delay):
+	case <-timer.C:
 		return &pollenPb.PollenReport{LocationId: locationID}, nil
 	case <-ctx.Done():
 		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
@@ -407,8 +414,10 @@ func (m *slowPollenClient) GetPollenReport(ctx context.Context, locationID strin
 }
 
 func (m *slowPollenClient) GetPollenReports(ctx context.Context) ([]*pollenPb.PollenReport, error) {
+	timer := time.NewTimer(m.delay)
+	defer timer.Stop()
 	select {
-	case <-time.After(m.delay):
+	case <-timer.C:
 		return []*pollenPb.PollenReport{{LocationId: "house-nick"}}, nil
 	case <-ctx.Done():
 		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
@@ -434,7 +443,7 @@ func TestDashboardHandler_GetDashboard_SlowWeatherTimesOut(t *testing.T) {
 	if rr.Code != http.StatusGatewayTimeout {
 		t.Errorf("expected status 504, got %d", rr.Code)
 	}
-	if elapsed > 5*time.Second {
+	if elapsed > shared.RPCClientTimeout+1*time.Second {
 		t.Errorf("expected per-RPC timeout to fire within 5s, but took %s", elapsed)
 	}
 }
@@ -458,7 +467,7 @@ func TestDashboardHandler_GetDashboard_SlowPollenTimesOut(t *testing.T) {
 	if rr.Code != http.StatusGatewayTimeout {
 		t.Errorf("expected status 504, got %d", rr.Code)
 	}
-	if elapsed > 5*time.Second {
+	if elapsed > shared.RPCClientTimeout+1*time.Second {
 		t.Errorf("expected per-RPC timeout to fire within 5s, but took %s", elapsed)
 	}
 }
