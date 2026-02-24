@@ -1,5 +1,7 @@
 package shared
 
+import "time"
+
 const (
 	// Firestore databases used by each service.
 	WeatherDatabaseID = "weather-log"
@@ -10,4 +12,7 @@ const (
 	WeatherRawCollection   = "weather_raw"
 	PollenCacheCollection  = "pollen_cache"
 	PollenRawCollection    = "pollen_raw"
+
+	// RPC timeouts
+	RPCClientTimeout = 2 * time.Second
 )
