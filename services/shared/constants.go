@@ -1,7 +1,7 @@
 package shared
 
 const (
-	// DatabaseID is the Firestore database used by all services.
+	// Firestore databases used by each service.
 	WeatherDatabaseID = "weather-log"
 	PollenDatabaseID  = "pollen-log"
 
