@@ -85,9 +85,9 @@ type PollenSnapshot struct {
 }
 
 type PollenCacheDoc struct {
-	LastUpdated time.Time        `firestore:"last_updated"`
-	CurrentValue PollenSnapshot  `firestore:"current"`
-	History     []PollenSnapshot `firestore:"history"`
+	LastUpdated  time.Time        `firestore:"last_updated"`
+	CurrentValue PollenSnapshot   `firestore:"current"`
+	History      []PollenSnapshot `firestore:"history"`
 }
 
 // nonRetryable wraps errors that should not be retried (e.g. 401, 403, bad JSON).
@@ -250,7 +250,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.PollenDatabaseID)
 	if err != nil {
 		slog.Error("Failed to create firestore client", "error", err)
 		os.Exit(1)

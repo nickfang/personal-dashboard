@@ -4,6 +4,7 @@
 # Local state files
 *.tfstate
 *.tfstate.backup
+*.tfstate.*.backup
 
 # Local variable files (contains private Project IDs/secrets)
 *.tfvars

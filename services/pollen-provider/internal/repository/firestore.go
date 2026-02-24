@@ -27,11 +27,11 @@ type StoredPollenPlant struct {
 }
 
 type PollenSnapshot struct {
-	LocationID      string             `firestore:"location_id"`
-	CollectedAt     time.Time          `firestore:"collected_at"`
-	OverallIndex    int                `firestore:"overall_index"`
-	OverallCategory string             `firestore:"overall_category"`
-	DominantType    string             `firestore:"dominant_type"`
+	LocationID      string              `firestore:"location_id"`
+	CollectedAt     time.Time           `firestore:"collected_at"`
+	OverallIndex    int                 `firestore:"overall_index"`
+	OverallCategory string              `firestore:"overall_category"`
+	DominantType    string              `firestore:"dominant_type"`
 	Types           []StoredPollenType  `firestore:"types"`
 	Plants          []StoredPollenPlant `firestore:"plants"`
 }
@@ -47,7 +47,7 @@ type FirestoreRepository struct {
 }
 
 func NewFirestoreRepository(ctx context.Context, projectID string) (*FirestoreRepository, error) {
-	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.DatabaseID)
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, shared.PollenDatabaseID)
 	if err != nil {
 		return nil, err
 	}

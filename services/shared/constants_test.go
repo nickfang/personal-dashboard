@@ -2,9 +2,15 @@ package shared
 
 import "testing"
 
-func TestDatabaseID(t *testing.T) {
-	if DatabaseID != "weather-log" {
-		t.Errorf("DatabaseID = %q, want %q", DatabaseID, "weather-log")
+func TestWeatherDatabaseID(t *testing.T) {
+	if WeatherDatabaseID != "weather-log" {
+		t.Errorf("WeatherDatabaseID = %q, want %q", WeatherDatabaseID, "weather-log")
+	}
+}
+
+func TestPollenDatabaseID(t *testing.T) {
+	if PollenDatabaseID != "pollen-log" {
+		t.Errorf("PollenDatabaseID = %q, want %q", PollenDatabaseID, "pollen-log")
 	}
 }
 
@@ -17,6 +23,12 @@ func TestWeatherCacheCollection(t *testing.T) {
 func TestPollenCacheCollection(t *testing.T) {
 	if PollenCacheCollection != "pollen_cache" {
 		t.Errorf("PollenCacheCollection = %q, want %q", PollenCacheCollection, "pollen_cache")
+	}
+}
+
+func TestDatabaseIDsAreDistinct(t *testing.T) {
+	if WeatherDatabaseID == PollenDatabaseID {
+		t.Error("WeatherDatabaseID and PollenDatabaseID must be distinct")
 	}
 }
 
