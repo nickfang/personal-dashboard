@@ -1,7 +1,7 @@
-# Weather Service Architecture & Implementation Plan
+# Weather Collector Service Architecture
 
 ## 1. Overview
-The **Weather Service** is a subsystem of the Personal Dashboard. It separates data collection (background job) from data serving (API).
+The **Weather Collector** (`services/weather-collector`) is a background worker that fetches weather data from the Google Weather API and writes to Firestore. It separates data collection from data serving — the **Weather Provider** reads from the cache to serve the Dashboard API.
 
 For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTURE_INFRASTRUCTURE.md](./ARCHITECTURE_INFRASTRUCTURE.md)**.
 
@@ -14,19 +14,15 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
     *   **Trigger**: Cloud Scheduler (Hourly Cron).
     *   **Responsibility**:
         *   Fetch weather data from external API (Google Weather/Maps).
-        *   Process and format data.
+        *   Calculate pressure deltas and barometric trend.
         *   Perform "Dual-Write" to Firestore (Archive + Cache).
 
-2.  **Weather Provider (`services/weather-provider`)** *[Planned]*
+2.  **Weather Provider (`services/weather-provider`)**
     *   **Role**: API Service (Reader).
-    *   **Runtime**: Cloud Run Service (gRPC).
+    *   **Runtime**: Cloud Run Service (gRPC, :50051).
     *   **Responsibility**:
-        *   Read pre-aggregated data from Firestore `weather_cache`.
-        *   Serve data to the SvelteKit Frontend.
-
-3.  **Frontend (`frontend/`)**
-    *   **Framework**: SvelteKit.
-    *   **Responsibility**: Display current weather and 24h trends.
+        *   Read pre-aggregated pressure data from Firestore `weather_cache`.
+        *   Serve pressure stats to the Dashboard API via gRPC.
 
 ## 3. Data Strategy (Firestore)
 
@@ -35,92 +31,78 @@ We utilize a **Dual-Write** strategy to balance historical accuracy with dashboa
 ### Collection 1: `weather_raw` (The Archive)
 *   **Purpose**: Long-term history logging. Flat structure for easy future export to BigQuery/SQL.
 *   **Write Frequency**: 1 document per location per hour.
-*   **Schema**:
+*   **Schema** (`WeatherPoint`):
     ```json
     {
       "location": "string",
       "timestamp": "timestamp",
-      "temp_c": "float64",
-      "temp_feel_c": "float64",
-      "humidity": "int",
+      "humidity_pct": "int",
+      "precipitation_pct": "int",
       "uv_index": "int",
       "pressure_mb": "float64",
       "wind_dir_deg": "int",
+      "temp_c": "float64",
+      "temp_feel_c": "float64",
+      "dewpoint_c": "float64",
       "wind_speed_kph": "float64",
       "wind_gust_kph": "float64",
-      "visibility_km": "float64"
+      "visibility_km": "float64",
+      "temp_f": "float64",
+      "temp_feel_f": "float64",
+      "dewpoint_f": "float64",
+      "wind_speed_mph": "float64",
+      "wind_gust_mph": "float64",
+      "visibility_miles": "float64"
     }
     ```
 
-### Collection 2: `weather_cache` (The Dashboard View)
-*   **Purpose**: Instant read-optimized view for the frontend.
-*   **Structure**: 1 Document per `Location ID` (e.g., `house-nick`).
-*   **Schema**:
+### Collection 2: `weather_cache` (The Pressure Analysis View)
+*   **Purpose**: Read-optimized pressure analysis for the dashboard. Contains current conditions, pressure history, and computed deltas/trend.
+*   **Structure**: 1 Document per Location ID (e.g., `house-nick`).
+*   **Schema** (`CacheDoc`):
     ```json
     {
       "last_updated": "timestamp",
       "current": {
-        // Snapshot of conditions (same fields as raw)
+        "// Full WeatherPoint snapshot (same fields as weather_raw)"
+      },
+      "analysis": {
+        "timestamp": "timestamp",
+        "delta_01h": "float64 | null",
+        "delta_03h": "float64 | null",
+        "delta_06h": "float64 | null",
+        "delta_12h": "float64 | null",
+        "delta_24h": "float64 | null",
+        "trend": "string (Rising | Falling | Stable)"
       },
       "history": [
-        // Array of last 48 simplified data points
         {
-          "ts": "time",
-          "t": 22.5,
-          "tf": 21.0,
-          "h": 60,
-          "uv": 4,
-          "p": 1013.2,
-          "wd": 180,
-          "ws": 14.0,
-          "wg": 25.0,
-          "v": 16.0
+          "// Last 48 PressurePoint entries (pressure, temp, humidity, dewpoint)"
+          "timestamp": "timestamp",
+          "pressure_mb": "float64",
+          "humidity_pct": "int",
+          "temp_c": "float64",
+          "temp_feel_c": "float64",
+          "dewpoint_c": "float64",
+          "temp_f": "float64",
+          "temp_feel_f": "float64",
+          "dewpoint_f": "float64"
         }
       ]
     }
     ```
 
-## 4. Implementation Details
+## 4. Pressure Analysis
 
-### Weather Collector Logic (`main.go`)
-1.  **Initialize**: Load config (Locations), init Firestore client.
-2.  **Iterate**: Loop through target locations.
-3.  **Fetch (Robust)**: Call Google Weather API with **Retry Policy**.
-    *   Attempts: 3 max.
-    *   Backoff: 1s, 2s, 4s (Exponential).
-    *   **Failure Handling**: If all retries fail, log a structured error (Severity: ERROR) to trigger **GCP Error Reporting**.
-4.  **Calculate Stats**: Compute pressure trends (1h, 3h, 6h, 12h, 24h).
-    *   **Algorithm**: Timestamp-based Time-Window Search.
-    *   **Logic**: Find historical point `P` where `abs(P.Timestamp - (Now - DeltaHours)) < Tolerance`.
-    *   **Tolerance**: +/- 45 minutes.
-    *   **Fallback**: If no point found within tolerance, Delta = 0.0 (Stable).
-    *   **Trend Definition**: The string "Trend" (Rising/Falling/Stable) is derived **exclusively** from the **3-Hour Delta**. This adheres to the World Meteorological Organization (WMO) standard for "Barometric Tendency". Other deltas (1h, 24h) are provided as raw values for context but are not used to label the official trend.
-5.  **Write Raw**: Insert new document into `weather_raw`.
-6.  **Update Cache**: Use a Firestore Transaction to:
-    *   Read existing cache doc for the location.
-    *   Append new point to `history` array.
-    *   Truncate `history` to keep only the last 48 entries (24h buffer).
-    *   Update `current` fields, `analysis` stats, and `last_updated`.
+The collector computes barometric pressure deltas and trend on each run.
 
-### Configuration
-Locations are currently hardcoded in Go but tracked as:
-*   `house-nick` (Lat: 30.2605, Long: -97.6677)
-*   `house-nita` (Lat: 30.2942, Long: -97.6959)
-*   `distribution-hall` (Lat: 30.2619, Long: -97.7282)
+*   **Deltas**: Change in pressure over 1h, 3h, 6h, 12h, and 24h windows. Uses a timestamp-based search with +/- 45 minute tolerance to handle scheduling jitter. Delta fields are nullable (`null` = insufficient history) to distinguish missing data from a stable 0.0 change.
+*   **Trend**: The string label (Rising/Falling/Stable) is derived **exclusively** from the **3-hour delta**, following the WMO standard for "Barometric Tendency". A noise threshold of 0.5 mb filters out insignificant fluctuations.
 
-## 6. Reliability & Data Quality
+## 5. Monitored Locations
 
-### Input Strategy: Robust Acquisition
-To ensure high data availability without excessive costs:
-*   **Retry with Backoff**: The collector implements a retry loop (3 attempts, exponential backoff) to handle transient API or network failures.
-*   **Observability**: Critical failures (after retries exhausted) are logged with structured payloads to integrate with **Google Cloud Error Reporting**, enabling active alerting on persistent outages.
-
-### Output Strategy: Resilient Calculation
-To ensure accurate trends despite potential data gaps or jitter:
-*   **Time-Window Search**: Delta calculations (e.g., "Change over 3 hours") do not rely on fixed array indices. Instead, they search the history buffer for the data point with a timestamp closest to the target time (e.g., `Now - 3h`).
-*   **Tolerance**: A search window (e.g., +/- 45 mins) allows for job scheduling jitter or missed cycles while maintaining statistical relevance.
-
-## 7. Next Steps
-1.  **Protocol Definitions**: Create `protos/weather/v1/weather.proto`.
-2.  **Provider Service**: Scaffold `services/weather-provider`.
-3.  **Frontend Integration**: Connect SvelteKit to the backend.
+| Location ID | Latitude | Longitude |
+|------------|----------|-----------|
+| `house-nick` | 30.2605 | -97.6677 |
+| `house-nita` | 30.2942 | -97.6959 |
+| `distribution-hall` | 30.2619 | -97.7282 |

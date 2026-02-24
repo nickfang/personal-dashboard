@@ -11,47 +11,46 @@ flowchart TD
 
     subgraph Aggregator ["The Gateway (Public URL)"]
         direction TB
-        %% This is the "BFF" that Svelte talks to
-        %% CURRENT: Implementing this now
-        S_Dash["Dashboard API<br/>(Go HTTP Server)"]:::next
+        S_Dash["Dashboard API<br/>(Go HTTP Server)"]:::done
     end
 
     subgraph Microservices ["Internal gRPC Services (Private)"]
         direction TB
-        %% DONE: Implemented and deployed
-        S_Weath["Weather Provider<br/>(Go gRPC)"]:::done
-        
-        %% Future services
-        S_Poll["Pollen Service<br/>(Go gRPC)"]:::future
+        S_Weath["Weather Provider<br/>(Go gRPC, :50051)"]:::done
+        S_Poll["Pollen Provider<br/>(Go gRPC, :50052)"]:::done
         S_Sat["SAT Word Service<br/>(Go HTTP)"]:::future
     end
 
     subgraph Background ["Background Jobs"]
         direction TB
-        %% DONE: Implemented and deployed
         J_Weath["Weather Collector<br/>(Cloud Run Job)"]:::done
+        J_Poll["Pollen Collector<br/>(Cloud Run Job)"]:::done
     end
 
     subgraph Data ["Google Firestore"]
         direction TB
         DB_Weath[("weather_cache<br/>(Collection)")]:::done
         DB_Raw[("weather_raw<br/>(Collection)")]:::done
+        DB_PolCache[("pollen_cache<br/>(Collection)")]:::done
+        DB_PolRaw[("pollen_raw<br/>(Collection)")]:::done
     end
 
-    %% Wiring
-    UI_Dash -- "1. GET /api/v1/dashboard" --> S_Dash
-    
-    S_Dash -- "2. GetWeatherHistory()<br/>(gRPC)" --> S_Weath
-    S_Dash -- "2. GetPollen()<br/>(gRPC)" --> S_Poll
-    
-    S_Weath -- "3. Read" --> DB_Weath
-    
+    %% Data Flow (arrows follow data direction)
+    DB_Weath -- "3. Read" --> S_Weath
+    DB_PolCache -- "3. Read" --> S_Poll
+
+    S_Weath -- "2. GetPressureStats()<br/>(gRPC)" --> S_Dash
+    S_Poll -- "2. GetAllPollenReports()<br/>(gRPC)" --> S_Dash
+
+    S_Dash -- "1. GET /api/v1/dashboard" --> UI_Dash
+
     J_Weath -- "Writes" --> DB_Weath
     J_Weath -- "Writes" --> DB_Raw
+    J_Poll -- "Writes" --> DB_PolCache
+    J_Poll -- "Writes" --> DB_PolRaw
 
     %% Styling
     classDef done fill:#bbf,stroke:#333,stroke-width:2px,color:black;
-    classDef next fill:#f96,stroke:#333,stroke-width:4px,color:black;
     classDef future fill:#fff,stroke:#ccc,stroke-width:1px,color:#999,stroke-dasharray: 5 5;
 ```
 
