@@ -92,7 +92,27 @@ All pollen data lives in a dedicated **`pollen-log`** Firestore database, separa
     *   **Role:** Background Worker (Writer).
     *   **Runtime:** Cloud Run Job.
     *   **Trigger:** Cloud Scheduler (`0 6,14 * * *` — 6 AM + 2 PM Central).
-    *   **Structure:** Single-file `main.go` (matches weather-collector pattern).
+    *   **Architecture:** Layered (Client → Service → Repository). See [Issue #31](https://github.com/nickfang/personal-dashboard/issues/31).
+    *   **Folder Structure:**
+        ```text
+        services/pollen-collector/
+        ├── cmd/collector/main.go        # Wiring + orchestration loop
+        ├── internal/
+        │   ├── client/
+        │   │   ├── client.go            # Fetcher interface + Client (HTTP + retry)
+        │   │   └── types.go             # Google Pollen API response types
+        │   ├── service/
+        │   │   ├── collector.go          # CollectorService, MapToSnapshot()
+        │   │   └── collector_test.go     # Mapping + orchestration tests
+        │   ├── repository/
+        │   │   ├── writer.go            # Writer interface
+        │   │   ├── firestore.go         # Writes to pollen_raw + pollen_cache
+        │   │   └── types.go             # PollenSnapshot, PollenCacheDoc
+        │   └── testutil/
+        │       └── mocks.go            # MockFetcher, MockWriter
+        ├── Dockerfile
+        └── go.mod
+        ```
     *   **Responsibilities:**
         *   Fetch pollen data from Google Pollen API with retry (3 attempts, exponential backoff).
         *   Map API response to internal storage models.
