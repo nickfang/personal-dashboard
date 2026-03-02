@@ -5,24 +5,25 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/nickfang/personal-dashboard/services/pollen-collector/internal/client"
+	"github.com/nickfang/personal-dashboard/services/pollen-collector/internal/api"
 	"github.com/nickfang/personal-dashboard/services/pollen-collector/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/pollen-collector/internal/testutil"
+	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
 // --- Mapping tests (migrated from main_test.go) ---
 
 func TestMapToSnapshot_OverallSummary(t *testing.T) {
-	apiResp := &client.PollenAPIResponse{
-		DailyInfo: []client.DailyInfo{{
-			PollenTypeInfo: []client.PollenTypeInfo{
-				{Code: "GRASS", InSeason: true, IndexInfo: client.IndexInfo{Value: 2, Category: "Low"}},
-				{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 4, Category: "High"}},
-				{Code: "WEED", InSeason: false, IndexInfo: client.IndexInfo{Value: 0, Category: "None"}},
+	apiResp := &api.PollenAPIResponse{
+		DailyInfo: []api.DailyInfo{{
+			PollenTypeInfo: []api.PollenTypeInfo{
+				{Code: "GRASS", InSeason: true, IndexInfo: api.IndexInfo{Value: 2, Category: "Low"}},
+				{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 4, Category: "High"}},
+				{Code: "WEED", InSeason: false, IndexInfo: api.IndexInfo{Value: 0, Category: "None"}},
 			},
-			PlantInfo: []client.PlantInfo{
-				{Code: "JUNIPER", DisplayName: "Juniper", InSeason: true, IndexInfo: client.IndexInfo{Value: 4, Category: "High"}},
-				{Code: "OAK", DisplayName: "Oak", InSeason: false, IndexInfo: client.IndexInfo{Value: 0, Category: "None"}},
+			PlantInfo: []api.PlantInfo{
+				{Code: "JUNIPER", DisplayName: "Juniper", InSeason: true, IndexInfo: api.IndexInfo{Value: 4, Category: "High"}},
+				{Code: "OAK", DisplayName: "Oak", InSeason: false, IndexInfo: api.IndexInfo{Value: 0, Category: "None"}},
 			},
 		}},
 	}
@@ -41,12 +42,12 @@ func TestMapToSnapshot_OverallSummary(t *testing.T) {
 }
 
 func TestMapToSnapshot_TypeMapping(t *testing.T) {
-	apiResp := &client.PollenAPIResponse{
-		DailyInfo: []client.DailyInfo{{
-			PollenTypeInfo: []client.PollenTypeInfo{
-				{Code: "GRASS", InSeason: true, IndexInfo: client.IndexInfo{Value: 2, Category: "Low"}},
-				{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 4, Category: "High"}},
-				{Code: "WEED", InSeason: false, IndexInfo: client.IndexInfo{Value: 0, Category: "None"}},
+	apiResp := &api.PollenAPIResponse{
+		DailyInfo: []api.DailyInfo{{
+			PollenTypeInfo: []api.PollenTypeInfo{
+				{Code: "GRASS", InSeason: true, IndexInfo: api.IndexInfo{Value: 2, Category: "Low"}},
+				{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 4, Category: "High"}},
+				{Code: "WEED", InSeason: false, IndexInfo: api.IndexInfo{Value: 0, Category: "None"}},
 			},
 		}},
 	}
@@ -87,12 +88,12 @@ func TestMapToSnapshot_TypeMapping(t *testing.T) {
 }
 
 func TestMapToSnapshot_PlantMapping(t *testing.T) {
-	apiResp := &client.PollenAPIResponse{
-		DailyInfo: []client.DailyInfo{{
-			PlantInfo: []client.PlantInfo{
-				{Code: "JUNIPER", DisplayName: "Juniper", InSeason: true, IndexInfo: client.IndexInfo{Value: 4, Category: "High"}},
-				{Code: "OAK", DisplayName: "Oak", InSeason: false, IndexInfo: client.IndexInfo{Value: 0, Category: "None"}},
-				{Code: "RAGWEED", DisplayName: "Ragweed", InSeason: true, IndexInfo: client.IndexInfo{Value: 3, Category: "Moderate"}},
+	apiResp := &api.PollenAPIResponse{
+		DailyInfo: []api.DailyInfo{{
+			PlantInfo: []api.PlantInfo{
+				{Code: "JUNIPER", DisplayName: "Juniper", InSeason: true, IndexInfo: api.IndexInfo{Value: 4, Category: "High"}},
+				{Code: "OAK", DisplayName: "Oak", InSeason: false, IndexInfo: api.IndexInfo{Value: 0, Category: "None"}},
+				{Code: "RAGWEED", DisplayName: "Ragweed", InSeason: true, IndexInfo: api.IndexInfo{Value: 3, Category: "Moderate"}},
 			},
 		}},
 	}
@@ -137,12 +138,12 @@ func TestMapToSnapshot_PlantMapping(t *testing.T) {
 }
 
 func TestMapToSnapshot_AllZero(t *testing.T) {
-	apiResp := &client.PollenAPIResponse{
-		DailyInfo: []client.DailyInfo{{
-			PollenTypeInfo: []client.PollenTypeInfo{
-				{Code: "GRASS", InSeason: false, IndexInfo: client.IndexInfo{Value: 0, Category: "None"}},
-				{Code: "TREE", InSeason: false, IndexInfo: client.IndexInfo{Value: 0, Category: "None"}},
-				{Code: "WEED", InSeason: false, IndexInfo: client.IndexInfo{Value: 0, Category: "None"}},
+	apiResp := &api.PollenAPIResponse{
+		DailyInfo: []api.DailyInfo{{
+			PollenTypeInfo: []api.PollenTypeInfo{
+				{Code: "GRASS", InSeason: false, IndexInfo: api.IndexInfo{Value: 0, Category: "None"}},
+				{Code: "TREE", InSeason: false, IndexInfo: api.IndexInfo{Value: 0, Category: "None"}},
+				{Code: "WEED", InSeason: false, IndexInfo: api.IndexInfo{Value: 0, Category: "None"}},
 			},
 		}},
 	}
@@ -158,10 +159,10 @@ func TestMapToSnapshot_AllZero(t *testing.T) {
 }
 
 func TestMapToSnapshot_LocationID(t *testing.T) {
-	apiResp := &client.PollenAPIResponse{
-		DailyInfo: []client.DailyInfo{{
-			PollenTypeInfo: []client.PollenTypeInfo{
-				{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 1, Category: "Very Low"}},
+	apiResp := &api.PollenAPIResponse{
+		DailyInfo: []api.DailyInfo{{
+			PollenTypeInfo: []api.PollenTypeInfo{
+				{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 1, Category: "Very Low"}},
 			},
 		}},
 	}
@@ -185,10 +186,10 @@ func TestMapToSnapshot_LocationID(t *testing.T) {
 }
 
 func TestMapToSnapshot_CollectedAtIsSet(t *testing.T) {
-	apiResp := &client.PollenAPIResponse{
-		DailyInfo: []client.DailyInfo{{
-			PollenTypeInfo: []client.PollenTypeInfo{
-				{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 1, Category: "Very Low"}},
+	apiResp := &api.PollenAPIResponse{
+		DailyInfo: []api.DailyInfo{{
+			PollenTypeInfo: []api.PollenTypeInfo{
+				{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 1, Category: "Very Low"}},
 			},
 		}},
 	}
@@ -202,12 +203,12 @@ func TestMapToSnapshot_CollectedAtIsSet(t *testing.T) {
 
 func TestMapToSnapshot_TiedTypes(t *testing.T) {
 	// When two types have the same highest UPI, the first one encountered wins
-	apiResp := &client.PollenAPIResponse{
-		DailyInfo: []client.DailyInfo{{
-			PollenTypeInfo: []client.PollenTypeInfo{
-				{Code: "GRASS", InSeason: true, IndexInfo: client.IndexInfo{Value: 3, Category: "Moderate"}},
-				{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 3, Category: "Moderate"}},
-				{Code: "WEED", InSeason: false, IndexInfo: client.IndexInfo{Value: 1, Category: "Very Low"}},
+	apiResp := &api.PollenAPIResponse{
+		DailyInfo: []api.DailyInfo{{
+			PollenTypeInfo: []api.PollenTypeInfo{
+				{Code: "GRASS", InSeason: true, IndexInfo: api.IndexInfo{Value: 3, Category: "Moderate"}},
+				{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 3, Category: "Moderate"}},
+				{Code: "WEED", InSeason: false, IndexInfo: api.IndexInfo{Value: 1, Category: "Very Low"}},
 			},
 		}},
 	}
@@ -230,11 +231,11 @@ func TestCollect_Success(t *testing.T) {
 	var cachedLocationID string
 
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.PollenAPIResponse, error) {
-			return &client.PollenAPIResponse{
-				DailyInfo: []client.DailyInfo{{
-					PollenTypeInfo: []client.PollenTypeInfo{
-						{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 3, Category: "Moderate"}},
+		FetchFn: func(apiKey string, location shared.Location) (*api.PollenAPIResponse, error) {
+			return &api.PollenAPIResponse{
+				DailyInfo: []api.DailyInfo{{
+					PollenTypeInfo: []api.PollenTypeInfo{
+						{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 3, Category: "Moderate"}},
 					},
 				}},
 			}, nil
@@ -253,7 +254,8 @@ func TestCollect_Success(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 
 	if err != nil {
 		t.Fatalf("Collect() returned error: %v", err)
@@ -271,7 +273,7 @@ func TestCollect_FetchError(t *testing.T) {
 	writerCalled := false
 
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.PollenAPIResponse, error) {
+		FetchFn: func(apiKey string, location shared.Location) (*api.PollenAPIResponse, error) {
 			return nil, fmt.Errorf("API unavailable")
 		},
 	}
@@ -288,7 +290,8 @@ func TestCollect_FetchError(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 
 	if err == nil {
 		t.Fatal("Collect() should return error when fetch fails")
@@ -303,11 +306,11 @@ func TestCollect_SaveRawError(t *testing.T) {
 	cacheCalled := false
 
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.PollenAPIResponse, error) {
-			return &client.PollenAPIResponse{
-				DailyInfo: []client.DailyInfo{{
-					PollenTypeInfo: []client.PollenTypeInfo{
-						{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 1, Category: "Very Low"}},
+		FetchFn: func(apiKey string, location shared.Location) (*api.PollenAPIResponse, error) {
+			return &api.PollenAPIResponse{
+				DailyInfo: []api.DailyInfo{{
+					PollenTypeInfo: []api.PollenTypeInfo{
+						{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 1, Category: "Very Low"}},
 					},
 				}},
 			}, nil
@@ -325,7 +328,8 @@ func TestCollect_SaveRawError(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 
 	if err == nil {
 		t.Fatal("Collect() should return error when SaveRaw fails")
@@ -337,11 +341,11 @@ func TestCollect_SaveRawError(t *testing.T) {
 
 func TestCollect_UpdateCacheError(t *testing.T) {
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.PollenAPIResponse, error) {
-			return &client.PollenAPIResponse{
-				DailyInfo: []client.DailyInfo{{
-					PollenTypeInfo: []client.PollenTypeInfo{
-						{Code: "TREE", InSeason: true, IndexInfo: client.IndexInfo{Value: 1, Category: "Very Low"}},
+		FetchFn: func(apiKey string, location shared.Location) (*api.PollenAPIResponse, error) {
+			return &api.PollenAPIResponse{
+				DailyInfo: []api.DailyInfo{{
+					PollenTypeInfo: []api.PollenTypeInfo{
+						{Code: "TREE", InSeason: true, IndexInfo: api.IndexInfo{Value: 1, Category: "Very Low"}},
 					},
 				}},
 			}, nil
@@ -358,7 +362,8 @@ func TestCollect_UpdateCacheError(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 
 	if err == nil {
 		t.Fatal("Collect() should return error when UpdateCache fails")
