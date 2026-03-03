@@ -28,7 +28,6 @@ func NewCollectorService(fetcher api.Fetcher, writer repository.Writer) *Collect
 }
 
 // Collect fetches weather data for a location, maps it, and writes to storage.
-// TODO: implement — fetch → validate → map → save raw → update cache with AnalyzeFunc callback.
 func (s *CollectorService) Collect(ctx context.Context, apiKey string, location shared.Location) error {
 	apiResp, err := s.fetcher.Fetch(apiKey, location)
 	if err != nil {
@@ -49,7 +48,6 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 
 // MapToWeatherPoint converts an API response into a WeatherPoint for storage.
 // Returns an error if the data is invalid (e.g., 0.0 pressure).
-// TODO: implement.
 func MapToWeatherPoint(locationID string, data api.WeatherAPIResponse) (*repository.WeatherPoint, error) {
 	// Strict Data Validation:
 	// If pressure is 0.0, we assume the API response is incomplete or corrupted.
