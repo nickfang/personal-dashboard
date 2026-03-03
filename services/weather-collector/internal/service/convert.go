@@ -1,13 +1,11 @@
 package service
 
 // CtoF converts Celsius to Fahrenheit.
-// TODO: implement.
 func CtoF(c float64) float64 {
-	return 0
+	return (c * 1.8) + 32
 }
 
 // KtoM converts kilometers per hour to miles per hour.
-// TODO: implement.
 func KtoM(k float64) float64 {
-	return 0
+	return k * 0.621371
 }

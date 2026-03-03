@@ -1,4 +1,4 @@
-package client
+package api
 
 // WeatherAPIResponse matches the Google Weather API JSON structure.
 type WeatherAPIResponse struct {

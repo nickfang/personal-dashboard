@@ -11,7 +11,7 @@ COPY weather-collector/ ./weather-collector/
 
 WORKDIR /app/weather-collector
 RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/weather-collector/bin main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/weather-collector/bin cmd/collector/main.go
 
 # Stage 2: Final image
 FROM alpine:3

@@ -3,17 +3,18 @@ package testutil
 import (
 	"context"
 
-	"github.com/nickfang/personal-dashboard/services/weather-collector/internal/client"
+	"github.com/nickfang/personal-dashboard/services/shared"
+	"github.com/nickfang/personal-dashboard/services/weather-collector/internal/api"
 	"github.com/nickfang/personal-dashboard/services/weather-collector/internal/repository"
 )
 
-// MockFetcher implements client.Fetcher for testing.
+// MockFetcher implements api.Fetcher for testing.
 type MockFetcher struct {
-	FetchFn func(ctx context.Context, apiKey string, locationID string, lat, long float64) (*client.WeatherAPIResponse, error)
+	FetchFn func(apiKey string, location shared.Location) (*api.WeatherAPIResponse, error)
 }
 
-func (m *MockFetcher) Fetch(ctx context.Context, apiKey string, locationID string, lat, long float64) (*client.WeatherAPIResponse, error) {
-	return m.FetchFn(ctx, apiKey, locationID, lat, long)
+func (m *MockFetcher) Fetch(apiKey string, location shared.Location) (*api.WeatherAPIResponse, error) {
+	return m.FetchFn(apiKey, location)
 }
 
 // MockWriter implements repository.Writer for testing.

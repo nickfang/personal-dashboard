@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nickfang/personal-dashboard/services/weather-collector/internal/client"
+	"github.com/nickfang/personal-dashboard/services/shared"
+	"github.com/nickfang/personal-dashboard/services/weather-collector/internal/api"
 	"github.com/nickfang/personal-dashboard/services/weather-collector/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/weather-collector/internal/testutil"
 )
@@ -107,7 +108,7 @@ func TestCalculatePressureStats(t *testing.T) {
 // --- Mapping tests (new) ---
 
 func TestMapToWeatherPoint_InvalidPressure(t *testing.T) {
-	data := client.WeatherAPIResponse{} // pressure defaults to 0.0
+	data := api.WeatherAPIResponse{} // pressure defaults to 0.0
 
 	_, err := MapToWeatherPoint("house-nick", data)
 	if err == nil {
@@ -122,8 +123,8 @@ func TestCollect_Success(t *testing.T) {
 	var cachedLocationID string
 
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.WeatherAPIResponse, error) {
-			resp := &client.WeatherAPIResponse{}
+		FetchFn: func(apiKey string, location shared.Location) (*api.WeatherAPIResponse, error) {
+			resp := &api.WeatherAPIResponse{}
 			resp.AirPressure.MeanSeaLevelMillibars = 1013.25
 			resp.Temperature.Degrees = 25.0
 			return resp, nil
@@ -142,8 +143,8 @@ func TestCollect_Success(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
-
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 	if err != nil {
 		t.Fatalf("Collect() returned error: %v", err)
 	}
@@ -161,7 +162,7 @@ func TestCollect_FetchError(t *testing.T) {
 	writerCalled := false
 
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.WeatherAPIResponse, error) {
+		FetchFn: func(apiKey string, location shared.Location) (*api.WeatherAPIResponse, error) {
 			return nil, fmt.Errorf("API unavailable")
 		},
 	}
@@ -178,7 +179,8 @@ func TestCollect_FetchError(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 
 	if err == nil {
 		t.Fatal("Collect() should return error when fetch fails")
@@ -193,8 +195,8 @@ func TestCollect_SaveRawError(t *testing.T) {
 	cacheCalled := false
 
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.WeatherAPIResponse, error) {
-			resp := &client.WeatherAPIResponse{}
+		FetchFn: func(apiKey string, location shared.Location) (*api.WeatherAPIResponse, error) {
+			resp := &api.WeatherAPIResponse{}
 			resp.AirPressure.MeanSeaLevelMillibars = 1013.25
 			return resp, nil
 		},
@@ -211,7 +213,8 @@ func TestCollect_SaveRawError(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 
 	if err == nil {
 		t.Fatal("Collect() should return error when SaveRaw fails")
@@ -223,8 +226,8 @@ func TestCollect_SaveRawError(t *testing.T) {
 
 func TestCollect_UpdateCacheError(t *testing.T) {
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey, locationID string, lat, long float64) (*client.WeatherAPIResponse, error) {
-			resp := &client.WeatherAPIResponse{}
+		FetchFn: func(apiKey string, location shared.Location) (*api.WeatherAPIResponse, error) {
+			resp := &api.WeatherAPIResponse{}
 			resp.AirPressure.MeanSeaLevelMillibars = 1013.25
 			return resp, nil
 		},
@@ -240,7 +243,8 @@ func TestCollect_UpdateCacheError(t *testing.T) {
 	}
 
 	svc := NewCollectorService(fetcher, writer)
-	err := svc.Collect(context.Background(), "test-key", "house-nick", 30.0, -97.0)
+	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
+	err := svc.Collect(context.Background(), "test-key", loc)
 
 	if err == nil {
 		t.Fatal("Collect() should return error when UpdateCache fails")

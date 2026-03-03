@@ -1,12 +1,13 @@
-package client
+package api
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
 // roundTripFunc adapts a plain function into an http.RoundTripper.
@@ -48,7 +49,7 @@ func TestFetch_APIKeyInHeaderNotURL(t *testing.T) {
 		}),
 	})
 
-	_, err := c.Fetch(context.Background(), testAPIKey, "test-loc", 30.0, -97.0)
+	_, err := c.Fetch(testAPIKey, shared.Location{ID: "test-loc", Lat: 30.0, Long: -97.0})
 	if err != nil {
 		t.Fatalf("Fetch() returned error: %v", err)
 	}
@@ -85,7 +86,7 @@ func TestFetch_ErrorDoesNotLeakAPIKey(t *testing.T) {
 		}),
 	})
 
-	_, err := c.Fetch(context.Background(), testAPIKey, "test-loc", 30.0, -97.0)
+	_, err := c.Fetch(testAPIKey, shared.Location{ID: "test-loc", Lat: 30.0, Long: -97.0})
 	if err == nil {
 		t.Fatal("Fetch() should return error for 403 status")
 	}
@@ -119,7 +120,7 @@ func TestFetch_NonRetryableStatusCodes(t *testing.T) {
 				}),
 			})
 
-			_, err := c.Fetch(context.Background(), "fake-key", "test-loc", 30.0, -97.0)
+			_, err := c.Fetch("fake-key", shared.Location{ID: "test-loc", Lat: 30.0, Long: -97.0})
 			if err == nil {
 				t.Fatal("Fetch() should return error for non-OK status")
 			}
