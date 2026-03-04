@@ -12,6 +12,8 @@ import (
 	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
+var fixedTime = time.Now()
+
 // --- Mapping tests (migrated from main_test.go) ---
 
 func TestMapToSnapshot_OverallSummary(t *testing.T) {
@@ -29,8 +31,11 @@ func TestMapToSnapshot_OverallSummary(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
+	snapshot := MapToSnapshot("house-nick", apiResp, fixedTime)
 
+	if snapshot.CollectedAt != fixedTime {
+		t.Errorf("CollectedAt = %v, want %v", snapshot.CollectedAt, fixedTime)
+	}
 	if snapshot.OverallIndex != 4 {
 		t.Errorf("OverallIndex = %d, want 4", snapshot.OverallIndex)
 	}
@@ -53,7 +58,7 @@ func TestMapToSnapshot_TypeMapping(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
+	snapshot := MapToSnapshot("house-nick", apiResp, fixedTime)
 
 	if len(snapshot.Types) != 3 {
 		t.Fatalf("len(Types) = %d, want 3", len(snapshot.Types))
@@ -99,7 +104,7 @@ func TestMapToSnapshot_PlantMapping(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
+	snapshot := MapToSnapshot("house-nick", apiResp, fixedTime)
 
 	if len(snapshot.Plants) != 3 {
 		t.Fatalf("len(Plants) = %d, want 3", len(snapshot.Plants))
@@ -149,7 +154,7 @@ func TestMapToSnapshot_AllZero(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
+	snapshot := MapToSnapshot("house-nick", apiResp, fixedTime)
 
 	if snapshot.OverallIndex != 0 {
 		t.Errorf("OverallIndex = %d, want 0", snapshot.OverallIndex)
@@ -178,7 +183,7 @@ func TestMapToSnapshot_LocationID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.locationID, func(t *testing.T) {
-			snapshot := MapToSnapshot(tt.locationID, apiResp, time.Now())
+			snapshot := MapToSnapshot(tt.locationID, apiResp, fixedTime)
 			if snapshot.LocationID != tt.locationID {
 				t.Errorf("LocationID = %s, want %s", snapshot.LocationID, tt.locationID)
 			}
@@ -195,10 +200,10 @@ func TestMapToSnapshot_CollectedAtIsSet(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
+	snapshot := MapToSnapshot("house-nick", apiResp, fixedTime)
 
-	if snapshot.CollectedAt.IsZero() {
-		t.Error("CollectedAt should be set to a non-zero time")
+	if snapshot.CollectedAt != fixedTime {
+		t.Errorf("CollectedAt = %v, want %v", snapshot.CollectedAt, fixedTime)
 	}
 }
 
@@ -214,7 +219,7 @@ func TestMapToSnapshot_TiedTypes(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
+	snapshot := MapToSnapshot("house-nick", apiResp, fixedTime)
 
 	if snapshot.OverallIndex != 3 {
 		t.Errorf("OverallIndex = %d, want 3", snapshot.OverallIndex)
