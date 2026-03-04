@@ -16,10 +16,8 @@ import (
 )
 
 func main() {
-	// Setup Structured Logging
 	shared.InitLogging()
 
-	// Load .env file if it exists (local development)
 	if err := godotenv.Load(); err != nil {
 		slog.Debug("No .env file found, using system environment variables", "error", err)
 	}
@@ -62,7 +60,7 @@ func collectAll(ctx context.Context, apiKey string, collector *service.Collector
 		slog.Info("Processed weather", "location", loc.ID)
 	}
 	if successCount == 0 {
-		return fmt.Errorf("all locations failed")
+		return fmt.Errorf("all %d locations failed", len(locations))
 	}
 	slog.Info("Weather collection complete", "succeeded", successCount, "total", len(locations))
 	return nil

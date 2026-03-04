@@ -55,7 +55,7 @@ proto-align-versions:
 # ==============================================================================
 ##@ Weather Collector
 wc-dev: ## Run Collector locally (Go)
-	-cd services/weather-collector && go run cmd/collector/main.go
+	-cd services/weather-collector && go run cmd/main.go
 
 wc-build: ## Build Weather Collector image
 	docker build -t weather-collector -f services/weather-collector/Dockerfile services
@@ -88,7 +88,7 @@ wp-test: ## Run Weather Provider tests
 # ==============================================================================
 ##@ Pollen Collector
 pc-dev: ## Run Pollen Collector locally (Go)
-	-cd services/pollen-collector && go run cmd/collector/main.go
+	-cd services/pollen-collector && go run cmd/main.go
 
 pc-build: ## Build Pollen Collector image
 	docker build -t pollen-collector -f services/pollen-collector/Dockerfile services

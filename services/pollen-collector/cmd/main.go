@@ -15,10 +15,6 @@ import (
 	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
-const (
-	MaxHistoryPoints = 28 // 14 days × 2 readings/day
-)
-
 func main() {
 	shared.InitLogging()
 
