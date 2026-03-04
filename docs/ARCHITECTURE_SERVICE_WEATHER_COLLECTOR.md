@@ -16,10 +16,13 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
     *   **Folder Structure:**
         ```text
         services/weather-collector/
-        ├── cmd/collector/main.go        # Wiring + orchestration loop
+        ├── cmd/
+        │   ├── main.go                  # Wiring + orchestration loop
+        │   └── main_test.go             # Entry-point tests (partial failure, all-fail, empty)
         ├── internal/
-        │   ├── client/
-        │   │   ├── client.go            # Fetcher interface + Client (HTTP + retry)
+        │   ├── api/
+        │   │   ├── api.go               # Fetcher interface + Client (HTTP + retry)
+        │   │   ├── api_test.go          # API key security + retry behavior tests
         │   │   └── types.go             # Google Weather API response types
         │   ├── service/
         │   │   ├── collector.go          # CollectorService, MapToWeatherPoint(), CalculatePressureStats()
@@ -27,11 +30,10 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
         │   │   ├── convert.go           # CtoF(), KtoM()
         │   │   └── convert_test.go      # Unit conversion tests
         │   ├── repository/
-        │   │   ├── writer.go            # Writer interface + AnalyzeFunc type
-        │   │   ├── firestore.go         # Writes to weather_raw + weather_cache
+        │   │   ├── writer.go            # Writer interface + AnalyzeFunc type + Firestore implementation
         │   │   └── types.go             # WeatherPoint, PressurePoint, PressureStats, CacheDoc
         │   └── testutil/
-        │       └── mocks.go            # MockFetcher, MockWriter
+        │       └── mocks.go             # MockFetcher, MockWriter
         ├── Dockerfile
         └── go.mod
         ```

@@ -28,7 +28,7 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 		return fmt.Errorf("fetching pollen data for %s: %w", location.ID, err)
 	}
 
-	snapshot := MapToSnapshot(location.ID, apiResp)
+	snapshot := MapToSnapshot(location.ID, apiResp, time.Now())
 
 	if err := s.writer.SaveRaw(ctx, snapshot); err != nil {
 		return fmt.Errorf("saving raw pollen data for %s: %w", location.ID, err)
@@ -43,12 +43,12 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 
 // MapToSnapshot converts an API response into a PollenSnapshot for storage.
 // It computes the overall summary (highest UPI across the 3 pollen types).
-func MapToSnapshot(locationID string, apiResp *api.PollenAPIResponse) repository.PollenSnapshot {
+func MapToSnapshot(locationID string, apiResp *api.PollenAPIResponse, now time.Time) repository.PollenSnapshot {
 	today := apiResp.DailyInfo[0]
 
 	snapshot := repository.PollenSnapshot{
 		LocationID:  locationID,
-		CollectedAt: time.Now(),
+		CollectedAt: now,
 	}
 
 	// Map pollen types

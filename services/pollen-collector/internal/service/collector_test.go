@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/nickfang/personal-dashboard/services/pollen-collector/internal/api"
 	"github.com/nickfang/personal-dashboard/services/pollen-collector/internal/repository"
@@ -28,7 +29,7 @@ func TestMapToSnapshot_OverallSummary(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp)
+	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
 
 	if snapshot.OverallIndex != 4 {
 		t.Errorf("OverallIndex = %d, want 4", snapshot.OverallIndex)
@@ -52,7 +53,7 @@ func TestMapToSnapshot_TypeMapping(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp)
+	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
 
 	if len(snapshot.Types) != 3 {
 		t.Fatalf("len(Types) = %d, want 3", len(snapshot.Types))
@@ -98,7 +99,7 @@ func TestMapToSnapshot_PlantMapping(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp)
+	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
 
 	if len(snapshot.Plants) != 3 {
 		t.Fatalf("len(Plants) = %d, want 3", len(snapshot.Plants))
@@ -148,7 +149,7 @@ func TestMapToSnapshot_AllZero(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp)
+	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
 
 	if snapshot.OverallIndex != 0 {
 		t.Errorf("OverallIndex = %d, want 0", snapshot.OverallIndex)
@@ -177,7 +178,7 @@ func TestMapToSnapshot_LocationID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.locationID, func(t *testing.T) {
-			snapshot := MapToSnapshot(tt.locationID, apiResp)
+			snapshot := MapToSnapshot(tt.locationID, apiResp, time.Now())
 			if snapshot.LocationID != tt.locationID {
 				t.Errorf("LocationID = %s, want %s", snapshot.LocationID, tt.locationID)
 			}
@@ -194,7 +195,7 @@ func TestMapToSnapshot_CollectedAtIsSet(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp)
+	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
 
 	if snapshot.CollectedAt.IsZero() {
 		t.Error("CollectedAt should be set to a non-zero time")
@@ -213,7 +214,7 @@ func TestMapToSnapshot_TiedTypes(t *testing.T) {
 		}},
 	}
 
-	snapshot := MapToSnapshot("house-nick", apiResp)
+	snapshot := MapToSnapshot("house-nick", apiResp, time.Now())
 
 	if snapshot.OverallIndex != 3 {
 		t.Errorf("OverallIndex = %d, want 3", snapshot.OverallIndex)
@@ -256,7 +257,6 @@ func TestCollect_Success(t *testing.T) {
 	svc := NewCollectorService(fetcher, writer)
 	loc := shared.Location{ID: "house-nick", Lat: 30.0, Long: -97.0}
 	err := svc.Collect(context.Background(), "test-key", loc)
-
 	if err != nil {
 		t.Fatalf("Collect() returned error: %v", err)
 	}

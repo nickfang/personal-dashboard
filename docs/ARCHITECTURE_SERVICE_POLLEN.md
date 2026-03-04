@@ -96,20 +96,22 @@ All pollen data lives in a dedicated **`pollen-log`** Firestore database, separa
     *   **Folder Structure:**
         ```text
         services/pollen-collector/
-        ├── cmd/collector/main.go        # Wiring + orchestration loop
+        ├── cmd/
+        │   ├── main.go                  # Wiring + orchestration loop
+        │   └── main_test.go             # Entry-point tests (partial failure, all-fail, empty)
         ├── internal/
-        │   ├── client/
-        │   │   ├── client.go            # Fetcher interface + Client (HTTP + retry)
+        │   ├── api/
+        │   │   ├── api.go               # Fetcher interface + Client (HTTP + retry)
+        │   │   ├── api_test.go          # API key security + retry behavior tests
         │   │   └── types.go             # Google Pollen API response types
         │   ├── service/
         │   │   ├── collector.go          # CollectorService, MapToSnapshot()
         │   │   └── collector_test.go     # Mapping + orchestration tests
         │   ├── repository/
-        │   │   ├── writer.go            # Writer interface
-        │   │   ├── firestore.go         # Writes to pollen_raw + pollen_cache
+        │   │   ├── writer.go            # Writer interface + Firestore implementation
         │   │   └── types.go             # PollenSnapshot, PollenCacheDoc
         │   └── testutil/
-        │       └── mocks.go            # MockFetcher, MockWriter
+        │       └── mocks.go             # MockFetcher, MockWriter
         ├── Dockerfile
         └── go.mod
         ```

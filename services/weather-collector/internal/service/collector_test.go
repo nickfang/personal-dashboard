@@ -110,7 +110,7 @@ func TestCalculatePressureStats(t *testing.T) {
 func TestMapToWeatherPoint_InvalidPressure(t *testing.T) {
 	data := api.WeatherAPIResponse{} // pressure defaults to 0.0
 
-	_, err := MapToWeatherPoint("house-nick", data)
+	_, err := MapToWeatherPoint("house-nick", data, time.Now())
 	if err == nil {
 		t.Fatal("MapToWeatherPoint should return error for 0.0 pressure")
 	}

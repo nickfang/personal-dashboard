@@ -33,7 +33,7 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 	if err != nil {
 		return fmt.Errorf("fetching weather data for %s: %w", location.ID, err)
 	}
-	wp, err := MapToWeatherPoint(location.ID, *apiResp)
+	wp, err := MapToWeatherPoint(location.ID, *apiResp, time.Now())
 	if err != nil {
 		return fmt.Errorf("mapping weather data for %s: %w", location.ID, err)
 	}
@@ -48,7 +48,7 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 
 // MapToWeatherPoint converts an API response into a WeatherPoint for storage.
 // Returns an error if the data is invalid (e.g., 0.0 pressure).
-func MapToWeatherPoint(locationID string, data api.WeatherAPIResponse) (*repository.WeatherPoint, error) {
+func MapToWeatherPoint(locationID string, data api.WeatherAPIResponse, now time.Time) (*repository.WeatherPoint, error) {
 	// Strict Data Validation:
 	// If pressure is 0.0, we assume the API response is incomplete or corrupted.
 	// Saving a 0.0 pressure reading ruins statistical analysis (deltas).
@@ -58,7 +58,7 @@ func MapToWeatherPoint(locationID string, data api.WeatherAPIResponse) (*reposit
 
 	wp := &repository.WeatherPoint{
 		Location:             locationID,
-		Timestamp:            time.Now(),
+		Timestamp:            now,
 		TempC:                data.Temperature.Degrees,
 		TempF:                CtoF(data.Temperature.Degrees),
 		TempFeelC:            data.FeelsLikeTemperature.Degrees,
