@@ -11,7 +11,7 @@ COPY pollen-collector/ ./pollen-collector/
 
 WORKDIR /app/pollen-collector
 RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/pollen-collector/bin main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /app/pollen-collector/bin cmd/main.go
 
 # Stage 2: Final image
 FROM alpine:3

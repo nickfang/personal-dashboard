@@ -12,6 +12,31 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
     *   **Role**: Background Worker (Writer).
     *   **Runtime**: Cloud Run Job.
     *   **Trigger**: Cloud Scheduler (Hourly Cron).
+    *   **Architecture:** Layered (Client → Service → Repository). See [Issue #31](https://github.com/nickfang/personal-dashboard/issues/31).
+    *   **Folder Structure:**
+        ```text
+        services/weather-collector/
+        ├── cmd/
+        │   ├── main.go                  # Wiring + orchestration loop
+        │   └── main_test.go             # Entry-point tests (partial failure, all-fail, empty)
+        ├── internal/
+        │   ├── api/
+        │   │   ├── api.go               # Fetcher interface + Client (HTTP + retry)
+        │   │   ├── api_test.go          # API key security + retry behavior tests
+        │   │   └── types.go             # Google Weather API response types
+        │   ├── service/
+        │   │   ├── collector.go          # CollectorService, MapToWeatherPoint(), CalculatePressureStats()
+        │   │   ├── collector_test.go     # Mapping + pressure analysis + orchestration tests
+        │   │   ├── convert.go           # CtoF(), KtoM()
+        │   │   └── convert_test.go      # Unit conversion tests
+        │   ├── repository/
+        │   │   ├── writer.go            # Writer interface + AnalyzeFunc type + Firestore implementation
+        │   │   └── types.go             # WeatherPoint, PressurePoint, PressureStats, CacheDoc
+        │   └── testutil/
+        │       └── mocks.go             # MockFetcher, MockWriter
+        ├── Dockerfile
+        └── go.mod
+        ```
     *   **Responsibility**:
         *   Fetch weather data from external API (Google Weather/Maps).
         *   Calculate pressure deltas and barometric trend.
