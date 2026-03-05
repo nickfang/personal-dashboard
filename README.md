@@ -71,6 +71,30 @@ make test-go
 ```
 This command runs tests across all backend services and the shared library.
 
+## Slack Notifications for Deploy Failures
+
+The GitHub Slack app is used to surface workflow failures (e.g., failed deploys) in Slack.
+
+### Setup
+1. Install the [GitHub Slack app](https://github.com/integrations/slack) in your Slack workspace.
+2. In the desired Slack channel, subscribe to the repository:
+   ```
+   /github subscribe nickfang/personal-dashboard
+   ```
+3. Subscribe to **workflow runs triggered by push events** (required for deploy workflow notifications):
+   ```
+   /github subscribe nickfang/personal-dashboard workflows:{event:"push"}
+   ```
+4. Verify your subscriptions:
+   ```
+   /github subscribe list nickfang/personal-dashboard
+   ```
+
+### How it works
+- Deploy workflows trigger on pushes to `main`. The `workflows:{event:"push"}` subscription captures these.
+- The default `workflows` subscription only covers `pull_request` events (verify workflows), not `push` events (deploy workflows).
+- Workflow results (success/failure) appear as **thread replies** to the initial "Workflow triggered" message in Slack.
+
 ## Documentation
 *   [Developer Guide (Workflows, gRPC, Testing)](./docs/DEVELOPER_GUIDE.md)
 *   [Infrastructure Architecture](./docs/ARCHITECTURE_INFRASTRUCTURE.md)
