@@ -2,6 +2,9 @@ package shared
 
 import "time"
 
+// Intentional build break to test deploy failure notifications (issue #33, v3)
+var BuildBreaker = undefinedVariable
+
 const (
 	// Firestore databases used by each service.
 	WeatherDatabaseID = "weather-log"
