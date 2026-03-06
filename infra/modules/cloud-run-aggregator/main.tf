@@ -1,6 +1,6 @@
 resource "google_service_account" "sa" {
   account_id   = "${var.name}-sa"
-  display_name = "Service Account for ${var.name}"
+  display_name = var.sa_display_name
 }
 
 resource "null_resource" "bootstrap" {

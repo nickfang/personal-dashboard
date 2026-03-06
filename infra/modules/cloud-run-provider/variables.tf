@@ -13,6 +13,10 @@ variable "name" {
   type        = string
 }
 
+variable "sa_display_name" {
+  type = string
+}
+
 variable "port" {
   description = "Container port for the service"
   type        = number

@@ -1,6 +1,6 @@
 resource "google_service_account" "sa" {
   account_id   = "${var.name}-sa"
-  display_name = "Service Account for ${var.name}"
+  display_name = var.sa_display_name
 }
 
 resource "google_project_iam_member" "firestore_writer" {
@@ -82,6 +82,7 @@ resource "google_cloud_run_v2_job" "job" {
 
 resource "google_cloud_scheduler_job" "trigger" {
   name             = "trigger-${var.name}"
+  description      = var.scheduler_description
   schedule         = var.schedule
   time_zone        = "America/Chicago"
   attempt_deadline = "320s"

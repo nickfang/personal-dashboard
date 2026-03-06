@@ -1,6 +1,6 @@
 resource "google_service_account" "service_account" {
   account_id   = "${var.name}-sa"
-  display_name = "Service Account for ${var.name}"
+  display_name = var.sa_display_name
 }
 
 resource "google_project_iam_member" "firestore_reader" {

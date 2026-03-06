@@ -33,6 +33,20 @@ resource "google_project_service" "iamcredentials" {
   disable_on_destroy = false
 }
 
+resource "time_sleep" "api_propagation" {
+  create_duration = "60s"
+
+  depends_on = [
+    google_project_service.run,
+    google_project_service.artifactregistry,
+    google_project_service.cloudscheduler,
+    google_project_service.cloudbuild,
+    google_project_service.secretmanager,
+    google_project_service.firestore,
+    google_project_service.iamcredentials,
+  ]
+}
+
 resource "google_artifact_registry_repository" "repo" {
   provider      = google-beta
   project       = var.project_id
@@ -41,5 +55,5 @@ resource "google_artifact_registry_repository" "repo" {
   description   = "Docker repository for Personal Dashboard services"
   format        = "DOCKER"
 
-  depends_on = [google_project_service.artifactregistry]
+  depends_on = [time_sleep.api_propagation]
 }
