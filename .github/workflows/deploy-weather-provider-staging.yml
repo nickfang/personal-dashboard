@@ -1,0 +1,18 @@
+name: Deploy Weather Provider (Staging)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/weather-provider/**'
+      - 'services/shared/**'
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: weather-provider-service
+      image_name: weather-provider
+      dockerfile_path: services/weather-provider/Dockerfile
+      deploy_type: services
+      environment: staging

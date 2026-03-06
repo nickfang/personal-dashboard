@@ -1,0 +1,15 @@
+name: Deploy Weather Collector (Prod)
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: weather-collector-job
+      image_name: weather-collector
+      dockerfile_path: services/weather-collector/Dockerfile
+      deploy_type: jobs
+      environment: production
