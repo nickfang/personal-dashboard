@@ -33,6 +33,16 @@ resource "google_project_service" "iamcredentials" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "weather" {
+  service            = "weather.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "pollen" {
+  service            = "pollen.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "time_sleep" "api_propagation" {
   create_duration = "60s"
 
@@ -44,6 +54,8 @@ resource "time_sleep" "api_propagation" {
     google_project_service.secretmanager,
     google_project_service.firestore,
     google_project_service.iamcredentials,
+    google_project_service.weather,
+    google_project_service.pollen,
   ]
 }
 

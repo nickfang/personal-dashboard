@@ -39,14 +39,16 @@ terraform apply
 
 ### 4. Add Secret Values
 
-After the first apply, add the Google Maps API key to Secret Manager:
+**Required before collectors will function.** Terraform creates a placeholder secret version so Cloud Run jobs can be created, but the collectors will fail at runtime until the real API key is added.
 
-1. Create a Google Maps API key in the GCP console (APIs & Services -> Credentials)
-2. Add it to Secret Manager:
+1. In the GCP console, go to **APIs & Services → Credentials** and create an API key
+2. Add the key to Secret Manager:
 
 ```bash
 echo -n "YOUR_API_KEY" | gcloud secrets versions add google-maps-api-key --data-file=- --project=<project_id>
 ```
+
+The key is used by the weather-collector (`weather.googleapis.com`) and pollen-collector (`pollen.googleapis.com`) Cloud Run jobs.
 
 ### 5. Complete Terraform Apply
 
