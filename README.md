@@ -11,7 +11,7 @@ This repository contains the frontend dashboard and backend services for the Per
   - **`pollen-collector`**: A Cloud Run Job that fetches pollen data from the Google Pollen API.
   - **`pollen-provider`**: A gRPC Service that serves pollen/allergy risk data.
   - **`dashboard-api`**: An HTTP Aggregator (BFF) that talks to internal gRPC services.
-- **`infra/`**: Terraform configuration for GCP infrastructure.
+- **`infra/`**: Terraform configuration for GCP infrastructure (modules + per-environment roots).
 
 ## Getting Started
 
@@ -91,10 +91,20 @@ The GitHub Slack app is used to surface workflow failures (e.g., failed deploys)
    ```
 
 ### How it works
-- Deploy workflows trigger on pushes to `main`. The `workflows:{event:"push"}` subscription captures these.
+- Staging deploy workflows trigger on pushes to `main`. Production deploy workflows trigger on release creation. The `workflows:{event:"push"}` subscription captures staging deploys.
 - The default `workflows` subscription only covers `pull_request` events (verify workflows), not `push` events (deploy workflows).
 - Workflow results (success/failure) appear as **thread replies** to the initial "Workflow triggered" message in Slack.
 
 ## Documentation
 *   [Developer Guide (Workflows, gRPC, Testing)](./docs/DEVELOPER_GUIDE.md)
 *   [Infrastructure Architecture](./docs/ARCHITECTURE_INFRASTRUCTURE.md)
+*   [Disaster Recovery](./docs/DISASTER_RECOVERY.md)
+
+## Deployment Environments
+
+CI/CD uses GitHub deployment environments (`staging` and `production`) with environment-specific variables. See [Disaster Recovery](./docs/DISASTER_RECOVERY.md) for setup instructions.
+
+The Google Maps API key is stored in GCP Secret Manager and managed manually (not in Terraform state). After a fresh `terraform apply`, add the key:
+```bash
+gcloud secrets versions add google-maps-api-key --data-file=- --project=<project_id>
+```

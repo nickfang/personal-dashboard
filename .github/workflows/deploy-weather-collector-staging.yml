@@ -1,0 +1,18 @@
+name: Deploy Weather Collector (Staging)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/weather-collector/**'
+      - 'services/shared/**'
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: weather-collector-job
+      image_name: weather-collector
+      dockerfile_path: services/weather-collector/Dockerfile
+      deploy_type: jobs
+      environment: staging

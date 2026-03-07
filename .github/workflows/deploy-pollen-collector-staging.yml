@@ -1,0 +1,18 @@
+name: Deploy Pollen Collector (Staging)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/pollen-collector/**'
+      - 'services/shared/**'
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: pollen-collector-job
+      image_name: pollen-collector
+      dockerfile_path: services/pollen-collector/Dockerfile
+      deploy_type: jobs
+      environment: staging

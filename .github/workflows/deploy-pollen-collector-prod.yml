@@ -1,0 +1,15 @@
+name: Deploy Pollen Collector (Prod)
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: pollen-collector-job
+      image_name: pollen-collector
+      dockerfile_path: services/pollen-collector/Dockerfile
+      deploy_type: jobs
+      environment: production
