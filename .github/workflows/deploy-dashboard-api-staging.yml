@@ -16,3 +16,6 @@ jobs:
       dockerfile_path: services/dashboard-api/Dockerfile
       deploy_type: services
       environment: staging
+    permissions:
+      contents: read
+      id-token: write
