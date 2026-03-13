@@ -16,3 +16,6 @@ jobs:
       dockerfile_path: services/weather-collector/Dockerfile
       deploy_type: jobs
       environment: staging
+    permissions:
+      contents: read
+      id-token: write
