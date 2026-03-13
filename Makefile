@@ -5,6 +5,7 @@
 	wp-dev wp-build wp-test \
 	da-dev da-build da-test \
 	fe-dev fe-test \
+	tf-plan-staging tf-plan-prod tf-apply-staging tf-apply-prod \
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$|^##@' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; /^##@/{printf "\n\033[1m%s\033[0m\n", substr($$0, 4); next} {printf "  make %-20s %s\n", $$1, $$2}'
@@ -139,6 +140,22 @@ fe-dev: ## Run the Svelte frontend
 
 fe-test: ## Run the Svelte frontend tests
 	cd frontend && npm test
+
+# ==============================================================================
+# Terraform
+# ==============================================================================
+##@ Terraform
+tf-plan-staging: ## Run terraform plan for staging
+	cd infra/staging && terraform plan
+
+tf-plan-prod: ## Run terraform plan for prod
+	cd infra/prod && terraform plan
+
+tf-apply-staging: ## Run terraform apply for staging
+	cd infra/staging && terraform apply
+
+tf-apply-prod: ## Run terraform apply for prod
+	cd infra/prod && terraform apply
 
 # ==============================================================================
 # Utilities

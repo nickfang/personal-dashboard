@@ -55,30 +55,30 @@ flowchart TD
 ```
 
 ## 2. Overview
-The Personal Dashboard platform is designed as a **Multi-Cloud System**, with completely isolated deployments for Google Cloud Platform (GCP) and Amazon Web Services (AWS). This allows for side-by-side comparison of costs, performance, and developer experience.
+The Personal Dashboard platform runs on **Google Cloud Platform (GCP)**, managed by Terraform with a modular structure supporting staging and production environments.
 
-## 3. Multi-Cloud Strategy
-We use Terraform to manage two distinct, non-overlapping stacks.
+## 3. Infrastructure Structure
+Terraform modules in `infra/modules/` define reusable resource configurations. Each environment (`infra/staging/`, `infra/prod/`) calls these modules with environment-specific values.
 
 ### Folder Structure
 ```text
 infra/
-├── gcp/         # The Google Cloud Platform stack
-│   ├── main.tf
-│   ├── firestore.tf
-│   └── ...
-└── aws/         # The Amazon Web Services stack (Future)
-    ├── main.tf
-    ├── dynamo.tf
-    └── ...
+  modules/          # Shared Terraform modules
+    foundation/     # API enables + Artifact Registry
+    firestore/      # Firestore databases
+    secrets/        # Secret Manager secrets
+    cloud-run-job/  # Collector jobs + Scheduler
+    cloud-run-provider/   # Internal gRPC services
+    cloud-run-aggregator/ # Public BFF
+    github-oidc/    # GitHub Actions OIDC
+  staging/          # Staging environment (deployed on push to main)
+  prod/             # Production environment (deployed on release creation)
 ```
 
-### Identity & Authentication
-We use an **Abstraction Layer** to support both clouds without changing backend code.
-*   **GCP:** Google Identity Platform (Firebase Auth).
-*   **AWS:** Amazon Cognito.
-*   **Backend Protocol:** OpenID Connect (OIDC). The backend services validate JWTs based on the `ISSUER_URL` environment variable, agnostic of the actual provider.
-*   **Frontend Strategy:** The "Adapter Pattern". The frontend loads the appropriate auth SDK (Firebase vs Amplify) based on build-time configuration.
+### Environments
+- **Staging:** Auto-deploys when code is merged to `main`. Uses `fang-gcp-staging` project.
+- **Production:** Deploys when a GitHub release is created. Uses `fang-gcp` project.
+- **Local:** Docker Compose + native Go for development (see Developer Guide).
 
 ## 4. Deployment Strategy (Bootstrap + CD)
 We utilize a hybrid pattern to support both Disaster Recovery (DR) and fast Continuous Deployment (CD).
@@ -94,16 +94,17 @@ We utilize a hybrid pattern to support both Disaster Recovery (DR) and fast Cont
 *   **Role**: Manages day-to-day code deployments.
 *   **Behavior**:
     *   **CI (Verify):** On Pull Request, runs unit tests (`go test`) and build checks.
-    *   **CD (Deploy):** On push to `main`, builds the new Docker image (tagged with `git sha`), pushes to Artifact Registry, and updates the Cloud Run resource.
+    *   **CD (Deploy):** Uses reusable workflow template (`.github/workflows/_deploy-service.yml`). Staging deploys trigger on push to `main`. Production deploys trigger on release creation. Both build a Docker image tagged with the git SHA, push to Artifact Registry, and update Cloud Run.
 
 ## 5. Data Layer (GCP Implementation)
-Defined in `infra/gcp/firestore.tf`.
+Defined in `infra/modules/firestore/`.
 
 *   **Firestore (Native Mode):** The primary database.
-*   **Database ID:** `weather-log` (Note: separate from the `(default)` database).
+*   **Databases:** `weather-log` and `pollen-log` (Note: separate from the `(default)` database).
 *   **Access Pattern:** Services connect using the Google Cloud Go SDK, authenticated via their runtime Service Account.
 
 ## 6. Development Workflow
 *   **Local:** Developers use `go run` or `make` commands.
 *   **Testing:** Automated CI workflows (`verify-*.yml`) run on every Pull Request.
-*   **Production:** Automated CD workflows (`deploy-*.yml`) run on merge to `main`.
+*   **Staging:** Automated CD workflows (`deploy-*-staging.yml`) run on merge to `main`.
+*   **Production:** Automated CD workflows (`deploy-*-prod.yml`) run on release creation.

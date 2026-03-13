@@ -75,10 +75,10 @@ We follow a **Trunk-Based Development** workflow with strict CI checks.
 
 We use a **Hybrid "Bootstrap + CD" Pattern** to manage our cloud resources.
 
-*   **Terraform (The Stage):** Manages the "hard" infrastructure (IAM, Networking, Databases, Service definitions).
+*   **Terraform (The Stage):** Manages infrastructure via modules in `infra/modules/`. Each environment (`infra/staging/`, `infra/prod/`) is applied independently. Use `make tf-plan-staging`, `make tf-plan-prod`, `make tf-apply-staging`, `make tf-apply-prod`.
     *   *Note:* Terraform configures the Cloud Run Job but is instructed to **ignore** changes to the container image version (`lifecycle { ignore_changes = [image] }`).
 *   **GitHub Actions (The Actor):** Manages the application code.
-    *   Every deploy updates the Cloud Run Job to a specific Docker tag (the git commit SHA).
+    *   Staging deploys trigger on push to `main`. Production deploys trigger on release creation. Both use the reusable workflow template `.github/workflows/_deploy-service.yml`.
 
 **Why?** This allows Terraform to restore the environment from scratch (Disaster Recovery) without fighting against the day-to-day deployments managed by CI/CD.
 

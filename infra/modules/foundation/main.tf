@@ -1,65 +1,64 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
-# --- Shared APIs (Foundation) ---
-
-# Enable Cloud Run API
 resource "google_project_service" "run" {
   service            = "run.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable Artifact Registry API
 resource "google_project_service" "artifactregistry" {
   service            = "artifactregistry.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable Cloud Scheduler API
-resource "google_project_service" "scheduler" {
+resource "google_project_service" "cloudscheduler" {
   service            = "cloudscheduler.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable Cloud Build API
 resource "google_project_service" "cloudbuild" {
   service            = "cloudbuild.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable Secret Manager API
 resource "google_project_service" "secretmanager" {
   service            = "secretmanager.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable the Firestore API
 resource "google_project_service" "firestore" {
   service            = "firestore.googleapis.com"
   disable_on_destroy = false
 }
 
-# Enable IAM Credentials API (Required for GitHub OIDC)
-resource "google_project_service" "iam_credentials" {
+resource "google_project_service" "iamcredentials" {
   service            = "iamcredentials.googleapis.com"
   disable_on_destroy = false
 }
 
-# --- Shared Resources ---
+resource "google_project_service" "weather" {
+  service            = "weather.googleapis.com"
+  disable_on_destroy = false
+}
 
-# Create Artifact Registry Repository for Docker images
-# This is shared by all services in the monorepo
+resource "google_project_service" "pollen" {
+  service            = "pollen.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "time_sleep" "api_propagation" {
+  create_duration = "60s"
+
+  depends_on = [
+    google_project_service.run,
+    google_project_service.artifactregistry,
+    google_project_service.cloudscheduler,
+    google_project_service.cloudbuild,
+    google_project_service.secretmanager,
+    google_project_service.firestore,
+    google_project_service.iamcredentials,
+    google_project_service.weather,
+    google_project_service.pollen,
+  ]
+}
+
 resource "google_artifact_registry_repository" "repo" {
   provider      = google-beta
   project       = var.project_id
@@ -68,5 +67,5 @@ resource "google_artifact_registry_repository" "repo" {
   description   = "Docker repository for Personal Dashboard services"
   format        = "DOCKER"
 
-  depends_on = [google_project_service.artifactregistry]
+  depends_on = [time_sleep.api_propagation]
 }

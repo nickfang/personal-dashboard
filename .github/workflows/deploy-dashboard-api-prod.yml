@@ -1,0 +1,15 @@
+name: Deploy Dashboard API (Prod)
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: dashboard-api-service
+      image_name: dashboard-api
+      dockerfile_path: services/dashboard-api/Dockerfile
+      deploy_type: services
+      environment: production

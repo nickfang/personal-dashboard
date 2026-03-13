@@ -1,0 +1,3 @@
+project_id         = "your-staging-project-id-here"
+region             = "us-central1"
+github_repository  = "nickfang/personal-dashboard"
