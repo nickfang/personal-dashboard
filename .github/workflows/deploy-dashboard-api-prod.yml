@@ -4,6 +4,10 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy:
     uses: ./.github/workflows/_deploy-service.yml
@@ -13,6 +17,3 @@ jobs:
       dockerfile_path: services/dashboard-api/Dockerfile
       deploy_type: services
       environment: production
-    permissions:
-      contents: read
-      id-token: write

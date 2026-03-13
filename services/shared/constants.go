@@ -13,6 +13,6 @@ const (
 	PollenCacheCollection  = "pollen_cache"
 	PollenRawCollection    = "pollen_raw"
 
-	// RPC timeouts
+	// RPC timeout
 	RPCClientTimeout = 2 * time.Second
 )

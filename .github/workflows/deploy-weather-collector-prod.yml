@@ -4,6 +4,10 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy:
     uses: ./.github/workflows/_deploy-service.yml
@@ -13,6 +17,3 @@ jobs:
       dockerfile_path: services/weather-collector/Dockerfile
       deploy_type: jobs
       environment: production
-    permissions:
-      contents: read
-      id-token: write
