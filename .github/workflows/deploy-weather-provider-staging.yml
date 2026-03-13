@@ -7,6 +7,10 @@ on:
       - 'services/weather-provider/**'
       - 'services/shared/**'
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy:
     uses: ./.github/workflows/_deploy-service.yml
@@ -16,6 +20,3 @@ jobs:
       dockerfile_path: services/weather-provider/Dockerfile
       deploy_type: services
       environment: staging
-    permissions:
-      contents: read
-      id-token: write

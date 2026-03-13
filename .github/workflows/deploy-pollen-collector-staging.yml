@@ -7,6 +7,10 @@ on:
       - 'services/pollen-collector/**'
       - 'services/shared/**'
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   deploy:
     uses: ./.github/workflows/_deploy-service.yml
@@ -16,6 +20,3 @@ jobs:
       dockerfile_path: services/pollen-collector/Dockerfile
       deploy_type: jobs
       environment: staging
-    permissions:
-      contents: read
-      id-token: write
