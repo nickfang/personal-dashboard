@@ -32,3 +32,4 @@ go.work.sum
 weather-provider/weather-provider
 weather-collector/weather-collector
 
+*.csv
