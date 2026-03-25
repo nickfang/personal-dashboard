@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"log/slog"
+	"sort"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -106,4 +107,27 @@ func (r *FirestoreRepository) GetByID(ctx context.Context, id string) (*CacheDoc
 	}
 	cache.LocationID = doc.Ref.ID
 	return &cache, nil
+}
+
+func (r *FirestoreRepository) GetAllRaw(ctx context.Context) ([]WeatherPoint, error) {
+	var results []WeatherPoint
+	iter := r.client.Collection(shared.WeatherRawCollection).Documents(ctx)
+	defer iter.Stop()
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+
+		var wp WeatherPoint
+		if err := doc.DataTo(&wp); err != nil {
+			return nil, err
+		}
+		results = append(results, wp)
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Timestamp.Before(results[j].Timestamp)
+	})
+	return results, nil
 }

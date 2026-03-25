@@ -10,8 +10,9 @@ import (
 // MockReader implements repository.WeatherReader for testing.
 // Unset function fields return a descriptive error instead of panicking.
 type MockReader struct {
-	GetAllFunc  func(ctx context.Context) ([]repository.CacheDoc, error)
-	GetByIDFunc func(ctx context.Context, id string) (*repository.CacheDoc, error)
+	GetAllFunc    func(ctx context.Context) ([]repository.CacheDoc, error)
+	GetByIDFunc   func(ctx context.Context, id string) (*repository.CacheDoc, error)
+	GetAllRawFunc func(ctx context.Context) ([]repository.WeatherPoint, error)
 }
 
 func (m *MockReader) GetAll(ctx context.Context) ([]repository.CacheDoc, error) {
@@ -26,4 +27,11 @@ func (m *MockReader) GetByID(ctx context.Context, id string) (*repository.CacheD
 		return nil, fmt.Errorf("GetByID not mocked")
 	}
 	return m.GetByIDFunc(ctx, id)
+}
+
+func (m *MockReader) GetAllRaw(ctx context.Context) ([]repository.WeatherPoint, error) {
+	if m.GetAllRawFunc == nil {
+		return nil, fmt.Errorf("GetAllRaw not mocked")
+	}
+	return m.GetAllRawFunc(ctx)
 }

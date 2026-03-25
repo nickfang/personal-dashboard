@@ -7,4 +7,5 @@ import "context"
 type WeatherReader interface {
 	GetAll(ctx context.Context) ([]CacheDoc, error)
 	GetByID(ctx context.Context, id string) (*CacheDoc, error)
+	GetAllRaw(ctx context.Context) ([]WeatherPoint, error)
 }
