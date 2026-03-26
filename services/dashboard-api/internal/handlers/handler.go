@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 
@@ -103,7 +104,19 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// 3. Respond with JSON (encoding/json handles json.RawMessage values
+	// 3. Respond with text/plain if the user agent is curl
+	if strings.Contains(r.Header.Get("User-Agent"), "curl") {
+		body, err := formatDashboardText(pressureStats, pollenReports)
+		if err != nil {
+			http.Error(w, "Failed to format text dashboard", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte(body))
+		return
+	}
+
+	// 4. Respond with JSON (encoding/json handles json.RawMessage values
 	// by embedding them verbatim, so the protojson output passes through).
 	// Marshal to buffer first so we can return a clean 500 if encoding fails.
 	buf, err := json.Marshal(map[string]any{
