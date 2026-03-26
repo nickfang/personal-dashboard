@@ -23,6 +23,10 @@ func formatPressureText(pressureStats []*pressurePb.PressureStat) map[string]str
 func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string {
 	pollenByLocation := make(map[string]string)
 	for _, pollenReport := range pollenReports {
+		if len(pollenReport.Plants) == 0 {
+			pollenByLocation[pollenReport.LocationId] = "No pollen data available"
+			continue
+		}
 		location := pollenReport.LocationId
 		pollenByLocation[location] = ""
 		pollenByLocation[location] += fmt.Sprintf("Pollen: %s\n", pollenReport.CollectedAt.AsTime().Local().Format("2006.01.02 15:04:05"))
@@ -58,6 +62,7 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 			pollenByLocation[location] += fmt.Sprintf(" %s (%s)", plant.DisplayName, inSeason)
 		}
 		pollenByLocation[location] += fmt.Sprintln()
+		// Type doesn't seem to be useful.  uncomment if someone asks for it.
 		// pollenByLocation[location] += fmt.Sprintln("  Type:")
 		// for _, pollenType := range pollenReport.Types {
 		// 	if pollenType.Index > 0 {

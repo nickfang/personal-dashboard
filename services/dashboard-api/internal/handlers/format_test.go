@@ -37,11 +37,6 @@ func TestFormatPressureText(t *testing.T) {
 		t.Fatal("expected 'house-nick' key in result map")
 	}
 
-	// Location header
-	if !strings.Contains(text, "house-nick\n") {
-		t.Errorf("expected location header, got:\n%s", text)
-	}
-
 	// Timestamp formatted as local time
 	if !strings.Contains(text, fmt.Sprintf("Pressure: %s", localFormatted)) {
 		t.Errorf("expected pressure timestamp in local time, got:\n%s", text)
@@ -92,7 +87,6 @@ func TestFormatPressureText_ZeroDeltas(t *testing.T) {
 	result := formatPressureText(pressureStats)
 	text := result["house-nick"]
 
-	// Zero-value deltas should still appear
 	if !strings.Contains(text, "Deltas: 0.00(1h), 0.00(3h), 0.00(6h) 0.00(12h) 0.00(24h)") {
 		t.Errorf("expected zero deltas to be included, got:\n%s", text)
 	}
@@ -108,15 +102,10 @@ func TestFormatPollenText(t *testing.T) {
 		{
 			LocationId:  "house-nick",
 			CollectedAt: timestamppb.New(fixedTime),
-			Types: []*pollenPb.PollenType{
-				{Code: "TREE", Index: 4, Category: "High", InSeason: true},
-				{Code: "GRASS", Index: 0, Category: "None", InSeason: false},
-				{Code: "WEED", Index: 2, Category: "Low", InSeason: false},
-			},
 			Plants: []*pollenPb.PollenPlant{
-				{Code: "JUNIPER", DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
-				{Code: "OAK", DisplayName: "Oak", Index: 0, Category: "None", InSeason: false},
-				{Code: "BIRCH", DisplayName: "Birch", Index: 2, Category: "Low", InSeason: false},
+				{DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
+				{DisplayName: "Birch", Index: 2, Category: "Low", InSeason: false},
+				{DisplayName: "Oak", Index: 0, Category: "None", InSeason: false},
 			},
 		},
 	}
@@ -128,41 +117,26 @@ func TestFormatPollenText(t *testing.T) {
 		t.Fatal("expected 'house-nick' key in result map")
 	}
 
-	// Timestamp formatted as local time
-	if !strings.Contains(text, fmt.Sprintf("Plants: %s", localFormatted)) {
-		t.Errorf("expected plants timestamp in local time, got:\n%s", text)
+	// Header with timestamp
+	if !strings.Contains(text, fmt.Sprintf("Pollen: %s", localFormatted)) {
+		t.Errorf("expected pollen timestamp in local time, got:\n%s", text)
 	}
 
-	// Plants: InSeason true → "In Season"
-	if !strings.Contains(text, "Juniper (High): 4 - In Season") {
+	// Plants with Index > 0 are included
+	if !strings.Contains(text, "Juniper (In Season)") {
 		t.Errorf("expected Juniper as In Season, got:\n%s", text)
 	}
-
-	// Plants: InSeason false → "Out of Season"
-	if !strings.Contains(text, "Birch (Low): 2 - Out of Season") {
+	if !strings.Contains(text, "Birch (Out of Season)") {
 		t.Errorf("expected Birch as Out of Season, got:\n%s", text)
 	}
 
-	// Plants: Index == 0 are excluded
+	// Plants with Index < 1 are excluded (break stops iteration)
 	if strings.Contains(text, "Oak") {
 		t.Errorf("expected Oak (Index=0) to be excluded, got:\n%s", text)
 	}
-
-	// Types: Index > 0 are included
-	if !strings.Contains(text, "TREE:") {
-		t.Errorf("expected TREE type in output, got:\n%s", text)
-	}
-	if !strings.Contains(text, "WEED:") {
-		t.Errorf("expected WEED type in output, got:\n%s", text)
-	}
-
-	// Types: Index == 0 are excluded
-	if strings.Contains(text, "GRASS") {
-		t.Errorf("expected GRASS type (Index=0) to be excluded, got:\n%s", text)
-	}
 }
 
-func TestFormatPollenText_PlantSortOrder(t *testing.T) {
+func TestFormatPollenText_GroupedByIndex(t *testing.T) {
 	fixedTime := timestamppb.New(time.Date(2025, 3, 15, 12, 0, 0, 0, time.UTC))
 
 	pollenReports := []*pollenPb.PollenReport{
@@ -170,10 +144,10 @@ func TestFormatPollenText_PlantSortOrder(t *testing.T) {
 			LocationId:  "house-nick",
 			CollectedAt: fixedTime,
 			Plants: []*pollenPb.PollenPlant{
-				{DisplayName: "Oak", Index: 1, Category: "Low", InSeason: false},
 				{DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
-				{DisplayName: "Birch", Index: 3, Category: "Medium", InSeason: true},
-				{DisplayName: "Ragweed", Index: 2, Category: "Low", InSeason: false},
+				{DisplayName: "Elm", Index: 4, Category: "High", InSeason: false},
+				{DisplayName: "Maple", Index: 2, Category: "Low", InSeason: true},
+				{DisplayName: "Oak", Index: 2, Category: "Low", InSeason: false},
 			},
 		},
 	}
@@ -181,29 +155,73 @@ func TestFormatPollenText_PlantSortOrder(t *testing.T) {
 	result := formatPollenText(pollenReports)
 	text := result["house-nick"]
 
-	// In-season plants (Juniper=4, Birch=3) should come before out-of-season (Ragweed=2, Oak=1)
-	// Within each group, higher index first
-	juniperIdx := strings.Index(text, "Juniper")
-	birchIdx := strings.Index(text, "Birch")
-	ragweedIdx := strings.Index(text, "Ragweed")
-	oakIdx := strings.Index(text, "Oak")
-
-	if juniperIdx == -1 || birchIdx == -1 || ragweedIdx == -1 || oakIdx == -1 {
-		t.Fatalf("expected all 4 plants in output, got:\n%s", text)
+	// Plants with the same index should be on the same line with a category label
+	lines := strings.Split(text, "\n")
+	foundHighGroup := false
+	foundLowGroup := false
+	for _, line := range lines {
+		if strings.Contains(line, "High") && strings.Contains(line, "Juniper") && strings.Contains(line, "Elm") {
+			foundHighGroup = true
+		}
+		if strings.Contains(line, "Low") && strings.Contains(line, "Maple") && strings.Contains(line, "Oak") {
+			foundLowGroup = true
+		}
 	}
 
-	if juniperIdx > birchIdx {
-		t.Errorf("expected Juniper (index=4, in-season) before Birch (index=3, in-season)")
+	if !foundHighGroup {
+		t.Errorf("expected Juniper and Elm grouped on same line under High, got:\n%s", text)
 	}
-	if birchIdx > ragweedIdx {
-		t.Errorf("expected Birch (in-season) before Ragweed (out-of-season)")
+	if !foundLowGroup {
+		t.Errorf("expected Maple and Oak grouped on same line under Low, got:\n%s", text)
 	}
-	if ragweedIdx > oakIdx {
-		t.Errorf("expected Ragweed (index=2) before Oak (index=1)")
+
+	// Groups are on separate lines
+	highLineIdx := strings.Index(text, "High")
+	lowLineIdx := strings.Index(text, "Low")
+	if highLineIdx == -1 || lowLineIdx == -1 {
+		t.Fatalf("expected both High and Low groups, got:\n%s", text)
+	}
+	if highLineIdx > lowLineIdx {
+		t.Errorf("expected High group before Low group, got:\n%s", text)
 	}
 }
 
-func TestFormatPollenText_EmptyPlantsAndTypes(t *testing.T) {
+func TestFormatPollenText_SortedByIndexDescending(t *testing.T) {
+	fixedTime := timestamppb.New(time.Date(2025, 3, 15, 12, 0, 0, 0, time.UTC))
+
+	pollenReports := []*pollenPb.PollenReport{
+		{
+			LocationId:  "house-nick",
+			CollectedAt: fixedTime,
+			Plants: []*pollenPb.PollenPlant{
+				{DisplayName: "Oak", Index: 1, Category: "Very Low", InSeason: false},
+				{DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
+				{DisplayName: "Birch", Index: 2, Category: "Low", InSeason: true},
+			},
+		},
+	}
+
+	result := formatPollenText(pollenReports)
+	text := result["house-nick"]
+
+	// Higher index should appear first
+	juniperIdx := strings.Index(text, "Juniper")
+	birchIdx := strings.Index(text, "Birch")
+	oakIdx := strings.Index(text, "Oak")
+
+	if juniperIdx == -1 || birchIdx == -1 || oakIdx == -1 {
+		t.Fatalf("expected all 3 plants in output, got:\n%s", text)
+	}
+
+	if juniperIdx > birchIdx {
+		t.Errorf("expected Juniper (index=4) before Birch (index=2)")
+	}
+	if birchIdx > oakIdx {
+		t.Errorf("expected Birch (index=2) before Oak (index=1)")
+	}
+}
+
+func TestFormatPollenText_EmptyPlants(t *testing.T) {
 	fixedTime := timestamppb.New(time.Date(2025, 3, 15, 12, 0, 0, 0, time.UTC))
 
 	pollenReports := []*pollenPb.PollenReport{
@@ -211,7 +229,6 @@ func TestFormatPollenText_EmptyPlantsAndTypes(t *testing.T) {
 			LocationId:  "house-nick",
 			CollectedAt: fixedTime,
 			Plants:      []*pollenPb.PollenPlant{},
-			Types:       []*pollenPb.PollenType{},
 		},
 	}
 
@@ -221,12 +238,8 @@ func TestFormatPollenText_EmptyPlantsAndTypes(t *testing.T) {
 		t.Fatal("expected 'house-nick' key in result map")
 	}
 
-	// Should still have the Plants header and Type section
-	if !strings.Contains(text, "Plants:") {
-		t.Errorf("expected Plants header even with empty data, got:\n%s", text)
-	}
-	if !strings.Contains(text, "Type:") {
-		t.Errorf("expected Type header even with empty data, got:\n%s", text)
+	if text != "No pollen data available" {
+		t.Errorf("expected 'No pollen data available', got:\n%s", text)
 	}
 }
 
@@ -253,11 +266,8 @@ func TestFormatDashboardText(t *testing.T) {
 		{
 			LocationId:  "house-nick",
 			CollectedAt: timestamppb.New(fixedTime),
-			Types: []*pollenPb.PollenType{
-				{Code: "TREE", Index: 4, Category: "High", InSeason: true},
-			},
 			Plants: []*pollenPb.PollenPlant{
-				{Code: "JUNIPER", DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
+				{DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true},
 			},
 		},
 	}
@@ -267,14 +277,16 @@ func TestFormatDashboardText(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Pressure and pollen sections combined for the location
-	if !strings.Contains(result, "house-nick\n") {
-		t.Errorf("expected location header, got:\n%s", result)
+	// Location separator
+	if !strings.Contains(result, "---------------- house-nick ----------------") {
+		t.Errorf("expected location separator, got:\n%s", result)
 	}
+
+	// Pressure and pollen sections combined
 	if !strings.Contains(result, fmt.Sprintf("Pressure: %s", localFormatted)) {
 		t.Errorf("expected pressure section, got:\n%s", result)
 	}
-	if !strings.Contains(result, fmt.Sprintf("Plants: %s", localFormatted)) {
+	if !strings.Contains(result, fmt.Sprintf("Pollen: %s", localFormatted)) {
 		t.Errorf("expected pollen section, got:\n%s", result)
 	}
 }
@@ -288,8 +300,8 @@ func TestFormatDashboardText_MultipleLocations(t *testing.T) {
 	}
 
 	pollenReports := []*pollenPb.PollenReport{
-		{LocationId: "house-nick", CollectedAt: fixedTime, Types: []*pollenPb.PollenType{{Code: "TREE", Index: 3, Category: "Medium", InSeason: true}}},
-		{LocationId: "house-mom", CollectedAt: fixedTime, Types: []*pollenPb.PollenType{{Code: "GRASS", Index: 1, Category: "Low", InSeason: false}}},
+		{LocationId: "house-nick", CollectedAt: fixedTime, Plants: []*pollenPb.PollenPlant{{DisplayName: "Juniper", Index: 4, Category: "High", InSeason: true}}},
+		{LocationId: "house-mom", CollectedAt: fixedTime, Plants: []*pollenPb.PollenPlant{{DisplayName: "Oak", Index: 2, Category: "Low", InSeason: false}}},
 	}
 
 	result, err := formatDashboardText(pressureStats, pollenReports)
@@ -297,11 +309,11 @@ func TestFormatDashboardText_MultipleLocations(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if !strings.Contains(result, "house-nick") {
-		t.Errorf("expected house-nick location, got:\n%s", result)
+	if !strings.Contains(result, "---------------- house-nick ----------------") {
+		t.Errorf("expected house-nick separator, got:\n%s", result)
 	}
-	if !strings.Contains(result, "house-mom") {
-		t.Errorf("expected house-mom location, got:\n%s", result)
+	if !strings.Contains(result, "---------------- house-mom ----------------") {
+		t.Errorf("expected house-mom separator, got:\n%s", result)
 	}
 	if !strings.Contains(result, "rising") {
 		t.Errorf("expected 'rising' trend for house-nick, got:\n%s", result)
