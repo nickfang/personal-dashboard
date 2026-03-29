@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"maps"
 	"slices"
+	"strings"
 
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
 	pressurePb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
@@ -10,7 +12,11 @@ import (
 
 func formatPressureText(pressureStats []*pressurePb.PressureStat) map[string]string {
 	pressureByLocation := make(map[string]string)
-	for _, pressureStat := range pressureStats {
+	sortedPressureStats := slices.Clone(pressureStats)
+	slices.SortFunc(sortedPressureStats, func(a, b *pressurePb.PressureStat) int {
+		return strings.Compare(a.LocationId, b.LocationId)
+	})
+	for _, pressureStat := range sortedPressureStats {
 		location := pressureStat.LocationId
 		pressureByLocation[location] = ""
 		pressureByLocation[location] += fmt.Sprintf("Pressure: %s\n", pressureStat.LastUpdated.AsTime().Local().Format("2006.01.02 15:04:05"))
@@ -22,7 +28,11 @@ func formatPressureText(pressureStats []*pressurePb.PressureStat) map[string]str
 
 func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string {
 	pollenByLocation := make(map[string]string)
-	for _, pollenReport := range pollenReports {
+	sortedPollenReports := slices.Clone(pollenReports)
+	slices.SortFunc(sortedPollenReports, func(a, b *pollenPb.PollenReport) int {
+		return strings.Compare(a.LocationId, b.LocationId)
+	})
+	for _, pollenReport := range sortedPollenReports {
 		if len(pollenReport.Plants) == 0 {
 			pollenByLocation[pollenReport.LocationId] = "No pollen data available"
 			continue
@@ -30,19 +40,13 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 		location := pollenReport.LocationId
 		pollenByLocation[location] = ""
 		pollenByLocation[location] += fmt.Sprintf("Pollen: %s\n", pollenReport.CollectedAt.AsTime().Local().Format("2006.01.02 15:04:05"))
-		slices.SortFunc(pollenReport.Plants, func(a, b *pollenPb.PollenPlant) int {
-			// uncomment to sort by In Season first
-			// if a.InSeason != b.InSeason {
-			// 	if a.InSeason {
-			// 		return -1
-			// 	}
-			// 	return 1
-			// }
+		sortedPlants := slices.Clone(pollenReport.Plants)
+		slices.SortFunc(sortedPlants, func(a, b *pollenPb.PollenPlant) int {
 			return int(b.Index) - int(a.Index)
 		})
 		first := true
-		currentIndex := pollenReport.Plants[0].Index + 1
-		for _, plant := range pollenReport.Plants {
+		currentIndex := sortedPlants[0].Index + 1
+		for _, plant := range sortedPlants {
 			if plant.Index < 1 {
 				break
 			}
@@ -62,17 +66,7 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 			pollenByLocation[location] += fmt.Sprintf(" %s (%s)", plant.DisplayName, inSeason)
 		}
 		pollenByLocation[location] += fmt.Sprintln()
-		// Type doesn't seem to be useful.  uncomment if someone asks for it.
-		// pollenByLocation[location] += fmt.Sprintln("  Type:")
-		// for _, pollenType := range pollenReport.Types {
-		// 	if pollenType.Index > 0 {
-		// 		inSeason := "In Season"
-		// 		if pollenType.InSeason {
-		// 			inSeason = "Out of Season"
-		// 		}
-		// 		pollenByLocation[location] += fmt.Sprintf("  %s: %s - %s\n", pollenType.Code, pollenType.Category, inSeason)
-		// 	}
-		// }
+		// Don't show types.  It's not useful.
 	}
 	return pollenByLocation
 }
@@ -80,6 +74,7 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports []*pollenPb.PollenReport) (string, error) {
 	byLocation := make(map[string]string)
 	pressureByLocation := formatPressureText(pressureStats)
+
 	for _, pressureStat := range pressureStats {
 		byLocation[pressureStat.LocationId] = pressureByLocation[pressureStat.LocationId]
 	}
@@ -89,8 +84,9 @@ func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports
 	}
 
 	data := ""
-	for location, info := range byLocation {
-		data += fmt.Sprintf("---------------- %s ----------------\n", location)
+	for _, key := range slices.Sorted(maps.Keys(byLocation)) {
+		info := byLocation[key]
+		data += fmt.Sprintf("---------------- %s ----------------\n", key)
 		data += info
 	}
 	return data, nil

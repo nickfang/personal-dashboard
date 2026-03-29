@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,18 +24,20 @@ type mockWeatherClient struct{}
 
 func (m *mockWeatherClient) GetPressureStat(ctx context.Context, locationID string) (*weatherPb.PressureStat, error) {
 	return &weatherPb.PressureStat{
-		LocationId: locationID,
-		Trend:      "rising",
-		Delta_1H:   0.5,
+		LocationId:  locationID,
+		Trend:       "rising",
+		Delta_1H:    0.5,
+		LastUpdated: timestamppb.Now(),
 	}, nil
 }
 
 func (m *mockWeatherClient) GetPressureStats(ctx context.Context) ([]*weatherPb.PressureStat, error) {
 	return []*weatherPb.PressureStat{
 		{
-			LocationId: "house-nick",
-			Trend:      "rising",
-			Delta_1H:   0.5,
+			LocationId:  "house-nick",
+			Trend:       "rising",
+			Delta_1H:    0.5,
+			LastUpdated: timestamppb.Now(),
 		},
 	}, nil
 }
@@ -469,6 +472,49 @@ func TestDashboardHandler_GetDashboard_SlowPollenTimesOut(t *testing.T) {
 	}
 	if elapsed > shared.RPCClientTimeout+1*time.Second {
 		t.Errorf("expected per-RPC timeout to fire within 5s, but took %s", elapsed)
+	}
+}
+
+func TestDashboardHandler_GetDashboard_CurlUserAgent_ReturnsText(t *testing.T) {
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+
+	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "curl/8.7.1")
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboard(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", rr.Code)
+	}
+
+	contentType := rr.Header().Get("Content-Type")
+	if contentType != "text/plain; charset=utf-8" {
+		t.Errorf("expected Content-Type 'text/plain; charset=utf-8', got '%s'", contentType)
+	}
+
+	body := rr.Body.String()
+
+	// Should contain pressure data
+	if !strings.Contains(body, "Pressure:") {
+		t.Errorf("expected Pressure section in text response, got:\n%s", body)
+	}
+	if !strings.Contains(body, "rising") {
+		t.Errorf("expected trend in text response, got:\n%s", body)
+	}
+
+	// Should contain pollen data
+	if !strings.Contains(body, "Pollen:") {
+		t.Errorf("expected Pollen section in text response, got:\n%s", body)
+	}
+
+	// Should NOT be valid JSON
+	var jsonCheck map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &jsonCheck); err == nil {
+		t.Error("expected non-JSON response for curl user agent, but got valid JSON")
 	}
 }
 

@@ -92,19 +92,7 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// 2. Aggregate with other future data
-	aggregatedPressure, err := aggregatePressureStats(pressureStats)
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-	aggregatedPollen, err := aggregatePollenReports(pollenReports)
-	if err != nil {
-		http.Error(w, "Failed to encode pollen response", http.StatusInternalServerError)
-		return
-	}
-
-	// 3. Respond with text/plain if the user agent is curl
+	// 2. Respond with text/plain if the user agent is curl
 	if strings.Contains(r.Header.Get("User-Agent"), "curl") {
 		body, err := formatDashboardText(pressureStats, pollenReports)
 		if err != nil {
@@ -113,6 +101,18 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Write([]byte(body))
+		return
+	}
+
+	// 3. Aggregate with other future data
+	aggregatedPressure, err := aggregatePressureStats(pressureStats)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	aggregatedPollen, err := aggregatePollenReports(pollenReports)
+	if err != nil {
+		http.Error(w, "Failed to encode pollen response", http.StatusInternalServerError)
 		return
 	}
 
