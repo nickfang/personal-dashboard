@@ -18,10 +18,12 @@ func formatPressureText(pressureStats []*pressurePb.PressureStat) map[string]str
 	})
 	for _, pressureStat := range sortedPressureStats {
 		location := pressureStat.LocationId
-		pressureByLocation[location] = ""
-		pressureByLocation[location] += fmt.Sprintf("Pressure: %s\n", pressureStat.LastUpdated.AsTime().Local().Format("2006.01.02 15:04:05"))
-		pressureByLocation[location] += fmt.Sprintf("  %s\n", pressureStat.Trend)
-		pressureByLocation[location] += fmt.Sprintf("  Deltas: %.2f(1h), %.2f(3h), %.2f(6h) %.2f(12h) %.2f(24h)\n", pressureStat.Delta_1H, pressureStat.Delta_3H, pressureStat.Delta_6H, pressureStat.Delta_12H, pressureStat.Delta_24H)
+		var pressureText strings.Builder
+
+		pressureText.WriteString(fmt.Sprintf("Pressure: %s\n", pressureStat.LastUpdated.AsTime().Local().Format("2006.01.02 15:04:05")))
+		pressureText.WriteString(fmt.Sprintf("  %s\n", pressureStat.Trend))
+		pressureText.WriteString(fmt.Sprintf("  Deltas: %.2f(1h), %.2f(3h), %.2f(6h) %.2f(12h) %.2f(24h)\n", pressureStat.Delta_1H, pressureStat.Delta_3H, pressureStat.Delta_6H, pressureStat.Delta_12H, pressureStat.Delta_24H))
+		pressureByLocation[location] = pressureText.String()
 	}
 	return pressureByLocation
 }
@@ -38,8 +40,8 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 			continue
 		}
 		location := pollenReport.LocationId
-		pollenByLocation[location] = ""
-		pollenByLocation[location] += fmt.Sprintf("Pollen: %s\n", pollenReport.CollectedAt.AsTime().Local().Format("2006.01.02 15:04:05"))
+		var pollenText strings.Builder
+		pollenText.WriteString(fmt.Sprintf("Pollen: %s\n", pollenReport.CollectedAt.AsTime().Local().Format("2006.01.02 15:04:05")))
 		sortedPlants := slices.Clone(pollenReport.Plants)
 		slices.SortFunc(sortedPlants, func(a, b *pollenPb.PollenPlant) int {
 			return int(b.Index) - int(a.Index)
@@ -54,40 +56,42 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 				if first {
 					first = false
 				} else {
-					pollenByLocation[location] += fmt.Sprintln()
+					pollenText.WriteString("\n")
 				}
-				pollenByLocation[location] += fmt.Sprintf("  %-10s", plant.Category)
+				pollenText.WriteString(fmt.Sprintf("  %-10s", plant.Category))
 				currentIndex = plant.Index
 			}
 			inSeason := "Out of Season"
 			if plant.InSeason {
 				inSeason = "In Season"
 			}
-			pollenByLocation[location] += fmt.Sprintf(" %s (%s)", plant.DisplayName, inSeason)
+			pollenText.WriteString(fmt.Sprintf(" %s (%s)", plant.DisplayName, inSeason))
 		}
-		pollenByLocation[location] += fmt.Sprintln()
+		pollenText.WriteString("\n")
+		pollenByLocation[location] = pollenText.String()
 		// Don't show types.  It's not useful.
 	}
 	return pollenByLocation
 }
 
 func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports []*pollenPb.PollenReport) (string, error) {
-	byLocation := make(map[string]string)
 	pressureByLocation := formatPressureText(pressureStats)
-
-	for _, pressureStat := range pressureStats {
-		byLocation[pressureStat.LocationId] = pressureByLocation[pressureStat.LocationId]
-	}
 	pollenByLocation := formatPollenText(pollenReports)
-	for _, pollenReport := range pollenReports {
-		byLocation[pollenReport.LocationId] += pollenByLocation[pollenReport.LocationId]
+
+	locations := make(map[string]struct{})
+	for location := range pressureByLocation {
+		locations[location] = struct{}{}
+	}
+	for location := range pollenByLocation {
+		locations[location] = struct{}{}
 	}
 
-	data := ""
-	for _, key := range slices.Sorted(maps.Keys(byLocation)) {
-		info := byLocation[key]
-		data += fmt.Sprintf("---------------- %s ----------------\n", key)
-		data += info
+	fmt.Printf("locations: %v\n", locations)
+	var data strings.Builder
+	for _, location := range slices.Sorted(maps.Keys(locations)) {
+		data.WriteString(fmt.Sprintf("---------------- %s ----------------\n", location))
+		data.WriteString(pressureByLocation[location])
+		data.WriteString(pollenByLocation[location])
 	}
-	return data, nil
+	return data.String(), nil
 }
