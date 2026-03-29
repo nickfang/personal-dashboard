@@ -8,6 +8,7 @@ The **Dashboard API** (`services/dashboard-api`) is the **Backend-for-Frontend (
 ### Functional Requirements
 *   **Aggregation:** Fetch data from `weather-provider` and `pollen-provider` (gRPC) in parallel.
 *   **Translation:** Convert internal gRPC binary structures into frontend-friendly JSON.
+*   **Content Negotiation:** Return plain text for `curl` clients (detected via `User-Agent` header), enabling terminal-friendly output.
 *   **Authentication:** Validate AWS Cognito JWTs from the frontend.
 *   **CORS:** Handle Cross-Origin requests from the Svelte app.
 
@@ -38,8 +39,15 @@ sequenceDiagram
     WP-->>API: Protobuf Response
     PP-->>API: Protobuf Response
 
-    API->>API: Map Proto -> JSON
-    API-->>FE: {"pressure": {...}, "pollen": {...}}
+    API->>API: Check User-Agent header
+
+    alt User-Agent contains "curl"
+        API->>API: Format Proto -> Plain Text
+        API-->>FE: Human-readable text (terminal-friendly)
+    else Default (JSON)
+        API->>API: Map Proto -> JSON
+        API-->>FE: {"pressure": {...}, "pollen": {...}}
+    end
 ```
 
 ## 4. Implementation Strategy
@@ -51,7 +59,7 @@ services/dashboard-api/
 │   └── main.go            # Entry point
 ├── internal/
 │   ├── app/               # Router & Server setup
-│   ├── handlers/          # HTTP Handlers (Controllers)
+│   ├── handlers/          # HTTP Handlers + text formatters
 │   ├── middleware/        # Auth & Logging middleware
 │   ├── clients/           # gRPC Client wrappers (weather, pollen)
 │   └── gen/go/            # Local generated gRPC stubs
@@ -63,7 +71,15 @@ services/dashboard-api/
 
 ### API Design Principles
 *   **Data API:** The API returns raw data with full precision (e.g., `1013.25482910`). Formatting (rounding, units) is the responsibility of the Frontend.
-*   **Aggregation:** The API aggregates data from multiple sources into a single JSON response, keyed by domain (e.g., `"pressure"`, `"pollen"`).
+*   **Aggregation:** The API aggregates data from multiple sources into a single response, keyed by domain (e.g., `"pressure"`, `"pollen"`).
+*   **Content Negotiation:** The endpoint supports two response formats based on the `User-Agent` request header:
+
+    | `User-Agent` | Response Format | `Content-Type` |
+    |---|---|---|
+    | Contains `curl` | Human-readable plain text | `text/plain; charset=utf-8` |
+    | All others | JSON (protojson camelCase) | `application/json` |
+
+    The text format is designed for terminal use (e.g., `curl <url>`). The data fetch is shared — only the serialization step branches. Text formatting is handled by `formatPressureText` and `formatPollenText` in `handlers/format.go`, which return data grouped by location ID.
 
 ### Dependency Management
 *   **Contract First:** We use **Buf** to manage Protobuf files in `services/protos`.
@@ -81,6 +97,13 @@ services/dashboard-api/
     1.  **Isolation:** Services are fully decoupled at build time. A service can be built and deployed without knowledge of other folders in the monorepo.
     2.  **Simple Docker:** Dockerfiles use standard `COPY . .` patterns. No complex context mounting or root-level builds are needed.
     3.  **Contract Integrity:** While the code is duplicated, the *source* (Protos) is centralized. Buf ensures that all services generate code from the same contract version.
+
+### ADR-002: Content Negotiation via `User-Agent` Detection
+*   **Context:** Issue #51 — make the dashboard endpoint return terminal-friendly output for curl users.
+*   **Decision:** Detect `curl` in the `User-Agent` header to serve plain text automatically.
+*   **Rationale:**
+    1.  **Zero-friction:** `curl <url>` returns readable text with no extra flags needed. curl sends `User-Agent: curl/<version>` and `Accept: */*` by default, so `Accept`-based detection would require the user to pass `-H "Accept: text/plain"` every time.
+    2.  **Practical:** This is a personal dashboard — the only text consumers are curl from a terminal. A standards-compliant `Accept` header approach adds friction for no real benefit here.
 
 ## 6. Integrated Services
 
