@@ -10,6 +10,8 @@ option go_package = "weather_provider/v1";
 service PressureStatsService {
   rpc GetAllPressureStats(GetAllPressureStatsRequest) returns (GetAllPressureStatsResponse);
   rpc GetPressureStats(GetPressureStatsRequest) returns (GetPressureStatsResponse);
+  rpc GetAllLastWeather(GetAllLastWeatherRequest) returns (GetAllLastWeatherResponse);
+  rpc GetLastWeather(GetLastWeatherRequest) returns (GetLastWeatherResponse);
 }
 
 message PressureStat {
@@ -21,6 +23,18 @@ message PressureStat {
   double delta_12h = 6;
   double delta_24h = 7;
   string trend = 8;
+}
+
+message Weather {
+  string location_id = 1;
+  google.protobuf.Timestamp last_updated = 2;
+  double temp_c = 3;
+  double temp_f = 4;
+  double temp_feel_c = 5;
+  double temp_feel_f = 6;
+  double humidity_percent = 7;
+  double pressure_mb = 8;
+  double precipitation_percent = 9;
 }
 
 message GetAllPressureStatsRequest {}
@@ -37,3 +51,16 @@ message GetPressureStatsResponse {
   PressureStat stat = 1;
 }
 
+message GetAllLastWeatherRequest {}
+
+message GetAllLastWeatherResponse {
+  repeated Weather weather = 1;
+}
+
+message GetLastWeatherRequest {
+  string location_id = 1;
+}
+
+message GetLastWeatherResponse {
+  Weather weather = 1;
+}
