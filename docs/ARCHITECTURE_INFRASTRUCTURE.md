@@ -70,6 +70,7 @@ infra/
     cloud-run-job/  # Collector jobs + Scheduler
     cloud-run-provider/   # Internal gRPC services
     cloud-run-aggregator/ # Public BFF
+    cloud-run-domain-mapping/ # Custom domain mapping for Cloud Run services
     github-oidc/    # GitHub Actions OIDC
   staging/          # Staging environment (deployed on push to main)
   prod/             # Production environment (deployed on release creation)
@@ -80,7 +81,15 @@ infra/
 - **Production:** Deploys when a GitHub release is created. Uses `fang-gcp` project.
 - **Local:** Docker Compose + native Go for development (see Developer Guide).
 
-## 4. Deployment Strategy (Bootstrap + CD)
+## 4. Custom Domain Mapping
+
+The staging Dashboard API is mapped to a custom subdomain (`api-staging.<domain>`) using Cloud Run domain mappings, managed by the `cloud-run-domain-mapping` Terraform module.
+
+- **How it works:** The module creates a `google_cloud_run_domain_mapping` resource that associates the custom domain with the Cloud Run service. Google automatically provisions and renews a managed TLS certificate.
+- **DNS:** A CNAME record at the domain registrar points the subdomain to `ghs.googlehosted.com.`. DNS is managed manually at the registrar, not in Terraform.
+- **Prerequisite:** The domain must be verified via [Google Webmaster Central](https://www.google.com/webmasters/verification/verification?domain=yourdomain.com) before domain mappings can be created. This is a one-time step per root domain.
+
+## 5. Deployment Strategy (Bootstrap + CD)
 We utilize a hybrid pattern to support both Disaster Recovery (DR) and fast Continuous Deployment (CD).
 
 ### Terraform (The Stage & Bootstrap)
@@ -96,14 +105,14 @@ We utilize a hybrid pattern to support both Disaster Recovery (DR) and fast Cont
     *   **CI (Verify):** On Pull Request, runs unit tests (`go test`) and build checks.
     *   **CD (Deploy):** Uses reusable workflow template (`.github/workflows/_deploy-service.yml`). Staging deploys trigger on push to `main`. Production deploys trigger on release creation. Both build a Docker image tagged with the git SHA, push to Artifact Registry, and update Cloud Run.
 
-## 5. Data Layer (GCP Implementation)
+## 6. Data Layer (GCP Implementation)
 Defined in `infra/modules/firestore/`.
 
 *   **Firestore (Native Mode):** The primary database.
 *   **Databases:** `weather-log` and `pollen-log` (Note: separate from the `(default)` database).
 *   **Access Pattern:** Services connect using the Google Cloud Go SDK, authenticated via their runtime Service Account.
 
-## 6. Development Workflow
+## 7. Development Workflow
 *   **Local:** Developers use `go run` or `make` commands.
 *   **Testing:** Automated CI workflows (`verify-*.yml`) run on every Pull Request.
 *   **Staging:** Automated CD workflows (`deploy-*-staging.yml`) run on merge to `main`.

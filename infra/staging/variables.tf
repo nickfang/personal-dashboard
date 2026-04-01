@@ -14,3 +14,8 @@ variable "github_repository" {
   type        = string
   default     = "nickfang/personal-dashboard"
 }
+
+variable "api_domain" {
+  description = "Custom domain for the dashboard API (e.g. api-staging.example.com)"
+  type        = string
+}

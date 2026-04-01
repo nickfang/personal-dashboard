@@ -175,6 +175,18 @@ module "dashboard_api" {
   depends_on = [module.foundation]
 }
 
+# --- Domain Mapping ---
+
+module "dashboard_api_domain" {
+  source       = "../modules/cloud-run-domain-mapping"
+  domain       = var.api_domain
+  service_name = module.dashboard_api.service_name
+  region       = var.region
+  project_id   = var.project_id
+
+  depends_on = [module.dashboard_api]
+}
+
 # --- CI/CD Identity ---
 
 module "github_oidc" {

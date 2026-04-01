@@ -100,6 +100,16 @@ The GitHub Slack app is used to surface workflow failures (e.g., failed deploys)
 *   [Infrastructure Architecture](./docs/ARCHITECTURE_INFRASTRUCTURE.md)
 *   [Disaster Recovery](./docs/DISASTER_RECOVERY.md)
 
+## Custom Domain Setup
+
+Cloud Run domain mappings require domain ownership verification through Google. This is a one-time manual step per domain.
+
+1. Visit: `https://www.google.com/webmasters/verification/verification?domain=yourdomain.com` (replace `yourdomain.com` with your actual domain)
+2. Add the TXT record Google provides to your DNS registrar
+3. Click **Verify** once DNS has propagated
+
+Verify at the root domain level (e.g., `nickfang.com`) to cover all subdomains. This must be completed before `terraform apply` can create domain mappings.
+
 ## Deployment Environments
 
 CI/CD uses GitHub deployment environments (`staging` and `production`) with environment-specific variables. See [Disaster Recovery](./docs/DISASTER_RECOVERY.md) for setup instructions.
