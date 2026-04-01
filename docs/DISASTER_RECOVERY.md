@@ -58,7 +58,33 @@ Run `terraform apply` again to create the Cloud Run jobs that failed in step 3:
 terraform apply
 ```
 
-### 6. Record Terraform Outputs
+### 6. Configure Custom Domain Mapping
+
+After Terraform apply, the domain mapping module outputs the DNS records needed.
+
+1. **Verify domain ownership** (one-time, if not already done):
+   - Visit `https://www.google.com/webmasters/verification/verification?domain=yourdomain.com` (replace with your actual domain)
+   - Add the TXT record Google provides to your DNS registrar
+   - Click **Verify** once DNS has propagated
+   - Verify at the root domain level to cover all subdomains
+
+2. **Add DNS record at your registrar:**
+
+   | Type | Name | Value |
+   |------|------|-------|
+   | CNAME | `api-staging` | `ghs.googlehosted.com.` |
+
+3. **Wait for TLS certificate provisioning** (15–60 minutes). Check status:
+
+   ```bash
+   gcloud run domain-mappings describe --domain api-staging.<yourdomain>.com --region us-central1
+   ```
+
+   Look for `certificateStatus: ACTIVE`.
+
+4. **Re-run `terraform apply`** if the domain mapping was in a failed state due to missing DNS verification.
+
+### 7. Record Terraform Outputs
 
 ```bash
 terraform output
@@ -70,7 +96,7 @@ Save these values — they're needed for GitHub deployment environments:
 - `workload_identity_provider_name`
 - `artifact_registry_url`
 
-### 7. Configure GitHub Deployment Environments
+### 8. Configure GitHub Deployment Environments
 
 In the GitHub repo, go to **Settings -> Environments** and create/update the environment (`staging` or `production`).
 
@@ -85,7 +111,7 @@ Add these **environment variables** (not secrets):
 
 Optionally add required reviewers to the `production` environment.
 
-### 8. Verify
+### 9. Verify
 
 Push a change to `main` and confirm the staging deploy workflow succeeds. Create a release to confirm the prod deploy workflow succeeds.
 
@@ -100,6 +126,7 @@ infra/
     cloud-run-job/  # Collector services (Cloud Run Jobs + Scheduler)
     cloud-run-provider/   # Internal gRPC services
     cloud-run-aggregator/ # Public BFF (Dashboard API)
+    cloud-run-domain-mapping/ # Custom domain mapping for Cloud Run services
     github-oidc/    # GitHub Actions OIDC authentication
   staging/          # Staging environment Terraform root
   prod/             # Production environment Terraform root
