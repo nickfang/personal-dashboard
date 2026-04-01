@@ -87,7 +87,7 @@ The staging Dashboard API is mapped to a custom subdomain (`api-staging.<domain>
 
 - **How it works:** The module creates a `google_cloud_run_domain_mapping` resource that associates the custom domain with the Cloud Run service. Google automatically provisions and renews a managed TLS certificate.
 - **DNS:** A CNAME record at the domain registrar points the subdomain to `ghs.googlehosted.com.`. DNS is managed manually at the registrar, not in Terraform.
-- **Prerequisite:** The domain must be verified via [Google Webmaster Central](https://www.google.com/webmasters/verification/verification?domain=) before domain mappings can be created. This is a one-time step per root domain.
+- **Prerequisite:** The domain must be verified via [Google Webmaster Central](https://www.google.com/webmasters/verification/verification?domain=yourdomain.com) before domain mappings can be created. This is a one-time step per root domain.
 
 ## 5. Deployment Strategy (Bootstrap + CD)
 We utilize a hybrid pattern to support both Disaster Recovery (DR) and fast Continuous Deployment (CD).
