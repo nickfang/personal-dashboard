@@ -122,6 +122,114 @@ func (x *PressureStat) GetTrend() string {
 	return ""
 }
 
+type Weather struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	LocationId           string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	LastUpdated          *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
+	TempC                float64                `protobuf:"fixed64,3,opt,name=temp_c,json=tempC,proto3" json:"temp_c,omitempty"`
+	TempF                float64                `protobuf:"fixed64,4,opt,name=temp_f,json=tempF,proto3" json:"temp_f,omitempty"`
+	TempFeelC            float64                `protobuf:"fixed64,5,opt,name=temp_feel_c,json=tempFeelC,proto3" json:"temp_feel_c,omitempty"`
+	TempFeelF            float64                `protobuf:"fixed64,6,opt,name=temp_feel_f,json=tempFeelF,proto3" json:"temp_feel_f,omitempty"`
+	HumidityPercent      float64                `protobuf:"fixed64,7,opt,name=humidity_percent,json=humidityPercent,proto3" json:"humidity_percent,omitempty"`
+	PressureMb           float64                `protobuf:"fixed64,8,opt,name=pressure_mb,json=pressureMb,proto3" json:"pressure_mb,omitempty"`
+	PrecipitationPercent float64                `protobuf:"fixed64,9,opt,name=precipitation_percent,json=precipitationPercent,proto3" json:"precipitation_percent,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *Weather) Reset() {
+	*x = Weather{}
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Weather) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Weather) ProtoMessage() {}
+
+func (x *Weather) ProtoReflect() protoreflect.Message {
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Weather.ProtoReflect.Descriptor instead.
+func (*Weather) Descriptor() ([]byte, []int) {
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Weather) GetLocationId() string {
+	if x != nil {
+		return x.LocationId
+	}
+	return ""
+}
+
+func (x *Weather) GetLastUpdated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastUpdated
+	}
+	return nil
+}
+
+func (x *Weather) GetTempC() float64 {
+	if x != nil {
+		return x.TempC
+	}
+	return 0
+}
+
+func (x *Weather) GetTempF() float64 {
+	if x != nil {
+		return x.TempF
+	}
+	return 0
+}
+
+func (x *Weather) GetTempFeelC() float64 {
+	if x != nil {
+		return x.TempFeelC
+	}
+	return 0
+}
+
+func (x *Weather) GetTempFeelF() float64 {
+	if x != nil {
+		return x.TempFeelF
+	}
+	return 0
+}
+
+func (x *Weather) GetHumidityPercent() float64 {
+	if x != nil {
+		return x.HumidityPercent
+	}
+	return 0
+}
+
+func (x *Weather) GetPressureMb() float64 {
+	if x != nil {
+		return x.PressureMb
+	}
+	return 0
+}
+
+func (x *Weather) GetPrecipitationPercent() float64 {
+	if x != nil {
+		return x.PrecipitationPercent
+	}
+	return 0
+}
+
 type GetAllPressureStatsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -130,7 +238,7 @@ type GetAllPressureStatsRequest struct {
 
 func (x *GetAllPressureStatsRequest) Reset() {
 	*x = GetAllPressureStatsRequest{}
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[1]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -142,7 +250,7 @@ func (x *GetAllPressureStatsRequest) String() string {
 func (*GetAllPressureStatsRequest) ProtoMessage() {}
 
 func (x *GetAllPressureStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[1]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -155,7 +263,7 @@ func (x *GetAllPressureStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllPressureStatsRequest.ProtoReflect.Descriptor instead.
 func (*GetAllPressureStatsRequest) Descriptor() ([]byte, []int) {
-	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{1}
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{2}
 }
 
 type GetAllPressureStatsResponse struct {
@@ -167,7 +275,7 @@ type GetAllPressureStatsResponse struct {
 
 func (x *GetAllPressureStatsResponse) Reset() {
 	*x = GetAllPressureStatsResponse{}
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[2]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -179,7 +287,7 @@ func (x *GetAllPressureStatsResponse) String() string {
 func (*GetAllPressureStatsResponse) ProtoMessage() {}
 
 func (x *GetAllPressureStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[2]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -192,7 +300,7 @@ func (x *GetAllPressureStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAllPressureStatsResponse.ProtoReflect.Descriptor instead.
 func (*GetAllPressureStatsResponse) Descriptor() ([]byte, []int) {
-	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{2}
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetAllPressureStatsResponse) GetStats() []*PressureStat {
@@ -211,7 +319,7 @@ type GetPressureStatsRequest struct {
 
 func (x *GetPressureStatsRequest) Reset() {
 	*x = GetPressureStatsRequest{}
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[3]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -223,7 +331,7 @@ func (x *GetPressureStatsRequest) String() string {
 func (*GetPressureStatsRequest) ProtoMessage() {}
 
 func (x *GetPressureStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[3]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -236,7 +344,7 @@ func (x *GetPressureStatsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPressureStatsRequest.ProtoReflect.Descriptor instead.
 func (*GetPressureStatsRequest) Descriptor() ([]byte, []int) {
-	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{3}
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetPressureStatsRequest) GetLocationId() string {
@@ -255,7 +363,7 @@ type GetPressureStatsResponse struct {
 
 func (x *GetPressureStatsResponse) Reset() {
 	*x = GetPressureStatsResponse{}
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[4]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -267,7 +375,7 @@ func (x *GetPressureStatsResponse) String() string {
 func (*GetPressureStatsResponse) ProtoMessage() {}
 
 func (x *GetPressureStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[4]
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -280,12 +388,180 @@ func (x *GetPressureStatsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPressureStatsResponse.ProtoReflect.Descriptor instead.
 func (*GetPressureStatsResponse) Descriptor() ([]byte, []int) {
-	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{4}
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetPressureStatsResponse) GetStat() *PressureStat {
 	if x != nil {
 		return x.Stat
+	}
+	return nil
+}
+
+type GetAllLastWeatherRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAllLastWeatherRequest) Reset() {
+	*x = GetAllLastWeatherRequest{}
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAllLastWeatherRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAllLastWeatherRequest) ProtoMessage() {}
+
+func (x *GetAllLastWeatherRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAllLastWeatherRequest.ProtoReflect.Descriptor instead.
+func (*GetAllLastWeatherRequest) Descriptor() ([]byte, []int) {
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{6}
+}
+
+type GetAllLastWeatherResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Weather       []*Weather             `protobuf:"bytes,1,rep,name=weather,proto3" json:"weather,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAllLastWeatherResponse) Reset() {
+	*x = GetAllLastWeatherResponse{}
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAllLastWeatherResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAllLastWeatherResponse) ProtoMessage() {}
+
+func (x *GetAllLastWeatherResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAllLastWeatherResponse.ProtoReflect.Descriptor instead.
+func (*GetAllLastWeatherResponse) Descriptor() ([]byte, []int) {
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *GetAllLastWeatherResponse) GetWeather() []*Weather {
+	if x != nil {
+		return x.Weather
+	}
+	return nil
+}
+
+type GetLastWeatherRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLastWeatherRequest) Reset() {
+	*x = GetLastWeatherRequest{}
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLastWeatherRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLastWeatherRequest) ProtoMessage() {}
+
+func (x *GetLastWeatherRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLastWeatherRequest.ProtoReflect.Descriptor instead.
+func (*GetLastWeatherRequest) Descriptor() ([]byte, []int) {
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *GetLastWeatherRequest) GetLocationId() string {
+	if x != nil {
+		return x.LocationId
+	}
+	return ""
+}
+
+type GetLastWeatherResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Weather       *Weather               `protobuf:"bytes,1,opt,name=weather,proto3" json:"weather,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetLastWeatherResponse) Reset() {
+	*x = GetLastWeatherResponse{}
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetLastWeatherResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetLastWeatherResponse) ProtoMessage() {}
+
+func (x *GetLastWeatherResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_weather_provider_v1_weather_provider_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetLastWeatherResponse.ProtoReflect.Descriptor instead.
+func (*GetLastWeatherResponse) Descriptor() ([]byte, []int) {
+	return file_weather_provider_v1_weather_provider_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *GetLastWeatherResponse) GetWeather() *Weather {
+	if x != nil {
+		return x.Weather
 	}
 	return nil
 }
@@ -304,7 +580,19 @@ const file_weather_provider_v1_weather_provider_proto_rawDesc = "" +
 	"\bdelta_6h\x18\x05 \x01(\x01R\adelta6h\x12\x1b\n" +
 	"\tdelta_12h\x18\x06 \x01(\x01R\bdelta12h\x12\x1b\n" +
 	"\tdelta_24h\x18\a \x01(\x01R\bdelta24h\x12\x14\n" +
-	"\x05trend\x18\b \x01(\tR\x05trend\"\x1c\n" +
+	"\x05trend\x18\b \x01(\tR\x05trend\"\xd8\x02\n" +
+	"\aWeather\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\x12=\n" +
+	"\flast_updated\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vlastUpdated\x12\x15\n" +
+	"\x06temp_c\x18\x03 \x01(\x01R\x05tempC\x12\x15\n" +
+	"\x06temp_f\x18\x04 \x01(\x01R\x05tempF\x12\x1e\n" +
+	"\vtemp_feel_c\x18\x05 \x01(\x01R\ttempFeelC\x12\x1e\n" +
+	"\vtemp_feel_f\x18\x06 \x01(\x01R\ttempFeelF\x12)\n" +
+	"\x10humidity_percent\x18\a \x01(\x01R\x0fhumidityPercent\x12\x1f\n" +
+	"\vpressure_mb\x18\b \x01(\x01R\n" +
+	"pressureMb\x123\n" +
+	"\x15precipitation_percent\x18\t \x01(\x01R\x14precipitationPercent\"\x1c\n" +
 	"\x1aGetAllPressureStatsRequest\"V\n" +
 	"\x1bGetAllPressureStatsResponse\x127\n" +
 	"\x05stats\x18\x01 \x03(\v2!.weather_provider.v1.PressureStatR\x05stats\":\n" +
@@ -312,10 +600,20 @@ const file_weather_provider_v1_weather_provider_proto_rawDesc = "" +
 	"\vlocation_id\x18\x01 \x01(\tR\n" +
 	"locationId\"Q\n" +
 	"\x18GetPressureStatsResponse\x125\n" +
-	"\x04stat\x18\x01 \x01(\v2!.weather_provider.v1.PressureStatR\x04stat2\x81\x02\n" +
+	"\x04stat\x18\x01 \x01(\v2!.weather_provider.v1.PressureStatR\x04stat\"\x1a\n" +
+	"\x18GetAllLastWeatherRequest\"S\n" +
+	"\x19GetAllLastWeatherResponse\x126\n" +
+	"\aweather\x18\x01 \x03(\v2\x1c.weather_provider.v1.WeatherR\aweather\"8\n" +
+	"\x15GetLastWeatherRequest\x12\x1f\n" +
+	"\vlocation_id\x18\x01 \x01(\tR\n" +
+	"locationId\"P\n" +
+	"\x16GetLastWeatherResponse\x126\n" +
+	"\aweather\x18\x01 \x01(\v2\x1c.weather_provider.v1.WeatherR\aweather2\xe0\x03\n" +
 	"\x14PressureStatsService\x12x\n" +
 	"\x13GetAllPressureStats\x12/.weather_provider.v1.GetAllPressureStatsRequest\x1a0.weather_provider.v1.GetAllPressureStatsResponse\x12o\n" +
-	"\x10GetPressureStats\x12,.weather_provider.v1.GetPressureStatsRequest\x1a-.weather_provider.v1.GetPressureStatsResponseB\xfb\x01\n" +
+	"\x10GetPressureStats\x12,.weather_provider.v1.GetPressureStatsRequest\x1a-.weather_provider.v1.GetPressureStatsResponse\x12r\n" +
+	"\x11GetAllLastWeather\x12-.weather_provider.v1.GetAllLastWeatherRequest\x1a..weather_provider.v1.GetAllLastWeatherResponse\x12i\n" +
+	"\x0eGetLastWeather\x12*.weather_provider.v1.GetLastWeatherRequest\x1a+.weather_provider.v1.GetLastWeatherResponseB\xfb\x01\n" +
 	"\x17com.weather_provider.v1B\x14WeatherProviderProtoP\x01Zagithub.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1\xa2\x02\x03WXX\xaa\x02\x12WeatherProvider.V1\xca\x02\x12WeatherProvider\\V1\xe2\x02\x1eWeatherProvider\\V1\\GPBMetadata\xea\x02\x13WeatherProvider::V1b\x06proto3"
 
 var (
@@ -330,28 +628,40 @@ func file_weather_provider_v1_weather_provider_proto_rawDescGZIP() []byte {
 	return file_weather_provider_v1_weather_provider_proto_rawDescData
 }
 
-var file_weather_provider_v1_weather_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_weather_provider_v1_weather_provider_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_weather_provider_v1_weather_provider_proto_goTypes = []any{
 	(*PressureStat)(nil),                // 0: weather_provider.v1.PressureStat
-	(*GetAllPressureStatsRequest)(nil),  // 1: weather_provider.v1.GetAllPressureStatsRequest
-	(*GetAllPressureStatsResponse)(nil), // 2: weather_provider.v1.GetAllPressureStatsResponse
-	(*GetPressureStatsRequest)(nil),     // 3: weather_provider.v1.GetPressureStatsRequest
-	(*GetPressureStatsResponse)(nil),    // 4: weather_provider.v1.GetPressureStatsResponse
-	(*timestamppb.Timestamp)(nil),       // 5: google.protobuf.Timestamp
+	(*Weather)(nil),                     // 1: weather_provider.v1.Weather
+	(*GetAllPressureStatsRequest)(nil),  // 2: weather_provider.v1.GetAllPressureStatsRequest
+	(*GetAllPressureStatsResponse)(nil), // 3: weather_provider.v1.GetAllPressureStatsResponse
+	(*GetPressureStatsRequest)(nil),     // 4: weather_provider.v1.GetPressureStatsRequest
+	(*GetPressureStatsResponse)(nil),    // 5: weather_provider.v1.GetPressureStatsResponse
+	(*GetAllLastWeatherRequest)(nil),    // 6: weather_provider.v1.GetAllLastWeatherRequest
+	(*GetAllLastWeatherResponse)(nil),   // 7: weather_provider.v1.GetAllLastWeatherResponse
+	(*GetLastWeatherRequest)(nil),       // 8: weather_provider.v1.GetLastWeatherRequest
+	(*GetLastWeatherResponse)(nil),      // 9: weather_provider.v1.GetLastWeatherResponse
+	(*timestamppb.Timestamp)(nil),       // 10: google.protobuf.Timestamp
 }
 var file_weather_provider_v1_weather_provider_proto_depIdxs = []int32{
-	5, // 0: weather_provider.v1.PressureStat.last_updated:type_name -> google.protobuf.Timestamp
-	0, // 1: weather_provider.v1.GetAllPressureStatsResponse.stats:type_name -> weather_provider.v1.PressureStat
-	0, // 2: weather_provider.v1.GetPressureStatsResponse.stat:type_name -> weather_provider.v1.PressureStat
-	1, // 3: weather_provider.v1.PressureStatsService.GetAllPressureStats:input_type -> weather_provider.v1.GetAllPressureStatsRequest
-	3, // 4: weather_provider.v1.PressureStatsService.GetPressureStats:input_type -> weather_provider.v1.GetPressureStatsRequest
-	2, // 5: weather_provider.v1.PressureStatsService.GetAllPressureStats:output_type -> weather_provider.v1.GetAllPressureStatsResponse
-	4, // 6: weather_provider.v1.PressureStatsService.GetPressureStats:output_type -> weather_provider.v1.GetPressureStatsResponse
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	10, // 0: weather_provider.v1.PressureStat.last_updated:type_name -> google.protobuf.Timestamp
+	10, // 1: weather_provider.v1.Weather.last_updated:type_name -> google.protobuf.Timestamp
+	0,  // 2: weather_provider.v1.GetAllPressureStatsResponse.stats:type_name -> weather_provider.v1.PressureStat
+	0,  // 3: weather_provider.v1.GetPressureStatsResponse.stat:type_name -> weather_provider.v1.PressureStat
+	1,  // 4: weather_provider.v1.GetAllLastWeatherResponse.weather:type_name -> weather_provider.v1.Weather
+	1,  // 5: weather_provider.v1.GetLastWeatherResponse.weather:type_name -> weather_provider.v1.Weather
+	2,  // 6: weather_provider.v1.PressureStatsService.GetAllPressureStats:input_type -> weather_provider.v1.GetAllPressureStatsRequest
+	4,  // 7: weather_provider.v1.PressureStatsService.GetPressureStats:input_type -> weather_provider.v1.GetPressureStatsRequest
+	6,  // 8: weather_provider.v1.PressureStatsService.GetAllLastWeather:input_type -> weather_provider.v1.GetAllLastWeatherRequest
+	8,  // 9: weather_provider.v1.PressureStatsService.GetLastWeather:input_type -> weather_provider.v1.GetLastWeatherRequest
+	3,  // 10: weather_provider.v1.PressureStatsService.GetAllPressureStats:output_type -> weather_provider.v1.GetAllPressureStatsResponse
+	5,  // 11: weather_provider.v1.PressureStatsService.GetPressureStats:output_type -> weather_provider.v1.GetPressureStatsResponse
+	7,  // 12: weather_provider.v1.PressureStatsService.GetAllLastWeather:output_type -> weather_provider.v1.GetAllLastWeatherResponse
+	9,  // 13: weather_provider.v1.PressureStatsService.GetLastWeather:output_type -> weather_provider.v1.GetLastWeatherResponse
+	10, // [10:14] is the sub-list for method output_type
+	6,  // [6:10] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_weather_provider_v1_weather_provider_proto_init() }
@@ -365,7 +675,7 @@ func file_weather_provider_v1_weather_provider_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_weather_provider_v1_weather_provider_proto_rawDesc), len(file_weather_provider_v1_weather_provider_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

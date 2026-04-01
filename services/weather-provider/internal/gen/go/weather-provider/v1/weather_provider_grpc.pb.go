@@ -21,6 +21,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	PressureStatsService_GetAllPressureStats_FullMethodName = "/weather_provider.v1.PressureStatsService/GetAllPressureStats"
 	PressureStatsService_GetPressureStats_FullMethodName    = "/weather_provider.v1.PressureStatsService/GetPressureStats"
+	PressureStatsService_GetAllLastWeather_FullMethodName   = "/weather_provider.v1.PressureStatsService/GetAllLastWeather"
+	PressureStatsService_GetLastWeather_FullMethodName      = "/weather_provider.v1.PressureStatsService/GetLastWeather"
 )
 
 // PressureStatsServiceClient is the client API for PressureStatsService service.
@@ -29,6 +31,8 @@ const (
 type PressureStatsServiceClient interface {
 	GetAllPressureStats(ctx context.Context, in *GetAllPressureStatsRequest, opts ...grpc.CallOption) (*GetAllPressureStatsResponse, error)
 	GetPressureStats(ctx context.Context, in *GetPressureStatsRequest, opts ...grpc.CallOption) (*GetPressureStatsResponse, error)
+	GetAllLastWeather(ctx context.Context, in *GetAllLastWeatherRequest, opts ...grpc.CallOption) (*GetAllLastWeatherResponse, error)
+	GetLastWeather(ctx context.Context, in *GetLastWeatherRequest, opts ...grpc.CallOption) (*GetLastWeatherResponse, error)
 }
 
 type pressureStatsServiceClient struct {
@@ -59,12 +63,34 @@ func (c *pressureStatsServiceClient) GetPressureStats(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *pressureStatsServiceClient) GetAllLastWeather(ctx context.Context, in *GetAllLastWeatherRequest, opts ...grpc.CallOption) (*GetAllLastWeatherResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllLastWeatherResponse)
+	err := c.cc.Invoke(ctx, PressureStatsService_GetAllLastWeather_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pressureStatsServiceClient) GetLastWeather(ctx context.Context, in *GetLastWeatherRequest, opts ...grpc.CallOption) (*GetLastWeatherResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetLastWeatherResponse)
+	err := c.cc.Invoke(ctx, PressureStatsService_GetLastWeather_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PressureStatsServiceServer is the server API for PressureStatsService service.
 // All implementations must embed UnimplementedPressureStatsServiceServer
 // for forward compatibility.
 type PressureStatsServiceServer interface {
 	GetAllPressureStats(context.Context, *GetAllPressureStatsRequest) (*GetAllPressureStatsResponse, error)
 	GetPressureStats(context.Context, *GetPressureStatsRequest) (*GetPressureStatsResponse, error)
+	GetAllLastWeather(context.Context, *GetAllLastWeatherRequest) (*GetAllLastWeatherResponse, error)
+	GetLastWeather(context.Context, *GetLastWeatherRequest) (*GetLastWeatherResponse, error)
 	mustEmbedUnimplementedPressureStatsServiceServer()
 }
 
@@ -80,6 +106,12 @@ func (UnimplementedPressureStatsServiceServer) GetAllPressureStats(context.Conte
 }
 func (UnimplementedPressureStatsServiceServer) GetPressureStats(context.Context, *GetPressureStatsRequest) (*GetPressureStatsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPressureStats not implemented")
+}
+func (UnimplementedPressureStatsServiceServer) GetAllLastWeather(context.Context, *GetAllLastWeatherRequest) (*GetAllLastWeatherResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAllLastWeather not implemented")
+}
+func (UnimplementedPressureStatsServiceServer) GetLastWeather(context.Context, *GetLastWeatherRequest) (*GetLastWeatherResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetLastWeather not implemented")
 }
 func (UnimplementedPressureStatsServiceServer) mustEmbedUnimplementedPressureStatsServiceServer() {}
 func (UnimplementedPressureStatsServiceServer) testEmbeddedByValue()                              {}
@@ -138,6 +170,42 @@ func _PressureStatsService_GetPressureStats_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PressureStatsService_GetAllLastWeather_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllLastWeatherRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PressureStatsServiceServer).GetAllLastWeather(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PressureStatsService_GetAllLastWeather_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PressureStatsServiceServer).GetAllLastWeather(ctx, req.(*GetAllLastWeatherRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PressureStatsService_GetLastWeather_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLastWeatherRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PressureStatsServiceServer).GetLastWeather(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PressureStatsService_GetLastWeather_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PressureStatsServiceServer).GetLastWeather(ctx, req.(*GetLastWeatherRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PressureStatsService_ServiceDesc is the grpc.ServiceDesc for PressureStatsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +220,14 @@ var PressureStatsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPressureStats",
 			Handler:    _PressureStatsService_GetPressureStats_Handler,
+		},
+		{
+			MethodName: "GetAllLastWeather",
+			Handler:    _PressureStatsService_GetAllLastWeather_Handler,
+		},
+		{
+			MethodName: "GetLastWeather",
+			Handler:    _PressureStatsService_GetLastWeather_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
