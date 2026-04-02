@@ -32,9 +32,9 @@ message Weather {
   double temp_f = 4;
   double temp_feel_c = 5;
   double temp_feel_f = 6;
-  double humidity_percent = 7;
+  int32 humidity_percent = 7;
   double pressure_mb = 8;
-  double precipitation_percent = 9;
+  int32 precipitation_percent = 9;
 }
 
 message GetAllPressureStatsRequest {}

@@ -13,8 +13,8 @@ import (
 func TestGetStatsByID(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		mockRepo := &testutil.MockReader{
-			GetByIDFunc: func(ctx context.Context, id string) (*repository.CacheDoc, error) {
-				return &repository.CacheDoc{
+			GetByIDFunc: func(ctx context.Context, id string) (*repository.PressureCacheDoc, error) {
+				return &repository.PressureCacheDoc{
 					LocationID:  id,
 					LastUpdated: time.Now(),
 				}, nil
@@ -23,7 +23,6 @@ func TestGetStatsByID(t *testing.T) {
 		svc := NewWeatherService(mockRepo)
 
 		res, err := svc.GetStatsByID(context.Background(), "test-loc")
-
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
@@ -34,7 +33,7 @@ func TestGetStatsByID(t *testing.T) {
 
 	t.Run("Error", func(t *testing.T) {
 		mockRepo := &testutil.MockReader{
-			GetByIDFunc: func(ctx context.Context, id string) (*repository.CacheDoc, error) {
+			GetByIDFunc: func(ctx context.Context, id string) (*repository.PressureCacheDoc, error) {
 				return nil, errors.New("db error")
 			},
 		}
@@ -52,8 +51,8 @@ func TestGetAllStats(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		now := time.Now()
 		mockRepo := &testutil.MockReader{
-			GetAllFunc: func(ctx context.Context) ([]repository.CacheDoc, error) {
-				return []repository.CacheDoc{
+			GetAllFunc: func(ctx context.Context) ([]repository.PressureCacheDoc, error) {
+				return []repository.PressureCacheDoc{
 					{LocationID: "house-nick", LastUpdated: now},
 					{LocationID: "house-nita", LastUpdated: now},
 					{LocationID: "distribution-hall", LastUpdated: now},
@@ -63,7 +62,6 @@ func TestGetAllStats(t *testing.T) {
 		svc := NewWeatherService(mockRepo)
 
 		results, err := svc.GetAllStats(context.Background())
-
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
@@ -77,7 +75,7 @@ func TestGetAllStats(t *testing.T) {
 
 	t.Run("Error", func(t *testing.T) {
 		mockRepo := &testutil.MockReader{
-			GetAllFunc: func(ctx context.Context) ([]repository.CacheDoc, error) {
+			GetAllFunc: func(ctx context.Context) ([]repository.PressureCacheDoc, error) {
 				return nil, errors.New("db error")
 			},
 		}

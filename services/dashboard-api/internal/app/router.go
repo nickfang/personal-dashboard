@@ -19,8 +19,10 @@ func NewRouter(dashboardHandler *handlers.DashboardHandler) *chi.Mux {
 	r.Use(customMiddleware.SlogLogger) // Use our custom slog middleware
 
 	// API Routes
-	r.Route("/api/v1", func(r chi.Router) {
+	r.Route("/v1", func(r chi.Router) {
 		r.Get("/dashboard", dashboardHandler.GetDashboard)
+		// r.Get("/weather", dashboardHandler.GetWeather)
+		// r.Get("/pollen", dashboardHandler.GetPollen)
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

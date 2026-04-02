@@ -28,6 +28,26 @@ func formatPressureText(pressureStats []*pressurePb.PressureStat) map[string]str
 	return pressureByLocation
 }
 
+func formatWeatherText(weathers []*pressurePb.Weather) map[string]string {
+	weatherByLocation := make(map[string]string)
+	sortedWeathers := slices.Clone(weathers)
+	slices.SortFunc(sortedWeathers, func(a, b *pressurePb.Weather) int {
+		return strings.Compare(a.LocationId, b.LocationId)
+	})
+	for _, weather := range sortedWeathers {
+		location := weather.LocationId
+		var weatherText strings.Builder
+		weatherText.WriteString(fmt.Sprintf("Weather: %s\n", weather.LastUpdated.AsTime().Local().Format("2006.01.02 15:04:05")))
+		weatherText.WriteString(fmt.Sprintf("  Temp: %.2fF\n", weather.TempF))
+		weatherText.WriteString(fmt.Sprintf("  Feels Like: %.2fF\n", weather.TempFeelF))
+		weatherText.WriteString(fmt.Sprintf("  Humidity: %d%%\n", weather.HumidityPercent))
+		weatherText.WriteString(fmt.Sprintf("  Precipitation: %d%%\n", weather.PrecipitationPercent))
+		weatherText.WriteString(fmt.Sprintf("  Pressure: %.2fmb\n", weather.PressureMb))
+		weatherByLocation[location] = weatherText.String()
+	}
+	return weatherByLocation
+}
+
 func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string {
 	pollenByLocation := make(map[string]string)
 	sortedPollenReports := slices.Clone(pollenReports)
@@ -74,9 +94,10 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 	return pollenByLocation
 }
 
-func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports []*pollenPb.PollenReport) (string, error) {
+func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports []*pollenPb.PollenReport, lastWeathers []*pressurePb.Weather) (string, error) {
 	pressureByLocation := formatPressureText(pressureStats)
 	pollenByLocation := formatPollenText(pollenReports)
+	weatherByLocation := formatWeatherText(lastWeathers)
 
 	locations := make(map[string]struct{})
 	for location := range pressureByLocation {
@@ -90,6 +111,7 @@ func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports
 	var data strings.Builder
 	for _, location := range slices.Sorted(maps.Keys(locations)) {
 		data.WriteString(fmt.Sprintf("---------------- %s ----------------\n", location))
+		data.WriteString(weatherByLocation[location])
 		data.WriteString(pressureByLocation[location])
 		data.WriteString(pollenByLocation[location])
 	}

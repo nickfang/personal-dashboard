@@ -130,9 +130,9 @@ type Weather struct {
 	TempF                float64                `protobuf:"fixed64,4,opt,name=temp_f,json=tempF,proto3" json:"temp_f,omitempty"`
 	TempFeelC            float64                `protobuf:"fixed64,5,opt,name=temp_feel_c,json=tempFeelC,proto3" json:"temp_feel_c,omitempty"`
 	TempFeelF            float64                `protobuf:"fixed64,6,opt,name=temp_feel_f,json=tempFeelF,proto3" json:"temp_feel_f,omitempty"`
-	HumidityPercent      float64                `protobuf:"fixed64,7,opt,name=humidity_percent,json=humidityPercent,proto3" json:"humidity_percent,omitempty"`
+	HumidityPercent      int32                  `protobuf:"varint,7,opt,name=humidity_percent,json=humidityPercent,proto3" json:"humidity_percent,omitempty"`
 	PressureMb           float64                `protobuf:"fixed64,8,opt,name=pressure_mb,json=pressureMb,proto3" json:"pressure_mb,omitempty"`
-	PrecipitationPercent float64                `protobuf:"fixed64,9,opt,name=precipitation_percent,json=precipitationPercent,proto3" json:"precipitation_percent,omitempty"`
+	PrecipitationPercent int32                  `protobuf:"varint,9,opt,name=precipitation_percent,json=precipitationPercent,proto3" json:"precipitation_percent,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -209,7 +209,7 @@ func (x *Weather) GetTempFeelF() float64 {
 	return 0
 }
 
-func (x *Weather) GetHumidityPercent() float64 {
+func (x *Weather) GetHumidityPercent() int32 {
 	if x != nil {
 		return x.HumidityPercent
 	}
@@ -223,7 +223,7 @@ func (x *Weather) GetPressureMb() float64 {
 	return 0
 }
 
-func (x *Weather) GetPrecipitationPercent() float64 {
+func (x *Weather) GetPrecipitationPercent() int32 {
 	if x != nil {
 		return x.PrecipitationPercent
 	}
@@ -589,10 +589,10 @@ const file_weather_provider_v1_weather_provider_proto_rawDesc = "" +
 	"\x06temp_f\x18\x04 \x01(\x01R\x05tempF\x12\x1e\n" +
 	"\vtemp_feel_c\x18\x05 \x01(\x01R\ttempFeelC\x12\x1e\n" +
 	"\vtemp_feel_f\x18\x06 \x01(\x01R\ttempFeelF\x12)\n" +
-	"\x10humidity_percent\x18\a \x01(\x01R\x0fhumidityPercent\x12\x1f\n" +
+	"\x10humidity_percent\x18\a \x01(\x05R\x0fhumidityPercent\x12\x1f\n" +
 	"\vpressure_mb\x18\b \x01(\x01R\n" +
 	"pressureMb\x123\n" +
-	"\x15precipitation_percent\x18\t \x01(\x01R\x14precipitationPercent\"\x1c\n" +
+	"\x15precipitation_percent\x18\t \x01(\x05R\x14precipitationPercent\"\x1c\n" +
 	"\x1aGetAllPressureStatsRequest\"V\n" +
 	"\x1bGetAllPressureStatsResponse\x127\n" +
 	"\x05stats\x18\x01 \x03(\v2!.weather_provider.v1.PressureStatR\x05stats\":\n" +

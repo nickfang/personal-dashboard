@@ -89,7 +89,7 @@ func main() {
 	for i, d := range data {
 		record := []string{
 			strconv.Itoa(i),
-			d.Location,
+			d.LocationID,
 			d.Timestamp.Format(time.RFC3339),
 			strconv.Itoa(d.HumidityPercent),
 			strconv.Itoa(d.PrecipitationPercent),

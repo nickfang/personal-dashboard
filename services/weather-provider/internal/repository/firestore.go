@@ -13,7 +13,7 @@ import (
 
 // Internal Firestore Models (Match weather-collector)
 type WeatherPoint struct {
-	Location             string    `firestore:"location"`
+	LocationID           string    `firestore:"location"`
 	Timestamp            time.Time `firestore:"timestamp"`
 	HumidityPercent      int       `firestore:"humidity_pct"`
 	PrecipitationPercent int       `firestore:"precipitation_pct"`
@@ -44,11 +44,16 @@ type PressureStats struct {
 	Trend     string    `firestore:"trend"`
 }
 
-type CacheDoc struct {
-	LocationID   string        `firestore:"-"` // Not in doc, but we use doc.ID
-	LastUpdated  time.Time     `firestore:"last_updated"`
-	CurrentValue WeatherPoint  `firestore:"current"`
-	Analysis     PressureStats `firestore:"analysis"`
+type PressureCacheDoc struct {
+	LocationID  string        `firestore:"-"` // Not in doc, but we use doc.ID
+	LastUpdated time.Time     `firestore:"last_updated"`
+	Analysis    PressureStats `firestore:"analysis"`
+}
+
+type WeatherCacheDoc struct {
+	LocationID   string       `firestore:"-"` // not in doc, but we use doc.ID
+	LastUpdated  time.Time    `firestore:"last_updated"`
+	CurrentValue WeatherPoint `firestore:"current"`
 }
 
 type FirestoreRepository struct {
@@ -67,8 +72,22 @@ func (r *FirestoreRepository) Close() error {
 	return r.client.Close()
 }
 
-func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
-	var results []CacheDoc
+func (r *FirestoreRepository) GetByID(ctx context.Context, id string) (*PressureCacheDoc, error) {
+	doc, err := r.client.Collection(shared.WeatherCacheCollection).Doc(id).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var cache PressureCacheDoc
+	if err := doc.DataTo(&cache); err != nil {
+		return nil, err
+	}
+	cache.LocationID = doc.Ref.ID
+	return &cache, nil
+}
+
+func (r *FirestoreRepository) GetAll(ctx context.Context) ([]PressureCacheDoc, error) {
+	var results []PressureCacheDoc
 	// Safety: Limit query to 100 documents to prevent OOM.
 	// In production, this should use pagination (cursors).
 	iter := r.client.Collection(shared.WeatherCacheCollection).Limit(100).Documents(ctx)
@@ -83,7 +102,7 @@ func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 			return nil, err
 		}
 
-		var cache CacheDoc
+		var cache PressureCacheDoc
 		if err := doc.DataTo(&cache); err != nil {
 			slog.Warn("Skipping invalid document in GetAll", "doc_id", doc.Ref.ID, "error", err)
 			continue
@@ -95,18 +114,45 @@ func (r *FirestoreRepository) GetAll(ctx context.Context) ([]CacheDoc, error) {
 	return results, nil
 }
 
-func (r *FirestoreRepository) GetByID(ctx context.Context, id string) (*CacheDoc, error) {
+func (r *FirestoreRepository) GetLastWeather(ctx context.Context, id string) (*WeatherCacheDoc, error) {
 	doc, err := r.client.Collection(shared.WeatherCacheCollection).Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var cache CacheDoc
+	var cache WeatherCacheDoc
 	if err := doc.DataTo(&cache); err != nil {
 		return nil, err
 	}
 	cache.LocationID = doc.Ref.ID
 	return &cache, nil
+}
+
+func (r *FirestoreRepository) GetAllLastWeather(ctx context.Context) ([]WeatherCacheDoc, error) {
+	var results []WeatherCacheDoc
+	iter := r.client.Collection(shared.WeatherCacheCollection).
+		Select("current", "last_updated").Limit(100).
+		Documents(ctx)
+	defer iter.Stop()
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		var cache WeatherCacheDoc
+		if err := doc.DataTo(&cache); err != nil {
+			slog.Warn("Skipping invalid document in GetAllLastWeather", "doc_id", doc.Ref.ID, "error", err)
+			continue
+		}
+		cache.LocationID = doc.Ref.ID
+		results = append(results, cache)
+	}
+	return results, nil
 }
 
 func (r *FirestoreRepository) GetAllRaw(ctx context.Context) ([]WeatherPoint, error) {

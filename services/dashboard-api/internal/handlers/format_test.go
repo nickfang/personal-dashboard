@@ -92,6 +92,106 @@ func TestFormatPressureText_ZeroDeltas(t *testing.T) {
 	}
 }
 
+// --- formatWeatherText tests ---
+
+func TestFormatWeatherText(t *testing.T) {
+	fixedTime := time.Date(2025, 3, 15, 14, 30, 0, 0, time.UTC)
+	localFormatted := fixedTime.Local().Format("2006.01.02 15:04:05")
+
+	weathers := []*weatherPb.Weather{
+		{
+			LocationId:           "house-nick",
+			TempC:                22.50,
+			TempF:                72.50,
+			TempFeelC:            21.00,
+			TempFeelF:            69.80,
+			HumidityPercent:      65.00,
+			PressureMb:           1013.25,
+			PrecipitationPercent: 10.00,
+			LastUpdated:          timestamppb.New(fixedTime),
+		},
+	}
+
+	result := formatWeatherText(weathers)
+
+	text, ok := result["house-nick"]
+	if !ok {
+		t.Fatal("expected 'house-nick' key in result map")
+	}
+
+	// Timestamp formatted as local time
+	if !strings.Contains(text, fmt.Sprintf("Weather: %s", localFormatted)) {
+		t.Errorf("expected weather timestamp in local time, got:\n%s", text)
+	}
+
+	// Temperature
+	if !strings.Contains(text, "Temp: 22.50C (72.50F)") {
+		t.Errorf("expected temperature, got:\n%s", text)
+	}
+
+	// Feels Like
+	if !strings.Contains(text, "Feels Like: 21.00C (69.80F)") {
+		t.Errorf("expected feels like, got:\n%s", text)
+	}
+
+	// Humidity
+	if !strings.Contains(text, "Humidity: 65.00%") {
+		t.Errorf("expected humidity, got:\n%s", text)
+	}
+
+	// Pressure
+	if !strings.Contains(text, "Pressure: 1013.25mb") {
+		t.Errorf("expected pressure, got:\n%s", text)
+	}
+
+	// Precipitation
+	if !strings.Contains(text, "Precipitation: 10.00%") {
+		t.Errorf("expected precipitation, got:\n%s", text)
+	}
+}
+
+func TestFormatWeatherText_MultipleLocations(t *testing.T) {
+	fixedTime := timestamppb.New(time.Date(2025, 3, 15, 12, 0, 0, 0, time.UTC))
+
+	weathers := []*weatherPb.Weather{
+		{LocationId: "house-nick", TempC: 22.5, TempF: 72.5, LastUpdated: fixedTime},
+		{LocationId: "house-mom", TempC: 18.0, TempF: 64.4, LastUpdated: fixedTime},
+	}
+
+	result := formatWeatherText(weathers)
+
+	if _, ok := result["house-nick"]; !ok {
+		t.Error("expected 'house-nick' key in result map")
+	}
+	if _, ok := result["house-mom"]; !ok {
+		t.Error("expected 'house-mom' key in result map")
+	}
+	if !strings.Contains(result["house-nick"], "22.50C") {
+		t.Errorf("expected house-nick temp, got:\n%s", result["house-nick"])
+	}
+	if !strings.Contains(result["house-mom"], "18.00C") {
+		t.Errorf("expected house-mom temp, got:\n%s", result["house-mom"])
+	}
+}
+
+func TestFormatWeatherText_ZeroValues(t *testing.T) {
+	fixedTime := timestamppb.New(time.Date(2025, 3, 15, 12, 0, 0, 0, time.UTC))
+
+	weathers := []*weatherPb.Weather{
+		{LocationId: "house-nick", LastUpdated: fixedTime},
+	}
+
+	result := formatWeatherText(weathers)
+	text := result["house-nick"]
+
+	if !strings.Contains(text, "Temp: 0.00C (0.00F)") {
+		t.Errorf("expected zero temps, got:\n%s", text)
+	}
+	if !strings.Contains(text, "Humidity: 0.00%") {
+		t.Errorf("expected zero humidity, got:\n%s", text)
+	}
+}
+
 // --- formatPollenText tests ---
 
 func TestFormatPollenText(t *testing.T) {
@@ -272,7 +372,16 @@ func TestFormatDashboardText(t *testing.T) {
 		},
 	}
 
-	result, err := formatDashboardText(pressureStats, pollenReports)
+	lastWeathers := []*weatherPb.Weather{
+		{
+			LocationId:  "house-nick",
+			TempC:       22.5,
+			TempF:       72.5,
+			LastUpdated: timestamppb.New(fixedTime),
+		},
+	}
+
+	result, err := formatDashboardText(pressureStats, pollenReports, lastWeathers)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -282,7 +391,10 @@ func TestFormatDashboardText(t *testing.T) {
 		t.Errorf("expected location separator, got:\n%s", result)
 	}
 
-	// Pressure and pollen sections combined
+	// Weather, pressure and pollen sections combined
+	if !strings.Contains(result, fmt.Sprintf("Weather: %s", localFormatted)) {
+		t.Errorf("expected weather section, got:\n%s", result)
+	}
 	if !strings.Contains(result, fmt.Sprintf("Pressure: %s", localFormatted)) {
 		t.Errorf("expected pressure section, got:\n%s", result)
 	}
@@ -304,7 +416,12 @@ func TestFormatDashboardText_MultipleLocations(t *testing.T) {
 		{LocationId: "house-mom", CollectedAt: fixedTime, Plants: []*pollenPb.PollenPlant{{DisplayName: "Oak", Index: 2, Category: "Low", InSeason: false}}},
 	}
 
-	result, err := formatDashboardText(pressureStats, pollenReports)
+	lastWeathers := []*weatherPb.Weather{
+		{LocationId: "house-nick", TempC: 22.5, TempF: 72.5, LastUpdated: fixedTime},
+		{LocationId: "house-mom", TempC: 18.0, TempF: 64.4, LastUpdated: fixedTime},
+	}
+
+	result, err := formatDashboardText(pressureStats, pollenReports, lastWeathers)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -320,5 +437,11 @@ func TestFormatDashboardText_MultipleLocations(t *testing.T) {
 	}
 	if !strings.Contains(result, "falling") {
 		t.Errorf("expected 'falling' trend for house-mom, got:\n%s", result)
+	}
+	if !strings.Contains(result, "22.50C") {
+		t.Errorf("expected house-nick weather temp, got:\n%s", result)
+	}
+	if !strings.Contains(result, "18.00C") {
+		t.Errorf("expected house-mom weather temp, got:\n%s", result)
 	}
 }
