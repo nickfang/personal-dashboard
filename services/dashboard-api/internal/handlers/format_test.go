@@ -125,17 +125,17 @@ func TestFormatWeatherText(t *testing.T) {
 	}
 
 	// Temperature
-	if !strings.Contains(text, "Temp: 22.50C (72.50F)") {
+	if !strings.Contains(text, "Temp: 72.50F") {
 		t.Errorf("expected temperature, got:\n%s", text)
 	}
 
 	// Feels Like
-	if !strings.Contains(text, "Feels Like: 21.00C (69.80F)") {
+	if !strings.Contains(text, "Feels Like: 69.80F") {
 		t.Errorf("expected feels like, got:\n%s", text)
 	}
 
 	// Humidity
-	if !strings.Contains(text, "Humidity: 65.00%") {
+	if !strings.Contains(text, "Humidity: 65%") {
 		t.Errorf("expected humidity, got:\n%s", text)
 	}
 
@@ -145,7 +145,7 @@ func TestFormatWeatherText(t *testing.T) {
 	}
 
 	// Precipitation
-	if !strings.Contains(text, "Precipitation: 10.00%") {
+	if !strings.Contains(text, "Precipitation: 10%") {
 		t.Errorf("expected precipitation, got:\n%s", text)
 	}
 }
@@ -166,10 +166,10 @@ func TestFormatWeatherText_MultipleLocations(t *testing.T) {
 	if _, ok := result["house-mom"]; !ok {
 		t.Error("expected 'house-mom' key in result map")
 	}
-	if !strings.Contains(result["house-nick"], "22.50C") {
+	if !strings.Contains(result["house-nick"], "72.50F") {
 		t.Errorf("expected house-nick temp, got:\n%s", result["house-nick"])
 	}
-	if !strings.Contains(result["house-mom"], "18.00C") {
+	if !strings.Contains(result["house-mom"], "64.40F") {
 		t.Errorf("expected house-mom temp, got:\n%s", result["house-mom"])
 	}
 }
@@ -184,10 +184,10 @@ func TestFormatWeatherText_ZeroValues(t *testing.T) {
 	result := formatWeatherText(weathers)
 	text := result["house-nick"]
 
-	if !strings.Contains(text, "Temp: 0.00C (0.00F)") {
+	if !strings.Contains(text, "Temp: 0.00F") {
 		t.Errorf("expected zero temps, got:\n%s", text)
 	}
-	if !strings.Contains(text, "Humidity: 0.00%") {
+	if !strings.Contains(text, "Humidity: 0%") {
 		t.Errorf("expected zero humidity, got:\n%s", text)
 	}
 }
@@ -438,10 +438,10 @@ func TestFormatDashboardText_MultipleLocations(t *testing.T) {
 	if !strings.Contains(result, "falling") {
 		t.Errorf("expected 'falling' trend for house-mom, got:\n%s", result)
 	}
-	if !strings.Contains(result, "22.50C") {
+	if !strings.Contains(result, "72.50F") {
 		t.Errorf("expected house-nick weather temp, got:\n%s", result)
 	}
-	if !strings.Contains(result, "18.00C") {
+	if !strings.Contains(result, "64.40F") {
 		t.Errorf("expected house-mom weather temp, got:\n%s", result)
 	}
 }

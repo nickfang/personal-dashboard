@@ -86,6 +86,7 @@ func TestGetLastWeather_Mapping(t *testing.T) {
 	mockRepo := &testutil.MockReader{
 		GetLastWeatherFunc: func(ctx context.Context, id string) (*repository.WeatherCacheDoc, error) {
 			return &repository.WeatherCacheDoc{
+				LocationID: id,
 				CurrentValue: repository.WeatherPoint{
 					LocationID:           id,
 					Timestamp:            now,
