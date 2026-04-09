@@ -17,6 +17,8 @@ import (
 type WeatherFetcher interface {
 	GetPressureStat(ctx context.Context, locationID string) (*pressurePb.PressureStat, error)
 	GetPressureStats(ctx context.Context) ([]*pressurePb.PressureStat, error)
+	GetLastWeather(ctx context.Context, locationID string) (*pressurePb.Weather, error)
+	GetAllLastWeather(ctx context.Context) ([]*pressurePb.Weather, error)
 }
 
 type PollenFetcher interface {
@@ -65,10 +67,23 @@ func aggregatePollenReports(pollenReports []*pollenPb.PollenReport) (map[string]
 	return aggregatedData, nil
 }
 
+func aggregateLastWeather(lastWeathers []*pressurePb.Weather) (map[string]json.RawMessage, error) {
+	aggregatedData := make(map[string]json.RawMessage, len(lastWeathers))
+	for _, weather := range lastWeathers {
+		data, err := protoMarshaler.Marshal(weather)
+		if err != nil {
+			return nil, err
+		}
+		aggregatedData[weather.LocationId] = data
+	}
+	return aggregatedData, nil
+}
+
 func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	// 1. Fetch data from clients
 	var pressureStats []*pressurePb.PressureStat
 	var pollenReports []*pollenPb.PollenReport
+	var allLastWeather []*pressurePb.Weather
 
 	g, ctx := errgroup.WithContext(r.Context())
 
@@ -83,6 +98,13 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		var err error
 		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
 		defer cancel()
+		allLastWeather, err = h.weatherClient.GetAllLastWeather(rpcCtx)
+		return err
+	})
+	g.Go(func() error {
+		var err error
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
 		pollenReports, err = h.pollenClient.GetPollenReports(rpcCtx)
 		return err
 	})
@@ -91,10 +113,9 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		RespondWithGrpcError(w, err, "Failed to fetch dashboard data")
 		return
 	}
-
 	// 2. Respond with text/plain if the user agent is curl
 	if strings.Contains(r.Header.Get("User-Agent"), "curl") {
-		body, err := formatDashboardText(pressureStats, pollenReports)
+		body, err := formatDashboardText(pressureStats, pollenReports, allLastWeather)
 		if err != nil {
 			http.Error(w, "Failed to format text dashboard", http.StatusInternalServerError)
 			return
@@ -115,11 +136,17 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Failed to encode pollen response", http.StatusInternalServerError)
 		return
 	}
+	aggregatedLastWeather, err := aggregateLastWeather(allLastWeather)
+	if err != nil {
+		http.Error(w, "Failed to encode last weather response", http.StatusInternalServerError)
+		return
+	}
 
 	// 4. Respond with JSON (encoding/json handles json.RawMessage values
 	// by embedding them verbatim, so the protojson output passes through).
 	// Marshal to buffer first so we can return a clean 500 if encoding fails.
 	buf, err := json.Marshal(map[string]any{
+		"weather":  aggregatedLastWeather,
 		"pressure": aggregatedPressure,
 		"pollen":   aggregatedPollen,
 	})

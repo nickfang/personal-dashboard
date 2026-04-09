@@ -75,3 +75,21 @@ func (c *WeatherClient) GetPressureStat(ctx context.Context, locationId string) 
 	}
 	return resp.Stat, nil
 }
+
+func (c *WeatherClient) GetLastWeather(ctx context.Context, locationId string) (*pb.Weather, error) {
+	resp, err := c.client.GetLastWeather(ctx, &pb.GetLastWeatherRequest{LocationId: locationId})
+	if err != nil {
+		slog.Error("Failed to get last weather", "error", err)
+		return nil, err
+	}
+	return resp.Weather, nil
+}
+
+func (c *WeatherClient) GetAllLastWeather(ctx context.Context) ([]*pb.Weather, error) {
+	resp, err := c.client.GetAllLastWeather(ctx, &pb.GetAllLastWeatherRequest{})
+	if err != nil {
+		slog.Error("Failed to get last weathers", "error", err)
+		return nil, err
+	}
+	return resp.Weather, nil
+}

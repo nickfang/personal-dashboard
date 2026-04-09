@@ -42,6 +42,36 @@ func (m *mockWeatherClient) GetPressureStats(ctx context.Context) ([]*weatherPb.
 	}, nil
 }
 
+func (m *mockWeatherClient) GetLastWeather(ctx context.Context, locationID string) (*weatherPb.Weather, error) {
+	return &weatherPb.Weather{
+		LocationId:           locationID,
+		TempC:                22.5,
+		TempF:                72.5,
+		TempFeelC:            21.0,
+		TempFeelF:            69.8,
+		HumidityPercent:      65,
+		PressureMb:           1013.25,
+		PrecipitationPercent: 10,
+		LastUpdated:          timestamppb.Now(),
+	}, nil
+}
+
+func (m *mockWeatherClient) GetAllLastWeather(ctx context.Context) ([]*weatherPb.Weather, error) {
+	return []*weatherPb.Weather{
+		{
+			LocationId:           "house-nick",
+			TempC:                22.5,
+			TempF:                72.5,
+			TempFeelC:            21.0,
+			TempFeelF:            69.8,
+			HumidityPercent:      65,
+			PressureMb:           1013.25,
+			PrecipitationPercent: 10,
+			LastUpdated:          timestamppb.Now(),
+		},
+	}, nil
+}
+
 type errorWeatherClient struct {
 	err error
 }
@@ -51,6 +81,14 @@ func (m *errorWeatherClient) GetPressureStat(ctx context.Context, locationID str
 }
 
 func (m *errorWeatherClient) GetPressureStats(ctx context.Context) ([]*weatherPb.PressureStat, error) {
+	return nil, m.err
+}
+
+func (m *errorWeatherClient) GetLastWeather(ctx context.Context, locationID string) (*weatherPb.Weather, error) {
+	return nil, m.err
+}
+
+func (m *errorWeatherClient) GetAllLastWeather(ctx context.Context) ([]*weatherPb.Weather, error) {
 	return nil, m.err
 }
 
@@ -216,6 +254,81 @@ func TestDashboardHandler_GetDashboard_GrpcError(t *testing.T) {
 				t.Errorf("expected status %d, got %d", tt.expectedStatus, rr.Code)
 			}
 		})
+	}
+}
+
+// --- Weather (last weather) integration tests ---
+
+func TestDashboardHandler_GetDashboard_IncludesWeather(t *testing.T) {
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+
+	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboard(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to decode JSON: %v", err)
+	}
+
+	if _, ok := resp["weather"]; !ok {
+		t.Fatal("Response missing 'weather' key")
+	}
+
+	weather, ok := resp["weather"].(map[string]interface{})
+	if !ok {
+		t.Fatal("'weather' is not an object")
+	}
+
+	weatherData, ok := weather["house-nick"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Weather object missing 'house-nick' entry")
+	}
+
+	if weatherData["tempC"] != 22.5 {
+		t.Errorf("Expected tempC 22.5, got %v", weatherData["tempC"])
+	}
+	if weatherData["tempF"] != 72.5 {
+		t.Errorf("Expected tempF 72.5, got %v", weatherData["tempF"])
+	}
+}
+
+func TestDashboardHandler_GetDashboard_WeatherProtojsonFormat(t *testing.T) {
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+
+	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboard(rr, req)
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to decode JSON: %v", err)
+	}
+
+	weather := resp["weather"].(map[string]interface{})
+	data := weather["house-nick"].(map[string]interface{})
+
+	// protojson uses camelCase field names
+	if _, ok := data["locationId"]; !ok {
+		t.Errorf("Expected camelCase 'locationId' from protojson, got keys: %v", keys(data))
+	}
+	if _, ok := data["tempC"]; !ok {
+		t.Errorf("Expected camelCase 'tempC' from protojson, got keys: %v", keys(data))
+	}
+	if _, ok := data["humidityPercent"]; !ok {
+		t.Errorf("Expected camelCase 'humidityPercent' from protojson, got keys: %v", keys(data))
 	}
 }
 
@@ -400,6 +513,28 @@ func (m *slowWeatherClient) GetPressureStats(ctx context.Context) ([]*weatherPb.
 	}
 }
 
+func (m *slowWeatherClient) GetLastWeather(ctx context.Context, locationID string) (*weatherPb.Weather, error) {
+	timer := time.NewTimer(m.delay)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return &weatherPb.Weather{LocationId: "house-nick"}, nil
+	case <-ctx.Done():
+		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
+	}
+}
+
+func (m *slowWeatherClient) GetAllLastWeather(ctx context.Context) ([]*weatherPb.Weather, error) {
+	timer := time.NewTimer(m.delay)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+		return []*weatherPb.Weather{{LocationId: "house-nick"}}, nil
+	case <-ctx.Done():
+		return nil, status.Error(codes.DeadlineExceeded, ctx.Err().Error())
+	}
+}
+
 // slowPollenClient simulates a provider that takes longer than the per-RPC timeout.
 type slowPollenClient struct {
 	delay time.Duration
@@ -497,6 +632,14 @@ func TestDashboardHandler_GetDashboard_CurlUserAgent_ReturnsText(t *testing.T) {
 	}
 
 	body := rr.Body.String()
+
+	// Should contain weather data
+	if !strings.Contains(body, "Weather:") {
+		t.Errorf("expected Weather section in text response, got:\n%s", body)
+	}
+	if !strings.Contains(body, "Temp:") {
+		t.Errorf("expected Temp in text response, got:\n%s", body)
+	}
 
 	// Should contain pressure data
 	if !strings.Contains(body, "Pressure:") {
