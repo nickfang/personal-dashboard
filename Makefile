@@ -4,6 +4,7 @@
 	wc-dev wc-build wc-run wc-test \
 	wp-dev wp-build wp-test \
 	da-dev da-build da-test \
+	kiosk-dev kiosk-build kiosk-test \
 	fe-dev fe-test \
 	tf-plan-staging tf-plan-prod tf-apply-staging tf-apply-prod \
 
@@ -129,6 +130,19 @@ da-build: ## Build Dashboard API image
 
 da-test: ## Run Dashboard API tests
 	cd services/dashboard-api && go test ./...
+
+# ==============================================================================
+# Service: Kiosk (CLI TUI)
+# ==============================================================================
+##@ Kiosk
+kiosk-dev: ## Run Kiosk CLI locally (Go)
+	-cd services/kiosk && go run cmd/main.go
+
+kiosk-build: ## Build Kiosk image
+	docker build -t kiosk -f services/kiosk/Dockerfile services
+
+kiosk-test: ## Run Kiosk tests
+	cd services/kiosk && go test ./...
 
 
 # ==============================================================================
