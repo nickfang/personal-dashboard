@@ -166,10 +166,12 @@ Navigation would use keyboard: `Tab`/arrow keys to switch locations, `1`/`2`/`3`
 - On failure: show error in status bar, keep displaying last successful data
 - Default refresh interval: 60 seconds (configurable via env var or flag)
 
-## Service Structure
+## Module Structure
+
+The CLI lives under `clients/cli/` (not `services/`) because it is a display-only consumer of the dashboard-api, not a backend service. It is a standalone Go module with no local dependencies on any backend module — the REST endpoint is its only integration point.
 
 ```
-services/kiosk/
+clients/cli/
 ├── cmd/
 │   └── main.go                  # Entry point, parse flags, start bubbletea
 ├── internal/
@@ -190,10 +192,10 @@ services/kiosk/
 
 ### Integration with monorepo
 
-- Add `./services/kiosk` to `go.work`
-- Add `kiosk-dev`, `kiosk-build`, `kiosk-test` targets to Makefile
-- Import `services/shared` for `shared.InitLogging()` and location constants
-- Optionally add to `docker-compose.yml` with dependency on `dashboard-api`
+- **Not added to `go.work`** — the CLI is intentionally outside the Go workspace so it cannot import any backend module. Build/test targets pass `GOWORK=off` to respect that boundary.
+- Makefile targets: `cli-dev`, `cli-build`, `cli-test`
+- No import of `services/shared` or any other `services/*` package. The CLI inlines its own logging setup and derives render order from the REST response (sorted location IDs).
+- Not added to `docker-compose.yml` for Phase 1 — a TUI in a detached container is awkward; run the binary locally against the compose stack or a staging URL.
 
 ## Configuration
 
@@ -204,14 +206,14 @@ services/kiosk/
 
 ## Phase 1 Scope (this issue)
 
-- [ ] Scaffold `services/kiosk/` with go.mod, cmd/main.go
-- [ ] HTTP client to fetch and parse `/api/v1/dashboard` JSON
+- [ ] Scaffold `clients/cli/` with go.mod, cmd/main.go
+- [ ] HTTP client to fetch and parse `/v1/dashboard` JSON
 - [ ] Bubbletea model with `WindowSizeMsg` handling and `tea.Tick` refresh
 - [ ] Lipgloss styles: retro terminal aesthetic (dark bg, box-drawing borders)
 - [ ] Render components: header, weather section, pressure section, pollen section, status bar
 - [ ] Center layout in terminal
 - [ ] Handle fetch errors gracefully (show in status bar)
-- [ ] Add to go.work, Makefile
+- [ ] Makefile targets (CLI stays out of `go.work`)
 - [ ] `q` key to quit
 
 ## Phase 2 Scope (future)

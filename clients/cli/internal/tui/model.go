@@ -2,14 +2,14 @@ package tui
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/nickfang/personal-dashboard/services/kiosk/internal/client"
-	"github.com/nickfang/personal-dashboard/services/shared"
+	"github.com/nickfang/personal-dashboard/clients/cli/internal/client"
 )
 
 // refreshMsg is emitted on each tick — triggers a new fetch.
@@ -117,22 +117,20 @@ func (m Model) View() string {
 		innerWidth = 30
 	}
 
-	for _, loc := range shared.Locations {
+	for _, id := range locationIDs(m.data) {
 		var w *client.Weather
 		var p *client.Pressure
 		var pol *client.Pollen
-		if m.data != nil {
-			if v, ok := m.data.Weather[loc.ID]; ok {
-				w = &v
-			}
-			if v, ok := m.data.Pressure[loc.ID]; ok {
-				p = &v
-			}
-			if v, ok := m.data.Pollen[loc.ID]; ok {
-				pol = &v
-			}
+		if v, ok := m.data.Weather[id]; ok {
+			w = &v
 		}
-		b.WriteString(renderLocation(loc.ID, w, p, pol, innerWidth))
+		if v, ok := m.data.Pressure[id]; ok {
+			p = &v
+		}
+		if v, ok := m.data.Pollen[id]; ok {
+			pol = &v
+		}
+		b.WriteString(renderLocation(id, w, p, pol, innerWidth))
 		b.WriteString("\n\n")
 	}
 
@@ -140,4 +138,28 @@ func (m Model) View() string {
 
 	// Center horizontally.
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, b.String())
+}
+
+// locationIDs returns the union of location IDs present in the response,
+// sorted alphabetically for deterministic render order. Returns nil if no data.
+func locationIDs(r *client.Response) []string {
+	if r == nil {
+		return nil
+	}
+	seen := make(map[string]struct{})
+	for id := range r.Weather {
+		seen[id] = struct{}{}
+	}
+	for id := range r.Pressure {
+		seen[id] = struct{}{}
+	}
+	for id := range r.Pollen {
+		seen[id] = struct{}{}
+	}
+	ids := make([]string, 0, len(seen))
+	for id := range seen {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
 }

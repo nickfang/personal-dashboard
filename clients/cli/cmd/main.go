@@ -9,14 +9,13 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/nickfang/personal-dashboard/services/kiosk/internal/client"
-	tui "github.com/nickfang/personal-dashboard/services/kiosk/internal/tui"
-	"github.com/nickfang/personal-dashboard/services/shared"
+	"github.com/nickfang/personal-dashboard/clients/cli/internal/client"
+	tui "github.com/nickfang/personal-dashboard/clients/cli/internal/tui"
 )
 
 const (
-	defaultURL     = "http://localhost:8080"
-	defaultRefresh = 60 * time.Second
+	defaultURL     = "http://api-staging.ianbeefang.com"
+	defaultRefresh = 300 * time.Second
 	envURL         = "DASHBOARD_API_URL"
 	envRefresh     = "REFRESH_INTERVAL"
 )
@@ -40,7 +39,7 @@ func main() {
 	refreshFlag := flag.Duration("refresh", refreshDefault, "Refresh interval (env: REFRESH_INTERVAL)")
 	flag.Parse()
 
-	shared.InitLogging()
+	initLogging()
 	slog.Info("kiosk starting", "url", *urlFlag, "refresh", refreshFlag.String())
 
 	apiClient := client.New(*urlFlag)
@@ -51,4 +50,12 @@ func main() {
 		slog.Error("kiosk exited with error", "err", err)
 		os.Exit(1)
 	}
+}
+
+func initLogging() {
+	level := slog.LevelInfo
+	if os.Getenv("DEBUG") == "true" {
+		level = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
 }

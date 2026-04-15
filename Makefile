@@ -4,7 +4,7 @@
 	wc-dev wc-build wc-run wc-test \
 	wp-dev wp-build wp-test \
 	da-dev da-build da-test \
-	kiosk-dev kiosk-build kiosk-test \
+	cli-dev cli-build cli-test \
 	fe-dev fe-test \
 	tf-plan-staging tf-plan-prod tf-apply-staging tf-apply-prod \
 
@@ -25,7 +25,7 @@ compose-logs: ## View logs for all services
 	docker compose logs -f
 
 test-go: ## Run all Go tests
-	@find services -name "go.mod" -exec dirname {} \; | while read dir; do \
+	@find services clients -name "go.mod" -exec dirname {} \; | while read dir; do \
 		echo "Testing $$dir..."; \
 		(cd $$dir && go test ./...); \
 	done
@@ -132,17 +132,17 @@ da-test: ## Run Dashboard API tests
 	cd services/dashboard-api && go test ./...
 
 # ==============================================================================
-# Service: Kiosk (CLI TUI)
+# Client: CLI (kiosk-style TUI)
 # ==============================================================================
-##@ Kiosk
-kiosk-dev: ## Run Kiosk CLI locally (Go)
-	-cd services/kiosk && go run cmd/main.go
+##@ CLI Client
+cli-dev: ## Run CLI client locally (Go)
+	-cd clients/cli && GOWORK=off go run cmd/main.go
 
-kiosk-build: ## Build Kiosk image
-	docker build -t kiosk -f services/kiosk/Dockerfile services
+cli-build: ## Build CLI client image
+	docker build -t cli -f clients/cli/Dockerfile clients/cli
 
-kiosk-test: ## Run Kiosk tests
-	cd services/kiosk && go test ./...
+cli-test: ## Run CLI client tests
+	cd clients/cli && GOWORK=off go test ./...
 
 
 # ==============================================================================

@@ -1,11 +1,10 @@
-module github.com/nickfang/personal-dashboard/services/kiosk
+module github.com/nickfang/personal-dashboard/clients/cli
 
 go 1.25.6
 
 require (
 	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/charmbracelet/lipgloss v1.0.0
-	github.com/nickfang/personal-dashboard/services/shared v0.0.0
 )
 
 require (
@@ -25,5 +24,3 @@ require (
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 )
-
-replace github.com/nickfang/personal-dashboard/services/shared => ../shared

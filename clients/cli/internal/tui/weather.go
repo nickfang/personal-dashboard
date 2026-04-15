@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nickfang/personal-dashboard/services/kiosk/internal/client"
+	"github.com/nickfang/personal-dashboard/clients/cli/internal/client"
 )
 
 // renderWeather renders the weather section body (no border).

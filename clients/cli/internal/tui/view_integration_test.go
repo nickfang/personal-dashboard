@@ -7,7 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/nickfang/personal-dashboard/services/kiosk/internal/client"
+	"github.com/nickfang/personal-dashboard/clients/cli/internal/client"
 )
 
 func TestModelView_FullRenderWithStagingShapedData(t *testing.T) {

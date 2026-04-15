@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nickfang/personal-dashboard/services/kiosk/internal/client"
+	"github.com/nickfang/personal-dashboard/clients/cli/internal/client"
 )
 
 // trendArrow maps a trend string to a symbol + title-cased label.

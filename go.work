@@ -2,7 +2,6 @@ go 1.25.6
 
 use (
 	./services/dashboard-api
-	./services/kiosk
 	./services/pollen-collector
 	./services/pollen-provider
 	./services/shared

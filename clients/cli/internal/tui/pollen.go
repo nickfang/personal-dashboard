@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/nickfang/personal-dashboard/services/kiosk/internal/client"
+	"github.com/nickfang/personal-dashboard/clients/cli/internal/client"
 )
 
 // categoryRank maps a pollen category (Title Case, as returned by the API) to a

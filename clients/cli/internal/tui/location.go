@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/nickfang/personal-dashboard/services/kiosk/internal/client"
+	"github.com/nickfang/personal-dashboard/clients/cli/internal/client"
 )
 
 // formatTimestamp parses an RFC3339 string and returns "MM.DD HH:MM:SS".
