@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	appName        = "pd-cli"
 	defaultURL     = "http://api-staging.ianbeefang.com"
 	defaultRefresh = 300 * time.Second
 	envURL         = "DASHBOARD_API_URL"
@@ -40,14 +41,14 @@ func main() {
 	flag.Parse()
 
 	initLogging()
-	slog.Info("kiosk starting", "url", *urlFlag, "refresh", refreshFlag.String())
+	slog.Info(appName+" starting", "url", *urlFlag, "refresh", refreshFlag.String())
 
 	apiClient := client.New(*urlFlag)
 
 	m := tui.NewModel(apiClient, *refreshFlag)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		slog.Error("kiosk exited with error", "err", err)
+		slog.Error(appName+" exited with error", "err", err)
 		os.Exit(1)
 	}
 }
