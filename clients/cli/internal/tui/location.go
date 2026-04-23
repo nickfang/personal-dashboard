@@ -22,7 +22,7 @@ func formatTimestamp(s string) string {
 		}
 		return s
 	}
-	return t.Format("01.02 15:04:05")
+	return t.Local().Format("01.02 15:04:05")
 }
 
 // sectionBar renders a horizontal bar like "── WEATHER ────── 04.11 14:30:05 ──"

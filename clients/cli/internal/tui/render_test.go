@@ -73,11 +73,11 @@ func TestRenderPressure(t *testing.T) {
 
 func TestRenderPollen(t *testing.T) {
 	tests := []struct {
-		name     string
-		p        *client.Pollen
-		want     []string
-		notWant  []string
-		ordered  []string // substrings that must appear in this order
+		name    string
+		p       *client.Pollen
+		want    []string
+		notWant []string
+		ordered []string // substrings that must appear in this order
 	}{
 		{
 			name: "title case categories",
@@ -179,13 +179,16 @@ func TestRenderHeader(t *testing.T) {
 }
 
 func TestRenderLocation(t *testing.T) {
+	weatherTs := parseLocal(t, "2026-04-11T14:30:05Z").Format("01.02 15:04:05")
+	pollenTs := parseLocal(t, "2026-04-11T06:00:00Z").Format("01.02 15:04:05")
+
 	got := renderLocation("house-nick",
 		&client.Weather{TempF: 85.2, TempFeelF: 89.1, HumidityPercent: 62, PrecipitationPercent: 10, LastUpdated: "2026-04-11T14:30:05Z", PressureMb: 1013.25},
 		&client.Pressure{Trend: "rising", Delta1h: 0.3, LastUpdated: "2026-04-11T14:30:05Z"},
 		&client.Pollen{Plants: []client.PollenPlant{{DisplayName: "Oak", Index: 3, Category: "Moderate", InSeason: true}}, CollectedAt: "2026-04-11T06:00:00Z"},
 		70,
 	)
-	for _, s := range []string{"house-nick", "WEATHER", "PRESSURE", "POLLEN", "85.2°F", "Oak", "04.11 14:30:05", "04.11 06:00:00"} {
+	for _, s := range []string{"house-nick", "WEATHER", "PRESSURE", "POLLEN", "85.2°F", "Oak", weatherTs, pollenTs} {
 		if !strings.Contains(got, s) {
 			t.Errorf("missing %q in location render:\n%s", s, got)
 		}
@@ -193,8 +196,15 @@ func TestRenderLocation(t *testing.T) {
 }
 
 func TestFormatTimestamp(t *testing.T) {
-	if got := formatTimestamp("2026-04-11T14:30:05Z"); got != "04.11 14:30:05" {
-		t.Errorf("got %q", got)
+	const input = "2026-04-11T14:30:05Z"
+	parsed, err := time.Parse(time.RFC3339, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := parsed.Local().Format("01.02 15:04:05")
+
+	if got := formatTimestamp(input); got != want {
+		t.Errorf("got %q, want %q", got, want)
 	}
 	if got := formatTimestamp(""); got != "" {
 		t.Errorf("empty should return empty, got %q", got)
@@ -248,4 +258,16 @@ func TestModelFetchResult(t *testing.T) {
 	if m3.err == nil {
 		t.Error("expected err set")
 	}
+}
+
+// parseLocal parses an RFC3339 timestamp and returns it in the host's local
+// timezone. Used to compute expected render values that match whatever zone
+// the test is running in.
+func parseLocal(t *testing.T, s string) time.Time {
+	t.Helper()
+	parsed, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return parsed.Local()
 }
