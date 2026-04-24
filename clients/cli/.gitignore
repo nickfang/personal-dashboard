@@ -1,0 +1,5 @@
+# Build artifacts
+dist/
+
+# Go workspace checksum file (auto-generated, not needed for single-module workspace)
+go.work.sum

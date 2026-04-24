@@ -24,7 +24,7 @@ compose-logs: ## View logs for all services
 	docker compose logs -f
 
 test-go: ## Run all Go tests
-	@find services -name "go.mod" -exec dirname {} \; | while read dir; do \
+	@find services clients -name "go.mod" -exec dirname {} \; | while read dir; do \
 		echo "Testing $$dir..."; \
 		(cd $$dir && go test ./...); \
 	done
@@ -129,7 +129,6 @@ da-build: ## Build Dashboard API image
 
 da-test: ## Run Dashboard API tests
 	cd services/dashboard-api && go test ./...
-
 
 # ==============================================================================
 # Frontend
