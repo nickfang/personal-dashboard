@@ -43,7 +43,11 @@ func main() {
 	initLogging()
 	slog.Info(appName+" starting", "url", *urlFlag, "refresh", refreshFlag.String())
 
-	apiClient := client.New(*urlFlag)
+	apiClient, err := client.New(*urlFlag)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s: %v\n", appName, err)
+		os.Exit(2)
+	}
 
 	m := tui.NewModel(apiClient, *refreshFlag)
 	p := tea.NewProgram(m, tea.WithAltScreen())

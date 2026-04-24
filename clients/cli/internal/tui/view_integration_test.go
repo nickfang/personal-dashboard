@@ -13,9 +13,9 @@ import (
 func TestModelView_FullRenderWithStagingShapedData(t *testing.T) {
 	resp := &client.Response{
 		Weather: map[string]client.Weather{
-			"house-nick":         {LocationID: "house-nick", LastUpdated: "2026-04-15T02:02:08Z", TempF: 75.4, TempFeelF: 78.4, HumidityPercent: 71, PrecipitationPercent: 0, PressureMb: 1013.58},
-			"house-nita":         {LocationID: "house-nita", LastUpdated: "2026-04-15T02:02:08Z", TempF: 76.5, TempFeelF: 79.2, HumidityPercent: 68, PrecipitationPercent: 0, PressureMb: 1013.55},
-			"distribution-hall":  {LocationID: "distribution-hall", LastUpdated: "2026-04-15T02:02:08Z", TempF: 76.5, TempFeelF: 79.3, HumidityPercent: 68, PrecipitationPercent: 0, PressureMb: 1013.55},
+			"house-nick":        {LocationID: "house-nick", LastUpdated: "2026-04-15T02:02:08Z", TempF: 75.4, TempFeelF: 78.4, HumidityPercent: 71, PrecipitationPercent: 0, PressureMb: 1013.58},
+			"house-nita":        {LocationID: "house-nita", LastUpdated: "2026-04-15T02:02:08Z", TempF: 76.5, TempFeelF: 79.2, HumidityPercent: 68, PrecipitationPercent: 0, PressureMb: 1013.55},
+			"distribution-hall": {LocationID: "distribution-hall", LastUpdated: "2026-04-15T02:02:08Z", TempF: 76.5, TempFeelF: 79.3, HumidityPercent: 68, PrecipitationPercent: 0, PressureMb: 1013.55},
 		},
 		Pressure: map[string]client.Pressure{
 			"house-nick":        {LocationID: "house-nick", LastUpdated: "2026-04-15T02:02:08Z", Delta1h: 0.82, Delta3h: 1.24, Delta6h: -0.76, Delta12h: -3.39, Delta24h: -2.42, Trend: "rising"},

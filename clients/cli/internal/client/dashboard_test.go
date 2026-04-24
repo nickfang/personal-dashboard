@@ -62,7 +62,10 @@ func TestClientFetch_HappyPath(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := New(srv.URL)
+	c, err := New(srv.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	resp, err := c.Fetch(context.Background())
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)
@@ -124,7 +127,10 @@ func TestClientFetch_ErrorStatus(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := New(srv.URL)
+	c, err := New(srv.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
 	if _, err := c.Fetch(context.Background()); err == nil {
 		t.Fatal("expected error on 500, got nil")
 	}

@@ -25,17 +25,17 @@ This module is a standalone Go module with its own `go.mod` and a nested
 make dev
 ```
 
-Defaults to the staging API (`http://api-staging.ianbeefang.com`) with a
-5-minute refresh. Override with env vars:
+Defaults to `http://localhost:8080` with a 5-minute refresh. Override with env
+vars:
 
 ```
-DASHBOARD_API_URL=http://localhost:8080 REFRESH_INTERVAL=30s make dev
+DASHBOARD_API_URL=http://api-staging.ianbeefang.com REFRESH_INTERVAL=30s make dev
 ```
 
 Or with flags via `go run`:
 
 ```
-go run ./cmd -url=http://localhost:8080 -refresh=30s
+go run ./cmd -url=http://api-staging.ianbeefang.com -refresh=30s
 ```
 
 Enable debug logging with `DEBUG=true`. Quit the TUI with `q` or `Ctrl+C`.

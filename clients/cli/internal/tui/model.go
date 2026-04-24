@@ -80,12 +80,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.fetchCmd(), m.tickCmd())
 
 	case fetchResultMsg:
-		m.lastFetch = msg.at
 		if msg.err != nil {
 			m.err = msg.err
 		} else {
 			m.err = nil
 			m.data = msg.data
+			m.lastFetch = msg.at
 		}
 		return m, nil
 	}
@@ -122,7 +122,7 @@ func (m Model) View() string {
 		b.WriteString("  Loading dashboard data...\n\n")
 	}
 
-	for _, id := range locationIDs(m.data) {
+	for _, id := range ids {
 		var w *client.Weather
 		var p *client.Pressure
 		var pol *client.Pollen

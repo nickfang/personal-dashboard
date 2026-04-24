@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -16,12 +17,24 @@ type Client struct {
 	http    *http.Client
 }
 
-// New returns a Client for the given dashboard-api base URL.
-func New(baseURL string) *Client {
+// New returns a Client for the given dashboard-api base URL. The URL must
+// parse cleanly and carry an http or https scheme plus a non-empty host,
+// so misconfigurations fail fast at startup rather than on first fetch.
+func New(baseURL string) (*Client, error) {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse base URL %q: %w", baseURL, err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, fmt.Errorf("base URL %q: scheme must be http or https", baseURL)
+	}
+	if u.Host == "" {
+		return nil, fmt.Errorf("base URL %q: missing host", baseURL)
+	}
 	return &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		http:    &http.Client{Timeout: 10 * time.Second},
-	}
+	}, nil
 }
 
 // Fetch calls GET {baseURL}/v1/dashboard and parses the JSON response.
