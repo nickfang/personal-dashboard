@@ -24,6 +24,15 @@ func trendArrow(trend string) (string, string) {
 	}
 }
 
+// deltaBlock formats the 1h/3h/6h/12h/24h deltas as a two-row table (labels
+// above values). A single-line form exceeded the 30-col minimum innerWidth.
+func deltaBlock(p *client.Pressure) string {
+	labels := "    Δ1h   Δ3h   Δ6h  Δ12h  Δ24h"
+	values := fmt.Sprintf("  %+.2f %+.2f %+.2f %+.2f %+.2f",
+		p.Delta1h, p.Delta3h, p.Delta6h, p.Delta12h, p.Delta24h)
+	return labels + "\n" + values
+}
+
 // renderPressure renders the pressure section body. The current mb reading
 // comes from the weather payload (same collector), so renderLocation passes
 // a pre-formatted current-mb string via a sibling function.
@@ -33,9 +42,7 @@ func renderPressure(p *client.Pressure) string {
 	}
 	arrow, label := trendArrow(p.Trend)
 	line1 := fmt.Sprintf("  %s %s", arrow, label)
-	line2 := fmt.Sprintf("  Δ1h: %+.2f  Δ3h: %+.2f  Δ6h: %+.2f  Δ12h: %+.2f  Δ24h: %+.2f",
-		p.Delta1h, p.Delta3h, p.Delta6h, p.Delta12h, p.Delta24h)
-	return line1 + "\n" + line2
+	return line1 + "\n" + deltaBlock(p)
 }
 
 // renderPressureWithCurrent renders the pressure block with current mb from weather.
@@ -50,7 +57,5 @@ func renderPressureWithCurrent(p *client.Pressure, currentMb float64, haveCurren
 	} else {
 		line1 = fmt.Sprintf("  %s %s", arrow, label)
 	}
-	line2 := fmt.Sprintf("  Δ1h: %+.2f  Δ3h: %+.2f  Δ6h: %+.2f  Δ12h: %+.2f  Δ24h: %+.2f",
-		p.Delta1h, p.Delta3h, p.Delta6h, p.Delta12h, p.Delta24h)
-	return line1 + "\n" + line2
+	return line1 + "\n" + deltaBlock(p)
 }

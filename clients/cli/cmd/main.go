@@ -15,7 +15,7 @@ import (
 
 const (
 	appName        = "pd-cli"
-	defaultURL     = "http://api-staging.ianbeefang.com"
+	defaultURL     = "http://localhost:8080"
 	defaultRefresh = 300 * time.Second
 	envURL         = "DASHBOARD_API_URL"
 	envRefresh     = "REFRESH_INTERVAL"
@@ -58,5 +58,5 @@ func initLogging() {
 	if os.Getenv("DEBUG") == "true" {
 		level = slog.LevelDebug
 	}
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 }

@@ -159,13 +159,13 @@ func TestRenderPollen(t *testing.T) {
 
 func TestRenderStatus(t *testing.T) {
 	ts := time.Date(2026, 4, 11, 14, 30, 5, 0, time.UTC)
-	got := renderStatus(60*time.Second, ts, nil, 80)
+	got := renderStatus(60*time.Second, ts, nil)
 	for _, s := range []string{"1m0s", "14:30:05", "q: quit", "Refreshing"} {
 		if !strings.Contains(got, s) {
 			t.Errorf("missing %q:\n%s", s, got)
 		}
 	}
-	got = renderStatus(60*time.Second, ts, errors.New("boom"), 80)
+	got = renderStatus(60*time.Second, ts, errors.New("boom"))
 	if !strings.Contains(got, "Error:") || !strings.Contains(got, "boom") {
 		t.Errorf("expected error status, got: %q", got)
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 // renderStatus renders the bottom status bar.
-func renderStatus(refresh time.Duration, lastFetch time.Time, err error, width int) string {
+func renderStatus(refresh time.Duration, lastFetch time.Time, err error) string {
 	if err != nil {
 		return ErrorStyle.Render(fmt.Sprintf("Error: %s │ q: quit", err.Error()))
 	}

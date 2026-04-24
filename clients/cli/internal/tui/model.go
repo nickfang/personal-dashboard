@@ -117,6 +117,11 @@ func (m Model) View() string {
 		innerWidth = 30
 	}
 
+	ids := locationIDs(m.data)
+	if len(ids) == 0 && m.err == nil {
+		b.WriteString("  Loading dashboard data...\n\n")
+	}
+
 	for _, id := range locationIDs(m.data) {
 		var w *client.Weather
 		var p *client.Pressure
@@ -134,7 +139,7 @@ func (m Model) View() string {
 		b.WriteString("\n\n")
 	}
 
-	b.WriteString(renderStatus(m.refresh, m.lastFetch, m.err, frameWidth))
+	b.WriteString(renderStatus(m.refresh, m.lastFetch, m.err))
 
 	// Center horizontally.
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Top, b.String())
