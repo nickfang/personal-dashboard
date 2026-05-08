@@ -8,6 +8,18 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// isNotFound reports whether err is a gRPC NotFound status. Used by
+// per-section fan-outs (e.g. GetDashboardByLocation) that want to treat
+// "this provider has no data for that location" as "skip this section"
+// rather than "fail the whole request."
+func isNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	st, ok := status.FromError(err)
+	return ok && st.Code() == codes.NotFound
+}
+
 // RespondWithGrpcError maps a gRPC error to a standard HTTP response.
 func RespondWithGrpcError(w http.ResponseWriter, err error, message string) {
 	st, ok := status.FromError(err)
