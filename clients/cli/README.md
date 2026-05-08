@@ -38,7 +38,31 @@ Or with flags via `go run`:
 go run ./cmd -url=http://api-staging.ianbeefang.com -refresh=30s
 ```
 
-Enable debug logging with `DEBUG=true`. Quit the TUI with `q` or `Ctrl+C`.
+Enable debug logging with `DEBUG=true`.
+
+## Flags
+
+| Flag        | Env var             | Default                  | Description                                                            |
+|-------------|---------------------|--------------------------|------------------------------------------------------------------------|
+| `-url`      | `DASHBOARD_API_URL` | `http://localhost:8080`  | Dashboard API base URL.                                                |
+| `-refresh`  | `REFRESH_INTERVAL`  | `300s`                   | How often to refresh data in the background.                           |
+| `-location` | —                   | (unset)                  | Boot the CLI focused on a single location ID; arrows still navigate.   |
+
+If `-location` references an ID that the API doesn't return, the CLI shows a transient "location not found" message and falls back to the all-locations view.
+
+## Keys
+
+| Key            | Action                                                           |
+|----------------|------------------------------------------------------------------|
+| `←` / `→`      | Cycle through individual locations (wraps at the ends).          |
+| `↑`            | Return to the all-locations view.                                |
+| `r`            | Refresh now: full dashboard in all-view, focused location in single-view. |
+| `q` / `Ctrl+C` | Quit.                                                            |
+
+## API endpoints used
+
+- `GET /v1/dashboard` — full payload for every location. Used on startup and on each background refresh tick.
+- `GET /v1/dashboard/{locationID}` — single-location payload, same response shape with single-entry maps. Used when pressing `r` while focused on a single location.
 
 ## Build
 

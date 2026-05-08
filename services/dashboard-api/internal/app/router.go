@@ -21,6 +21,7 @@ func NewRouter(dashboardHandler *handlers.DashboardHandler) *chi.Mux {
 	// API Routes
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/dashboard", dashboardHandler.GetDashboard)
+		r.Get("/dashboard/{locationID}", dashboardHandler.GetDashboardByLocation)
 		// r.Get("/weather", dashboardHandler.GetWeather)
 		// r.Get("/pollen", dashboardHandler.GetPollen)
 	})

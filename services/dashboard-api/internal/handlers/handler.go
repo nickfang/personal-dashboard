@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/errgroup"
 
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
@@ -145,6 +146,122 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 	// 4. Respond with JSON (encoding/json handles json.RawMessage values
 	// by embedding them verbatim, so the protojson output passes through).
 	// Marshal to buffer first so we can return a clean 500 if encoding fails.
+	buf, err := json.Marshal(map[string]any{
+		"weather":  aggregatedLastWeather,
+		"pressure": aggregatedPressure,
+		"pollen":   aggregatedPollen,
+	})
+	if err != nil {
+		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(buf)
+}
+
+func (h *DashboardHandler) GetDashboardByLocation(w http.ResponseWriter, r *http.Request) {
+	// Chi's path matching guarantees a non-empty {locationID} segment
+	// before the handler runs, so we don't re-validate emptiness here.
+	locationID := chi.URLParam(r, "locationID")
+
+	var pressureStat *pressurePb.PressureStat
+	var pollenReport *pollenPb.PollenReport
+	var lastWeather *pressurePb.Weather
+
+	g, ctx := errgroup.WithContext(r.Context())
+
+	// Each goroutine swallows a NotFound error (treated as "no data for
+	// this section, but the request as a whole is still valid") and lets
+	// every other error propagate so errgroup can cancel its siblings and
+	// fail the whole request. (nil, nil) returns from a misbehaving
+	// provider also fall through as "section absent" — no panic, just no
+	// data, same shape as a clean NotFound.
+	g.Go(func() error {
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
+		s, err := h.weatherClient.GetPressureStat(rpcCtx, locationID)
+		if isNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		pressureStat = s
+		return nil
+	})
+	g.Go(func() error {
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
+		lw, err := h.weatherClient.GetLastWeather(rpcCtx, locationID)
+		if isNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		lastWeather = lw
+		return nil
+	})
+	g.Go(func() error {
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
+		p, err := h.pollenClient.GetPollenReport(rpcCtx, locationID)
+		if isNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		pollenReport = p
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		RespondWithGrpcError(w, err, "Failed to fetch dashboard data for location")
+		return
+	}
+
+	// 404 only when the location is wholly absent across all three sections.
+	// Partial data (e.g. weather present but pollen NotFound) yields 200
+	// with the corresponding maps left empty for the absent sections.
+	if pressureStat == nil && lastWeather == nil && pollenReport == nil {
+		http.Error(w, "Location data not found", http.StatusNotFound)
+		return
+	}
+
+	// Build aggregate inputs only from sections that actually returned data —
+	// a one-element slice per present section, nil for absent ones. The
+	// aggregate helpers iterate the slice, so nil-input maps come out empty,
+	// which is exactly the partial-data shape we want.
+	var pressureSlice []*pressurePb.PressureStat
+	if pressureStat != nil {
+		pressureSlice = []*pressurePb.PressureStat{pressureStat}
+	}
+	var weatherSlice []*pressurePb.Weather
+	if lastWeather != nil {
+		weatherSlice = []*pressurePb.Weather{lastWeather}
+	}
+	var pollenSlice []*pollenPb.PollenReport
+	if pollenReport != nil {
+		pollenSlice = []*pollenPb.PollenReport{pollenReport}
+	}
+
+	aggregatedPressure, err := aggregatePressureStats(pressureSlice)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	aggregatedPollen, err := aggregatePollenReports(pollenSlice)
+	if err != nil {
+		http.Error(w, "Failed to encode pollen response", http.StatusInternalServerError)
+		return
+	}
+	aggregatedLastWeather, err := aggregateLastWeather(weatherSlice)
+	if err != nil {
+		http.Error(w, "Failed to encode last weather response", http.StatusInternalServerError)
+		return
+	}
+
 	buf, err := json.Marshal(map[string]any{
 		"weather":  aggregatedLastWeather,
 		"pressure": aggregatedPressure,

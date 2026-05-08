@@ -9,6 +9,51 @@ type Response struct {
 	Pollen   map[string]Pollen   `json:"pollen"`
 }
 
+// Merge folds the entries from src into r using last-write-wins semantics:
+// for each key present in src, the entry is written into r only if it is
+// strictly newer than the entry already there (compared by per-payload
+// timestamp), or if r had no entry for that key. Keys absent from src are
+// left untouched.
+//
+// The timestamps come straight from the upstream payload (LastUpdated for
+// Weather/Pressure, CollectedAt for Pollen) and arrive as canonical RFC 3339
+// strings via protojson, so lexicographic > is equivalent to time.After.
+//
+// Why LWW: the TUI may have an in-flight full Fetch and an in-flight
+// FetchLocation arrive out of order — a stale full response that returns
+// after a fresh single-location response should not clobber the focused
+// location's newer data. Equal timestamps (the steady state today, since
+// upstream readings update hourly) skip the write entirely.
+func (r *Response) Merge(src *Response) {
+	if r == nil || src == nil {
+		return
+	}
+	if r.Weather == nil {
+		r.Weather = make(map[string]Weather, len(src.Weather))
+	}
+	for k, v := range src.Weather {
+		if existing, ok := r.Weather[k]; !ok || v.LastUpdated > existing.LastUpdated {
+			r.Weather[k] = v
+		}
+	}
+	if r.Pressure == nil {
+		r.Pressure = make(map[string]Pressure, len(src.Pressure))
+	}
+	for k, v := range src.Pressure {
+		if existing, ok := r.Pressure[k]; !ok || v.LastUpdated > existing.LastUpdated {
+			r.Pressure[k] = v
+		}
+	}
+	if r.Pollen == nil {
+		r.Pollen = make(map[string]Pollen, len(src.Pollen))
+	}
+	for k, v := range src.Pollen {
+		if existing, ok := r.Pollen[k]; !ok || v.CollectedAt > existing.CollectedAt {
+			r.Pollen[k] = v
+		}
+	}
+}
+
 // Weather matches the protojson output of the dashboard-api weather payload.
 type Weather struct {
 	LocationID           string  `json:"locationId"`

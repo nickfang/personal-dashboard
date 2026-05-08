@@ -159,15 +159,67 @@ func TestRenderPollen(t *testing.T) {
 
 func TestRenderStatus(t *testing.T) {
 	ts := time.Date(2026, 4, 11, 14, 30, 5, 0, time.UTC)
-	got := renderStatus(60*time.Second, ts, nil)
-	for _, s := range []string{"1m0s", "14:30:05", "q: quit", "Refreshing"} {
+	got := renderStatus(60*time.Second, ts, nil, viewAll, "", 0, 0, "")
+	for _, s := range []string{"1m0s", "14:30:05", "q quit", "Refreshing"} {
 		if !strings.Contains(got, s) {
 			t.Errorf("missing %q:\n%s", s, got)
 		}
 	}
-	got = renderStatus(60*time.Second, ts, errors.New("boom"))
+	got = renderStatus(60*time.Second, ts, errors.New("boom"), viewAll, "", 0, 0, "")
 	if !strings.Contains(got, "Error:") || !strings.Contains(got, "boom") {
 		t.Errorf("expected error status, got: %q", got)
+	}
+	// Error must NOT hide the contextual bar — the user needs nav hints
+	// to escape single-view (or otherwise act) even while an error is up.
+	if !strings.Contains(got, "Refreshing") {
+		t.Errorf("expected status bar to still render alongside error: %q", got)
+	}
+	if !strings.Contains(got, "← → focus") {
+		t.Errorf("expected nav hints to still render alongside error: %q", got)
+	}
+}
+
+func TestRenderStatus_ErrorPreservesSingleViewHints(t *testing.T) {
+	ts := time.Date(2026, 4, 11, 14, 30, 5, 0, time.UTC)
+	got := renderStatus(60*time.Second, ts, errors.New("boom"), viewSingle, "house-nick", 0, 3, "")
+	for _, s := range []string{"Error:", "boom", "house-nick", "(1/3)", "↑ all"} {
+		if !strings.Contains(got, s) {
+			t.Errorf("missing %q in error+single-view render:\n%s", s, got)
+		}
+	}
+}
+
+func TestRenderStatus_AllViewContextualHints(t *testing.T) {
+	ts := time.Date(2026, 4, 11, 14, 30, 5, 0, time.UTC)
+	got := renderStatus(60*time.Second, ts, nil, viewAll, "", 0, 3, "")
+	for _, s := range []string{"← → focus", "r refresh", "q quit"} {
+		if !strings.Contains(got, s) {
+			t.Errorf("missing %q in all-view hints:\n%s", s, got)
+		}
+	}
+	if strings.Contains(got, "↑ all") {
+		t.Errorf("all-view should not show '↑ all' escape hint:\n%s", got)
+	}
+}
+
+func TestRenderStatus_SingleViewContextualHints(t *testing.T) {
+	ts := time.Date(2026, 4, 11, 14, 30, 5, 0, time.UTC)
+	got := renderStatus(60*time.Second, ts, nil, viewSingle, "house-nick", 1, 3, "")
+	for _, s := range []string{"house-nick", "(2/3)", "← → cycle", "↑ all", "r refresh", "q quit"} {
+		if !strings.Contains(got, s) {
+			t.Errorf("missing %q in single-view hints:\n%s", s, got)
+		}
+	}
+}
+
+func TestRenderStatus_FlashPrepended(t *testing.T) {
+	ts := time.Date(2026, 4, 11, 14, 30, 5, 0, time.UTC)
+	got := renderStatus(60*time.Second, ts, nil, viewAll, "", 0, 0, "location \"bogus\" not found")
+	if !strings.Contains(got, "bogus") {
+		t.Errorf("expected flash text in output:\n%s", got)
+	}
+	if !strings.Contains(got, "Refreshing") {
+		t.Errorf("expected status bar still rendered alongside flash:\n%s", got)
 	}
 }
 
@@ -215,7 +267,7 @@ func TestFormatTimestamp(t *testing.T) {
 }
 
 func TestModelUpdateQuit(t *testing.T) {
-	m := NewModel(nil, time.Minute)
+	m := NewModel(nil, time.Minute, "")
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
 	if cmd == nil {
 		t.Fatal("expected Quit cmd on q")
@@ -227,7 +279,7 @@ func TestModelUpdateQuit(t *testing.T) {
 }
 
 func TestModelUpdateWindowSize(t *testing.T) {
-	m := NewModel(nil, time.Minute)
+	m := NewModel(nil, time.Minute, "")
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	m2 := updated.(Model)
 	if m2.width != 120 || m2.height != 40 {
@@ -236,14 +288,158 @@ func TestModelUpdateWindowSize(t *testing.T) {
 }
 
 func TestModelViewEmptyWhenNoSize(t *testing.T) {
-	m := NewModel(nil, time.Minute)
+	m := NewModel(nil, time.Minute, "")
 	if got := m.View(); got != "" {
 		t.Errorf("expected empty view pre-WindowSizeMsg, got %q", got)
 	}
 }
 
+func TestModelNavigation_AllToSingleAndWrap(t *testing.T) {
+	data := &client.Response{
+		Weather: map[string]client.Weather{
+			"a-loc": {}, "b-loc": {}, "c-loc": {},
+		},
+	}
+	m := NewModel(nil, time.Minute, "")
+	tm, _ := m.Update(fetchResultMsg{data: data, at: time.Now()})
+	m = tm.(Model)
+
+	// Right from "all" enters first single (alphabetical: a-loc).
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = tm.(Model)
+	if m.mode != viewSingle || m.selectedIdx != 0 {
+		t.Fatalf("after right from all: mode=%v idx=%d, want single/0", m.mode, m.selectedIdx)
+	}
+
+	// Right twice → b-loc → c-loc.
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = tm.(Model)
+	if m.selectedIdx != 1 {
+		t.Errorf("after second right: idx=%d, want 1", m.selectedIdx)
+	}
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = tm.(Model)
+	if m.selectedIdx != 2 {
+		t.Errorf("after third right: idx=%d, want 2", m.selectedIdx)
+	}
+
+	// Right from last wraps to first.
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = tm.(Model)
+	if m.selectedIdx != 0 {
+		t.Errorf("after wrap right: idx=%d, want 0", m.selectedIdx)
+	}
+
+	// Left from first wraps to last.
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	m = tm.(Model)
+	if m.selectedIdx != 2 {
+		t.Errorf("after wrap left: idx=%d, want 2", m.selectedIdx)
+	}
+
+	// Up returns to all.
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	m = tm.(Model)
+	if m.mode != viewAll {
+		t.Errorf("after up: mode=%v, want viewAll", m.mode)
+	}
+
+	// Up while already on all is a no-op.
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	m = tm.(Model)
+	if m.mode != viewAll {
+		t.Errorf("after second up: mode=%v, want viewAll", m.mode)
+	}
+}
+
+func TestModelNavigation_LeftFromAllEntersLast(t *testing.T) {
+	data := &client.Response{
+		Weather: map[string]client.Weather{"a-loc": {}, "b-loc": {}, "c-loc": {}},
+	}
+	m := NewModel(nil, time.Minute, "")
+	tm, _ := m.Update(fetchResultMsg{data: data, at: time.Now()})
+	m = tm.(Model)
+
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	m = tm.(Model)
+	if m.mode != viewSingle || m.selectedIdx != 2 {
+		t.Errorf("after left from all: mode=%v idx=%d, want single/2", m.mode, m.selectedIdx)
+	}
+}
+
+func TestModelNavigation_NoOpsWhenNoData(t *testing.T) {
+	m := NewModel(nil, time.Minute, "")
+
+	for _, key := range []tea.KeyType{tea.KeyLeft, tea.KeyRight, tea.KeyUp} {
+		tm, _ := m.Update(tea.KeyMsg{Type: key})
+		next := tm.(Model)
+		if next.mode != viewAll {
+			t.Errorf("key %v with no data should not change mode (got %v)", key, next.mode)
+		}
+	}
+}
+
+func TestModelRefreshKey_ViewAware(t *testing.T) {
+	data := &client.Response{
+		Weather: map[string]client.Weather{"a-loc": {}, "b-loc": {}},
+	}
+	m := NewModel(nil, time.Minute, "")
+	tm, _ := m.Update(fetchResultMsg{data: data, at: time.Now()})
+	m = tm.(Model)
+
+	// In viewAll, 'r' returns a non-nil cmd (the full fetch).
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	if cmd == nil {
+		t.Error("expected r in viewAll to return a command")
+	}
+
+	// Move into single view, then 'r' should still return a non-nil cmd
+	// (the per-location fetch). We can't easily distinguish the cmd type
+	// without invoking it (which would hit the network), so the contract
+	// here is just "r produces work".
+	tm, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+	m = tm.(Model)
+	_, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	if cmd == nil {
+		t.Error("expected r in viewSingle to return a command")
+	}
+}
+
+func TestModelFetchLocationResult_MergesIntoCachedData(t *testing.T) {
+	// LWW merge requires timestamps: real API responses always carry them,
+	// so the fixtures mirror that. Original is older; the single-location
+	// refresh result is newer and therefore wins.
+	const olderTS = "2026-04-13T13:00:00Z"
+	const newerTS = "2026-04-13T14:30:05Z"
+
+	original := &client.Response{
+		Weather: map[string]client.Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: olderTS, TempF: 70.0},
+			"house-nita": {LocationID: "house-nita", LastUpdated: olderTS, TempF: 71.0},
+		},
+	}
+	m := NewModel(nil, time.Minute, "")
+	tm, _ := m.Update(fetchResultMsg{data: original, at: time.Now()})
+	m = tm.(Model)
+
+	updated := &client.Response{
+		Weather: map[string]client.Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: newerTS, TempF: 99.9},
+		},
+	}
+	tm, _ = m.Update(fetchLocationResultMsg{data: updated, at: time.Now()})
+	m = tm.(Model)
+
+	if got := m.data.Weather["house-nick"].TempF; got != 99.9 {
+		t.Errorf("Weather[house-nick].TempF = %v, want merged 99.9", got)
+	}
+	if got := m.data.Weather["house-nita"].TempF; got != 71.0 {
+		t.Errorf("Weather[house-nita].TempF = %v, want preserved 71.0 (single-location merge should not clobber unrelated locations)", got)
+	}
+}
+
 func TestModelFetchResult(t *testing.T) {
-	m := NewModel(nil, time.Minute)
+	m := NewModel(nil, time.Minute, "")
 	now := time.Now()
 	updated, _ := m.Update(fetchResultMsg{data: &client.Response{}, err: nil, at: now})
 	m2 := updated.(Model)

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
 	weatherPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
 	"github.com/nickfang/personal-dashboard/services/shared"
@@ -17,6 +18,23 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+// requestWithLocationID returns an *http.Request whose chi RouteContext has
+// the {locationID} URL param set to the given value, simulating chi's router
+// without routing through chi.NewRouter. Pass an empty string to simulate a
+// request whose param was never populated.
+func requestWithLocationID(t *testing.T, locationID string) *http.Request {
+	t.Helper()
+	req, err := http.NewRequest("GET", "/api/v1/dashboard/"+locationID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rctx := chi.NewRouteContext()
+	if locationID != "" {
+		rctx.URLParams.Add("locationID", locationID)
+	}
+	return req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+}
 
 // --- Weather mocks ---
 
@@ -667,4 +685,248 @@ func keys(m map[string]interface{}) []string {
 		result = append(result, k)
 	}
 	return result
+}
+
+// --- GetDashboardByLocation tests ---
+
+func TestDashboardHandler_GetDashboardByLocation_Success(t *testing.T) {
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	req := requestWithLocationID(t, "house-nick")
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboardByLocation(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d (body: %s)", rr.Code, rr.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to decode JSON: %v", err)
+	}
+
+	for _, key := range []string{"weather", "pressure", "pollen"} {
+		section, ok := resp[key].(map[string]interface{})
+		if !ok {
+			t.Fatalf("Response missing %q object", key)
+		}
+		if len(section) != 1 {
+			t.Errorf("expected exactly one entry under %q, got %d (keys: %v)", key, len(section), keys(section))
+		}
+		if _, ok := section["house-nick"]; !ok {
+			t.Errorf("Response %q missing 'house-nick' entry (keys: %v)", key, keys(section))
+		}
+	}
+
+	weather := resp["weather"].(map[string]interface{})["house-nick"].(map[string]interface{})
+	if weather["tempC"] != 22.5 {
+		t.Errorf("Expected tempC 22.5, got %v", weather["tempC"])
+	}
+
+	pressure := resp["pressure"].(map[string]interface{})["house-nick"].(map[string]interface{})
+	if pressure["trend"] != "rising" {
+		t.Errorf("Expected trend 'rising', got %v", pressure["trend"])
+	}
+	if _, ok := pressure["locationId"]; !ok {
+		t.Errorf("expected camelCase 'locationId' from protojson, got keys: %v", keys(pressure))
+	}
+
+	pollen := resp["pollen"].(map[string]interface{})["house-nick"].(map[string]interface{})
+	if pollen["dominantType"] != "TREE" {
+		t.Errorf("Expected dominantType 'TREE', got %v", pollen["dominantType"])
+	}
+}
+
+// TestDashboardHandler_GetDashboardByLocation_GrpcError covers the *fatal*
+// gRPC error codes — the ones that should fail the whole request rather
+// than be tolerated as "section absent." NotFound is intentionally absent
+// from this table; per the partial-data contract, NotFound from any single
+// provider is non-fatal (see the PartialData / AllSectionsAbsent tests).
+func TestDashboardHandler_GetDashboardByLocation_GrpcError(t *testing.T) {
+	tests := []struct {
+		name           string
+		grpcErr        error
+		expectedStatus int
+	}{
+		{
+			name:           "Unavailable returns 503",
+			grpcErr:        status.Error(codes.Unavailable, "weather-provider down"),
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "DeadlineExceeded returns 504",
+			grpcErr:        status.Error(codes.DeadlineExceeded, "timeout"),
+			expectedStatus: http.StatusGatewayTimeout,
+		},
+		{
+			name:           "Unknown returns 500",
+			grpcErr:        status.Error(codes.Unknown, "unknown"),
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           "Non-gRPC error returns 500",
+			grpcErr:        fmt.Errorf("connection refused"),
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := NewDashboardHandler(&errorWeatherClient{err: tt.grpcErr}, &mockPollenClient{})
+			req := requestWithLocationID(t, "house-nick")
+			rr := httptest.NewRecorder()
+
+			handler.GetDashboardByLocation(rr, req)
+
+			if rr.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, rr.Code)
+			}
+		})
+	}
+}
+
+// nilReturnWeatherClient returns (nil, nil) for every call — simulating a
+// misbehaving provider that responds with no error but also no data. Without
+// a defensive nil-check, the aggregate helpers would panic on the nil proto.
+type nilReturnWeatherClient struct{}
+
+func (m *nilReturnWeatherClient) GetPressureStat(ctx context.Context, locationID string) (*weatherPb.PressureStat, error) {
+	return nil, nil
+}
+func (m *nilReturnWeatherClient) GetPressureStats(ctx context.Context) ([]*weatherPb.PressureStat, error) {
+	return nil, nil
+}
+func (m *nilReturnWeatherClient) GetLastWeather(ctx context.Context, locationID string) (*weatherPb.Weather, error) {
+	return nil, nil
+}
+func (m *nilReturnWeatherClient) GetAllLastWeather(ctx context.Context) ([]*weatherPb.Weather, error) {
+	return nil, nil
+}
+
+// TestDashboardHandler_GetDashboardByLocation_PartialData_WeatherMissingPollenPresent
+// locks in the partial-data contract: when a provider returns (nil, nil)
+// for a location (weather/pressure here), we don't fail the request — we
+// return 200 with the absent sections rendered as empty JSON maps and the
+// present sections populated normally. This is the shape the CLI's
+// Response.Merge depends on (empty src maps are no-ops on the dst).
+func TestDashboardHandler_GetDashboardByLocation_PartialData_WeatherMissingPollenPresent(t *testing.T) {
+	handler := NewDashboardHandler(&nilReturnWeatherClient{}, &mockPollenClient{})
+	req := requestWithLocationID(t, "house-nick")
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboardByLocation(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 with partial data, got %d (body: %s)", rr.Code, rr.Body.String())
+	}
+
+	var body map[string]map[string]json.RawMessage
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got := len(body["weather"]); got != 0 {
+		t.Errorf("weather map should be empty (nil-provider section), got %d entries", got)
+	}
+	if got := len(body["pressure"]); got != 0 {
+		t.Errorf("pressure map should be empty (nil-provider section), got %d entries", got)
+	}
+	if _, ok := body["pollen"]["house-nick"]; !ok {
+		t.Errorf("pollen[house-nick] should be present, body: %s", rr.Body.String())
+	}
+}
+
+// TestDashboardHandler_GetDashboardByLocation_AllSectionsAbsent_Returns404
+// is the "wholly absent" boundary: when every provider signals NotFound,
+// there's nothing partial to return, so we surface 404 rather than a
+// confusingly-empty 200.
+func TestDashboardHandler_GetDashboardByLocation_AllSectionsAbsent_Returns404(t *testing.T) {
+	notFound := status.Error(codes.NotFound, "no data for location")
+	handler := NewDashboardHandler(
+		&errorWeatherClient{err: notFound},
+		&errorPollenClient{err: notFound},
+	)
+	req := requestWithLocationID(t, "house-nick")
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboardByLocation(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404 when every section is NotFound, got %d (body: %s)", rr.Code, rr.Body.String())
+	}
+}
+
+// TestDashboardHandler_GetDashboardByLocation_PollenNotFound_PartialData
+// covers the per-section partial-data path from the other side: pollen is
+// the missing section this time, weather and pressure are populated.
+// Pairs with the WeatherMissingPollenPresent test above to lock in that
+// any single-section NotFound is non-fatal regardless of which one.
+func TestDashboardHandler_GetDashboardByLocation_PollenNotFound_PartialData(t *testing.T) {
+	handler := NewDashboardHandler(
+		&mockWeatherClient{},
+		&errorPollenClient{err: status.Error(codes.NotFound, "no pollen for location")},
+	)
+	req := requestWithLocationID(t, "house-nick")
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboardByLocation(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 (pollen NotFound is non-fatal), got %d (body: %s)", rr.Code, rr.Body.String())
+	}
+
+	var body map[string]map[string]json.RawMessage
+	if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got := len(body["pollen"]); got != 0 {
+		t.Errorf("pollen map should be empty (NotFound), got %d entries", got)
+	}
+	if _, ok := body["weather"]["house-nick"]; !ok {
+		t.Errorf("weather[house-nick] should be present, body: %s", rr.Body.String())
+	}
+	if _, ok := body["pressure"]["house-nick"]; !ok {
+		t.Errorf("pressure[house-nick] should be present, body: %s", rr.Body.String())
+	}
+}
+
+// TestDashboardHandler_GetDashboardByLocation_PollenUnavailable_Fatal
+// is the negative pair to PollenNotFound_PartialData: a non-NotFound
+// pollen error (Unavailable here) is *not* tolerated and should fail the
+// whole request with the appropriate 5xx, even though weather and
+// pressure would otherwise be returnable. This is what protects callers
+// from silently consuming a partial response when an upstream is broken
+// rather than empty.
+func TestDashboardHandler_GetDashboardByLocation_PollenUnavailable_Fatal(t *testing.T) {
+	handler := NewDashboardHandler(
+		&mockWeatherClient{},
+		&errorPollenClient{err: status.Error(codes.Unavailable, "pollen-provider down")},
+	)
+	req := requestWithLocationID(t, "house-nick")
+	rr := httptest.NewRecorder()
+
+	handler.GetDashboardByLocation(rr, req)
+
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected 503 when pollen returns Unavailable, got %d", rr.Code)
+	}
+}
+
+func TestDashboardHandler_GetDashboardByLocation_SlowProviderTimesOut(t *testing.T) {
+	handler := NewDashboardHandler(
+		&slowWeatherClient{delay: 10 * time.Second},
+		&mockPollenClient{},
+	)
+	req := requestWithLocationID(t, "house-nick")
+	rr := httptest.NewRecorder()
+
+	start := time.Now()
+	handler.GetDashboardByLocation(rr, req)
+	elapsed := time.Since(start)
+
+	if rr.Code != http.StatusGatewayTimeout {
+		t.Errorf("expected status 504, got %d", rr.Code)
+	}
+	if elapsed > shared.RPCClientTimeout+1*time.Second {
+		t.Errorf("expected per-RPC timeout to fire within budget, but took %s", elapsed)
+	}
 }

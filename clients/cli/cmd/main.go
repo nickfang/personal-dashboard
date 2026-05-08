@@ -38,10 +38,11 @@ func main() {
 
 	urlFlag := flag.String("url", urlDefault, "Dashboard API base URL (env: DASHBOARD_API_URL)")
 	refreshFlag := flag.Duration("refresh", refreshDefault, "Refresh interval (env: REFRESH_INTERVAL)")
+	locationFlag := flag.String("location", "", "Initial location ID to focus on (arrows still navigate)")
 	flag.Parse()
 
 	initLogging()
-	slog.Info(appName+" starting", "url", *urlFlag, "refresh", refreshFlag.String())
+	slog.Info(appName+" starting", "url", *urlFlag, "refresh", refreshFlag.String(), "initial_location", *locationFlag)
 
 	apiClient, err := client.New(*urlFlag)
 	if err != nil {
@@ -49,7 +50,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	m := tui.NewModel(apiClient, *refreshFlag)
+	m := tui.NewModel(apiClient, *refreshFlag, *locationFlag)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		slog.Error(appName+" exited with error", "err", err)

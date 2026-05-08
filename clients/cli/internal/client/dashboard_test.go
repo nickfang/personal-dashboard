@@ -135,3 +135,239 @@ func TestClientFetch_ErrorStatus(t *testing.T) {
 		t.Fatal("expected error on 500, got nil")
 	}
 }
+
+const sampleSingleLocationPayload = `{
+  "weather": {
+    "house-nick": {
+      "locationId": "house-nick",
+      "lastUpdated": "2026-04-13T14:30:05Z",
+      "tempC": 29.6,
+      "tempF": 85.2,
+      "humidityPercent": 62,
+      "pressureMb": 1013.25
+    }
+  },
+  "pressure": {
+    "house-nick": {
+      "locationId": "house-nick",
+      "lastUpdated": "2026-04-13T14:30:05Z",
+      "delta1h": 0.3,
+      "trend": "rising"
+    }
+  },
+  "pollen": {
+    "house-nick": {
+      "locationId": "house-nick",
+      "collectedAt": "2026-04-13T06:00:00Z",
+      "overallIndex": 4,
+      "overallCategory": "High",
+      "dominantType": "TREE"
+    }
+  }
+}`
+
+func TestClientFetchLocation_HappyPath(t *testing.T) {
+	var gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(sampleSingleLocationPayload))
+	}))
+	defer srv.Close()
+
+	c, err := New(srv.URL)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	resp, err := c.FetchLocation(context.Background(), "house-nick")
+	if err != nil {
+		t.Fatalf("FetchLocation: %v", err)
+	}
+
+	if gotPath != "/v1/dashboard/house-nick" {
+		t.Errorf("path = %q, want /v1/dashboard/house-nick", gotPath)
+	}
+
+	if w, ok := resp.Weather["house-nick"]; !ok {
+		t.Fatal("weather[house-nick] missing")
+	} else if w.TempF != 85.2 {
+		t.Errorf("TempF = %v, want 85.2", w.TempF)
+	}
+	if _, ok := resp.Pressure["house-nick"]; !ok {
+		t.Error("pressure[house-nick] missing")
+	}
+	if _, ok := resp.Pollen["house-nick"]; !ok {
+		t.Error("pollen[house-nick] missing")
+	}
+}
+
+func TestClientFetchLocation_PathEscapes(t *testing.T) {
+	var gotURI string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// RequestURI is the raw URI as sent on the wire — URL.Path would
+		// already be decoded, masking whether escaping happened.
+		gotURI = r.RequestURI
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	c, _ := New(srv.URL)
+	if _, err := c.FetchLocation(context.Background(), "weird id/with spaces"); err != nil {
+		t.Fatalf("FetchLocation: %v", err)
+	}
+	if gotURI != "/v1/dashboard/weird%20id%2Fwith%20spaces" {
+		t.Errorf("RequestURI = %q, want escaped form", gotURI)
+	}
+}
+
+func TestClientFetchLocation_EmptyID(t *testing.T) {
+	c, _ := New("http://localhost:9999")
+	if _, err := c.FetchLocation(context.Background(), ""); err == nil {
+		t.Fatal("expected error for empty locationID, got nil")
+	}
+}
+
+func TestResponseMerge_LWW_NewerSrcWins(t *testing.T) {
+	const olderTS = "2026-04-13T13:00:00Z"
+	const newerTS = "2026-04-13T14:30:05Z"
+	const olderPollenTS = "2026-04-12T06:00:00Z"
+
+	dst := &Response{
+		Weather: map[string]Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: olderTS, TempF: 70.0},
+			"house-nita": {LocationID: "house-nita", LastUpdated: olderTS, TempF: 71.0},
+		},
+		Pressure: map[string]Pressure{
+			"house-nick": {LocationID: "house-nick", LastUpdated: olderTS, Trend: "steady"},
+		},
+		Pollen: map[string]Pollen{
+			"house-nita": {LocationID: "house-nita", CollectedAt: olderPollenTS, OverallIndex: 1},
+		},
+	}
+	src := &Response{
+		Weather: map[string]Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: newerTS, TempF: 85.2}, // newer → overwrite
+		},
+		Pressure: map[string]Pressure{
+			"house-nick": {LocationID: "house-nick", LastUpdated: newerTS, Trend: "rising"}, // newer → overwrite
+		},
+		// pollen empty in src — house-nita's pollen should remain
+	}
+
+	dst.Merge(src)
+
+	if got := dst.Weather["house-nick"].TempF; got != 85.2 {
+		t.Errorf("Weather[house-nick].TempF = %v, want overwritten 85.2", got)
+	}
+	if got := dst.Weather["house-nita"].TempF; got != 71.0 {
+		t.Errorf("Weather[house-nita].TempF = %v, want preserved 71.0", got)
+	}
+	if got := dst.Pressure["house-nick"].Trend; got != "rising" {
+		t.Errorf("Pressure[house-nick].Trend = %q, want overwritten 'rising'", got)
+	}
+	if _, ok := dst.Pollen["house-nita"]; !ok {
+		t.Error("Pollen[house-nita] should be preserved when src has no pollen")
+	}
+}
+
+// TestResponseMerge_LWW_OlderSrcLoses locks in the load-bearing property:
+// a stale single-location response that arrives after a fresher full
+// response must NOT clobber the fresher data. This is the M1 race-window
+// fix from the issue-60 review.
+func TestResponseMerge_LWW_OlderSrcLoses(t *testing.T) {
+	const freshTS = "2026-04-13T14:30:05Z"
+	const staleTS = "2026-04-13T13:00:00Z"
+	const freshPollenTS = "2026-04-13T06:00:00Z"
+	const stalePollenTS = "2026-04-12T06:00:00Z"
+
+	dst := &Response{
+		Weather: map[string]Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: freshTS, TempF: 85.2},
+		},
+		Pressure: map[string]Pressure{
+			"house-nick": {LocationID: "house-nick", LastUpdated: freshTS, Trend: "rising"},
+		},
+		Pollen: map[string]Pollen{
+			"house-nick": {LocationID: "house-nick", CollectedAt: freshPollenTS, OverallIndex: 4},
+		},
+	}
+	stale := &Response{
+		Weather: map[string]Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: staleTS, TempF: 70.0},
+		},
+		Pressure: map[string]Pressure{
+			"house-nick": {LocationID: "house-nick", LastUpdated: staleTS, Trend: "steady"},
+		},
+		Pollen: map[string]Pollen{
+			"house-nick": {LocationID: "house-nick", CollectedAt: stalePollenTS, OverallIndex: 1},
+		},
+	}
+
+	dst.Merge(stale)
+
+	if got := dst.Weather["house-nick"].TempF; got != 85.2 {
+		t.Errorf("Weather[house-nick].TempF = %v, want preserved 85.2 (stale src must not overwrite)", got)
+	}
+	if got := dst.Pressure["house-nick"].Trend; got != "rising" {
+		t.Errorf("Pressure[house-nick].Trend = %q, want preserved 'rising'", got)
+	}
+	if got := dst.Pollen["house-nick"].OverallIndex; got != 4 {
+		t.Errorf("Pollen[house-nick].OverallIndex = %v, want preserved 4", got)
+	}
+}
+
+// TestResponseMerge_LWW_EqualTimestampSkips covers the steady-state case
+// today: weather upstream updates hourly, so two fetches in the same hour
+// return identical timestamps. Equal-timestamp merges should be no-ops
+// (we use > rather than >=) — keeps the property "merge is idempotent
+// for byte-equal inputs."
+func TestResponseMerge_LWW_EqualTimestampSkips(t *testing.T) {
+	const ts = "2026-04-13T14:30:05Z"
+	dst := &Response{
+		Weather: map[string]Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: ts, TempF: 85.2},
+		},
+	}
+	src := &Response{
+		Weather: map[string]Weather{
+			// Same timestamp, different value (shouldn't happen in practice,
+			// but proves the equal-timestamp branch).
+			"house-nick": {LocationID: "house-nick", LastUpdated: ts, TempF: 99.0},
+		},
+	}
+	dst.Merge(src)
+	if got := dst.Weather["house-nick"].TempF; got != 85.2 {
+		t.Errorf("Weather[house-nick].TempF = %v, want preserved 85.2 on equal timestamps", got)
+	}
+}
+
+func TestResponseMerge_NilGuards(t *testing.T) {
+	// nil receiver is a no-op (would crash otherwise).
+	var nilDst *Response
+	nilDst.Merge(&Response{})
+
+	// nil src is a no-op.
+	dst := &Response{Weather: map[string]Weather{"x": {TempF: 1}}}
+	dst.Merge(nil)
+	if dst.Weather["x"].TempF != 1 {
+		t.Error("Merge(nil) mutated dst")
+	}
+
+	// nil maps in dst should be initialised by Merge before writing.
+	empty := &Response{}
+	empty.Merge(&Response{
+		Weather:  map[string]Weather{"x": {TempF: 9}},
+		Pressure: map[string]Pressure{"x": {Trend: "rising"}},
+		Pollen:   map[string]Pollen{"x": {OverallIndex: 3}},
+	})
+	if empty.Weather["x"].TempF != 9 {
+		t.Error("Merge into nil Weather map failed")
+	}
+	if empty.Pressure["x"].Trend != "rising" {
+		t.Error("Merge into nil Pressure map failed")
+	}
+	if empty.Pollen["x"].OverallIndex != 3 {
+		t.Error("Merge into nil Pollen map failed")
+	}
+}
