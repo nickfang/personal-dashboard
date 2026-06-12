@@ -10,11 +10,11 @@ import (
 
 // MockFetcher implements api.Fetcher for testing.
 type MockFetcher struct {
-	FetchFn func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error)
+	FetchFn func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error)
 }
 
-func (m *MockFetcher) Fetch(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
-	return m.FetchFn(apiKey, location, horizonHours)
+func (m *MockFetcher) Fetch(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+	return m.FetchFn(ctx, apiKey, location, horizonHours)
 }
 
 // MockWriter implements repository.Writer for testing.

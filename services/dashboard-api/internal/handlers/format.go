@@ -104,11 +104,17 @@ func forecastDeltaAt(points []*pressurePb.ForecastPoint, hours int) (float64, bo
 	}
 	const tolerance = 45 * time.Minute
 	base := points[0]
+	if base.ValidTime == nil {
+		return 0, false
+	}
 	target := base.ValidTime.AsTime().Add(time.Duration(hours) * time.Hour)
 
 	bestIdx := -1
 	minDiff := tolerance + time.Second
 	for i := 1; i < len(points); i++ {
+		if points[i].ValidTime == nil {
+			continue
+		}
 		diff := points[i].ValidTime.AsTime().Sub(target)
 		if diff < 0 {
 			diff = -diff
@@ -127,12 +133,15 @@ func forecastDeltaAt(points []*pressurePb.ForecastPoint, hours int) (float64, bo
 // forecastLow returns the lowest pressure within the given horizon from the
 // first point.
 func forecastLow(points []*pressurePb.ForecastPoint, hours int) (float64, bool) {
-	if len(points) == 0 {
+	if len(points) == 0 || points[0].ValidTime == nil {
 		return 0, false
 	}
 	cutoff := points[0].ValidTime.AsTime().Add(time.Duration(hours) * time.Hour)
 	low := points[0].PressureMb
 	for _, p := range points[1:] {
+		if p.ValidTime == nil {
+			continue
+		}
 		if p.ValidTime.AsTime().After(cutoff) {
 			break
 		}
@@ -168,7 +177,11 @@ func formatForecastText(forecasts []*pressurePb.Forecast) map[string]string {
 	})
 	for _, forecast := range sortedForecasts {
 		var text strings.Builder
-		text.WriteString(fmt.Sprintf("Forecast: %s\n", forecast.IssuedAt.AsTime().Local().Format("2006.01.02 15:04:05")))
+		issuedAt := "unknown"
+		if forecast.IssuedAt != nil {
+			issuedAt = forecast.IssuedAt.AsTime().Local().Format("2006.01.02 15:04:05")
+		}
+		text.WriteString(fmt.Sprintf("Forecast: %s\n", issuedAt))
 
 		line := "  " + forecastTrend(forecast.Points)
 		if low, ok := forecastLow(forecast.Points, 48); ok {

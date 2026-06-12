@@ -25,7 +25,7 @@ func NewCollectorService(fetcher api.Fetcher, writer repository.Writer, horizonH
 
 // Collect fetches the forecast for a location, maps it, and writes to storage.
 func (s *CollectorService) Collect(ctx context.Context, apiKey string, location shared.Location) error {
-	hours, err := s.fetcher.Fetch(apiKey, location, s.horizonHours)
+	hours, err := s.fetcher.Fetch(ctx, apiKey, location, s.horizonHours)
 	if err != nil {
 		return fmt.Errorf("fetching forecast for %s: %w", location.ID, err)
 	}

@@ -23,7 +23,7 @@ func happyHour() api.ForecastHour {
 
 func happyFetcher() *testutil.MockFetcher {
 	return &testutil.MockFetcher{
-		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			return []api.ForecastHour{happyHour()}, nil
 		},
 	}
@@ -42,7 +42,7 @@ func happyWriter() *testutil.MockWriter {
 
 func failingFetcher() *testutil.MockFetcher {
 	return &testutil.MockFetcher{
-		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			return nil, fmt.Errorf("API unavailable")
 		},
 	}
@@ -65,7 +65,7 @@ func TestCollectAll_AllLocationsSucceed(t *testing.T) {
 func TestCollectAll_PartialFailure(t *testing.T) {
 	callCount := 0
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			callCount++
 			if callCount == 1 {
 				return nil, fmt.Errorf("API unavailable")

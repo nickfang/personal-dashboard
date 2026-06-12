@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -51,7 +52,7 @@ func TestFetch_PaginatesAndParsesFixture(t *testing.T) {
 		}),
 	})
 
-	hours, err := c.Fetch("test-key", testLocation, 72)
+	hours, err := c.Fetch(context.Background(), "test-key", testLocation, 72)
 	if err != nil {
 		t.Fatalf("Fetch() returned error: %v", err)
 	}
@@ -106,7 +107,7 @@ func TestFetch_StopsWhenHorizonCovered(t *testing.T) {
 
 	// Fixture has 3 hours and always returns a nextPageToken; a horizon of 3
 	// must stop after the first page rather than looping forever.
-	hours, err := c.Fetch("test-key", testLocation, 3)
+	hours, err := c.Fetch(context.Background(), "test-key", testLocation, 3)
 	if err != nil {
 		t.Fatalf("Fetch() returned error: %v", err)
 	}
@@ -129,7 +130,7 @@ func TestFetch_APIKeyInHeaderNotURL(t *testing.T) {
 		}),
 	})
 
-	_, err := c.Fetch(testAPIKey, testLocation, 72)
+	_, err := c.Fetch(context.Background(), testAPIKey, testLocation, 72)
 	if err != nil {
 		t.Fatalf("Fetch() returned error: %v", err)
 	}
@@ -162,7 +163,7 @@ func TestFetch_ErrorDoesNotLeakAPIKey(t *testing.T) {
 		}),
 	})
 
-	_, err := c.Fetch(testAPIKey, testLocation, 72)
+	_, err := c.Fetch(context.Background(), "testAPIKey", testLocation, 72)
 	if err == nil {
 		t.Fatal("Fetch() should return error for 403 status")
 	}
@@ -195,7 +196,7 @@ func TestFetchPage_NonRetryableStatusCodes(t *testing.T) {
 				}),
 			})
 
-			_, err := c.fetchPage("fake-key", testLocation, 72, "")
+			_, err := c.fetchPage(context.Background(), "fake-key", testLocation, 72, "")
 			if err == nil {
 				t.Fatal("fetchPage() should return error for non-OK status")
 			}
@@ -219,7 +220,7 @@ func TestFetchPage_ServerErrorIsRetryable(t *testing.T) {
 		}),
 	})
 
-	_, err := c.fetchPage("fake-key", testLocation, 72, "")
+	_, err := c.fetchPage(context.Background(), "fake-key", testLocation, 72, "")
 	if err == nil {
 		t.Fatal("fetchPage() should return error for 500 status")
 	}
@@ -236,7 +237,7 @@ func TestFetchPage_MalformedJSONIsNonRetryable(t *testing.T) {
 		}),
 	})
 
-	_, err := c.fetchPage("fake-key", testLocation, 72, "")
+	_, err := c.fetchPage(context.Background(), "fake-key", testLocation, 72, "")
 	if err == nil {
 		t.Fatal("fetchPage() should return error for malformed JSON")
 	}
