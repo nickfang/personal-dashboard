@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,7 +16,7 @@ const pageSize = 24
 
 // Fetcher defines the interface for fetching forecast data from an external API.
 type Fetcher interface {
-	Fetch(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]ForecastHour, error)
+	Fetch(apiKey string, location shared.Location, horizonHours int) ([]ForecastHour, error)
 }
 
 // nonRetryable wraps errors that should not be retried (e.g. 401, 403, bad JSON).
@@ -33,7 +32,7 @@ func New(httpApi *http.Client) *Client {
 	return &Client{httpClient: httpApi}
 }
 
-func (c *Client) fetchPage(ctx context.Context, apiKey string, location shared.Location, horizonHours int, pageToken string) (*forecastHoursResponse, error) {
+func (c *Client) fetchPage(apiKey string, location shared.Location, horizonHours int, pageToken string) (*forecastHoursResponse, error) {
 	baseUrl := "https://weather.googleapis.com/v1/forecast/hours:lookup"
 	queryParams := url.Values{
 		"location.latitude":  {fmt.Sprintf("%f", location.Lat)},
@@ -46,7 +45,7 @@ func (c *Client) fetchPage(ctx context.Context, apiKey string, location shared.L
 	}
 	reqURL := baseUrl + "?" + queryParams.Encode()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -72,12 +71,12 @@ func (c *Client) fetchPage(ctx context.Context, apiKey string, location shared.L
 	return &data, nil
 }
 
-func (c *Client) fetchPageWithRetry(ctx context.Context, apiKey string, location shared.Location, horizonHours int, pageToken string) (*forecastHoursResponse, error) {
+func (c *Client) fetchPageWithRetry(apiKey string, location shared.Location, horizonHours int, pageToken string) (*forecastHoursResponse, error) {
 	var lastErr error
 	backoffs := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
 
 	for i := 0; i <= len(backoffs); i++ {
-		page, err := c.fetchPage(ctx, apiKey, location, horizonHours, pageToken)
+		page, err := c.fetchPage(apiKey, location, horizonHours, pageToken)
 		if err == nil {
 			return page, nil
 		}
@@ -87,12 +86,7 @@ func (c *Client) fetchPageWithRetry(ctx context.Context, apiKey string, location
 		}
 		lastErr = err
 		if i < len(backoffs) {
-			// Context-aware backoff: a cancelled job shouldn't sit out the sleep.
-			select {
-			case <-time.After(backoffs[i]):
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			}
+			time.Sleep(backoffs[i])
 		}
 	}
 	return nil, fmt.Errorf("exhausted retries: %w", lastErr)
@@ -100,11 +94,11 @@ func (c *Client) fetchPageWithRetry(ctx context.Context, apiKey string, location
 
 // Fetch retrieves the hourly forecast for a location, following pagination
 // until the horizon is covered or no further pages exist.
-func (c *Client) Fetch(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]ForecastHour, error) {
+func (c *Client) Fetch(apiKey string, location shared.Location, horizonHours int) ([]ForecastHour, error) {
 	var hours []ForecastHour
 	pageToken := ""
 	for {
-		page, err := c.fetchPageWithRetry(ctx, apiKey, location, horizonHours, pageToken)
+		page, err := c.fetchPageWithRetry(apiKey, location, horizonHours, pageToken)
 		if err != nil {
 			return nil, err
 		}

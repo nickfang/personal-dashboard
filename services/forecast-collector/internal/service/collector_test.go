@@ -24,7 +24,7 @@ func TestCollect_SavesRawThenCache(t *testing.T) {
 	var cachedRun *repository.ForecastRun
 
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			if horizonHours != 72 {
 				t.Errorf("Fetch horizonHours = %d, want 72", horizonHours)
 			}
@@ -78,7 +78,7 @@ func TestCollect_WiresDetectedAlertsIntoMerge(t *testing.T) {
 
 	var capturedMerge repository.MergeFunc
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			return droppingHours, nil
 		},
 	}
@@ -114,7 +114,7 @@ func TestCollect_WiresDetectedAlertsIntoMerge(t *testing.T) {
 
 func TestCollect_FetchErrorPropagates(t *testing.T) {
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			return nil, fmt.Errorf("API unavailable")
 		},
 	}
@@ -138,7 +138,7 @@ func TestCollect_AllPointsInvalidFails(t *testing.T) {
 	bad := validHour()
 	bad.AirPressure.MeanSeaLevelMillibars = 0
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			return []api.ForecastHour{bad}, nil
 		},
 	}
@@ -160,7 +160,7 @@ func TestCollect_AllPointsInvalidFails(t *testing.T) {
 
 func TestCollect_SaveRawErrorPropagates(t *testing.T) {
 	fetcher := &testutil.MockFetcher{
-		FetchFn: func(ctx context.Context, apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
+		FetchFn: func(apiKey string, location shared.Location, horizonHours int) ([]api.ForecastHour, error) {
 			return happyHours(), nil
 		},
 	}
