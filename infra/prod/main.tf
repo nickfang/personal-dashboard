@@ -108,6 +108,37 @@ module "pollen_collector" {
   depends_on = [module.foundation, module.secrets]
 }
 
+module "forecast_collector" {
+  source                = "../modules/cloud-run-job"
+  project_id            = var.project_id
+  region                = var.region
+  name                  = "forecast-collector"
+  sa_display_name       = "Service Account for Forecast Collector Job"
+  schedule              = "0 */6 * * *"
+  scheduler_description = "Triggers the forecast collector job every 6 hours"
+  artifact_registry_url = module.foundation.artifact_registry_url
+  services_path         = local.services_path
+
+  env_vars = {
+    GCP_PROJECT_ID         = var.project_id
+    FORECAST_HORIZON_HOURS = "72"
+    PRESSURE_DROP_MB       = "5"
+    PRESSURE_SEVERE_MB     = "10"
+    PRESSURE_WINDOW_HOURS  = "3"
+  }
+
+  secret_env_vars = {
+    GOOGLE_MAPS_API_KEY = {
+      secret_id = "google-maps-api-key"
+      version   = "latest"
+    }
+  }
+
+  secret_refs = ["google-maps-api-key"]
+
+  depends_on = [module.foundation, module.secrets]
+}
+
 # --- Providers (Internal gRPC Services) ---
 
 module "weather_provider" {
@@ -185,6 +216,7 @@ module "github_oidc" {
   service_account_ids = [
     module.weather_collector.service_account_id,
     module.pollen_collector.service_account_id,
+    module.forecast_collector.service_account_id,
     module.weather_provider.service_account_id,
     module.pollen_provider.service_account_id,
     module.dashboard_api.service_account_id,

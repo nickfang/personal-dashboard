@@ -1,0 +1,19 @@
+name: Deploy Forecast Collector (Prod)
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: forecast-collector-job
+      image_name: forecast-collector
+      dockerfile_path: services/forecast-collector/Dockerfile
+      deploy_type: jobs
+      environment: production
