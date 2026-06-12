@@ -180,6 +180,31 @@ func (r *FirestoreRepository) GetAllLastWeather(ctx context.Context) ([]WeatherC
 	return results, nil
 }
 
+func (r *FirestoreRepository) GetAllForecasts(ctx context.Context) ([]ForecastCacheDoc, error) {
+	var results []ForecastCacheDoc
+	iter := r.client.Collection(shared.ForecastCacheCollection).Limit(100).Documents(ctx)
+	defer iter.Stop()
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		var cache ForecastCacheDoc
+		if err := doc.DataTo(&cache); err != nil {
+			slog.Warn("Skipping invalid document in GetAllForecasts", "doc_id", doc.Ref.ID, "error", err)
+			continue
+		}
+		cache.LocationID = doc.Ref.ID
+		results = append(results, cache)
+	}
+	return results, nil
+}
+
 func (r *FirestoreRepository) GetForecast(ctx context.Context, id string) (*ForecastCacheDoc, error) {
 	doc, err := r.client.Collection(shared.ForecastCacheCollection).Doc(id).Get(ctx)
 	if err != nil {

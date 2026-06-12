@@ -11,6 +11,7 @@ option go_package = "weather_provider/v1";
 // Alerts ride inside the forecast response: they live in the same cache
 // document, so a separate RPC would re-read the same data.
 service ForecastService {
+  rpc GetAllForecasts(GetAllForecastsRequest) returns (GetAllForecastsResponse);
   rpc GetForecast(GetForecastRequest) returns (GetForecastResponse);
 }
 
@@ -51,6 +52,12 @@ message Forecast {
   google.protobuf.Timestamp issued_at = 2;
   repeated ForecastPoint points = 3;
   repeated Alert alerts = 4;
+}
+
+message GetAllForecastsRequest {}
+
+message GetAllForecastsResponse {
+  repeated Forecast forecasts = 1;
 }
 
 message GetForecastRequest {

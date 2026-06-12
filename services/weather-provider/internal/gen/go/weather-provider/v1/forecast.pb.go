@@ -363,6 +363,86 @@ func (x *Forecast) GetAlerts() []*Alert {
 	return nil
 }
 
+type GetAllForecastsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAllForecastsRequest) Reset() {
+	*x = GetAllForecastsRequest{}
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAllForecastsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAllForecastsRequest) ProtoMessage() {}
+
+func (x *GetAllForecastsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAllForecastsRequest.ProtoReflect.Descriptor instead.
+func (*GetAllForecastsRequest) Descriptor() ([]byte, []int) {
+	return file_weather_provider_v1_forecast_proto_rawDescGZIP(), []int{3}
+}
+
+type GetAllForecastsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Forecasts     []*Forecast            `protobuf:"bytes,1,rep,name=forecasts,proto3" json:"forecasts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAllForecastsResponse) Reset() {
+	*x = GetAllForecastsResponse{}
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAllForecastsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAllForecastsResponse) ProtoMessage() {}
+
+func (x *GetAllForecastsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAllForecastsResponse.ProtoReflect.Descriptor instead.
+func (*GetAllForecastsResponse) Descriptor() ([]byte, []int) {
+	return file_weather_provider_v1_forecast_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *GetAllForecastsResponse) GetForecasts() []*Forecast {
+	if x != nil {
+		return x.Forecasts
+	}
+	return nil
+}
+
 type GetForecastRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
@@ -372,7 +452,7 @@ type GetForecastRequest struct {
 
 func (x *GetForecastRequest) Reset() {
 	*x = GetForecastRequest{}
-	mi := &file_weather_provider_v1_forecast_proto_msgTypes[3]
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -384,7 +464,7 @@ func (x *GetForecastRequest) String() string {
 func (*GetForecastRequest) ProtoMessage() {}
 
 func (x *GetForecastRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_weather_provider_v1_forecast_proto_msgTypes[3]
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -397,7 +477,7 @@ func (x *GetForecastRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetForecastRequest.ProtoReflect.Descriptor instead.
 func (*GetForecastRequest) Descriptor() ([]byte, []int) {
-	return file_weather_provider_v1_forecast_proto_rawDescGZIP(), []int{3}
+	return file_weather_provider_v1_forecast_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetForecastRequest) GetLocationId() string {
@@ -416,7 +496,7 @@ type GetForecastResponse struct {
 
 func (x *GetForecastResponse) Reset() {
 	*x = GetForecastResponse{}
-	mi := &file_weather_provider_v1_forecast_proto_msgTypes[4]
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -428,7 +508,7 @@ func (x *GetForecastResponse) String() string {
 func (*GetForecastResponse) ProtoMessage() {}
 
 func (x *GetForecastResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_weather_provider_v1_forecast_proto_msgTypes[4]
+	mi := &file_weather_provider_v1_forecast_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -441,7 +521,7 @@ func (x *GetForecastResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetForecastResponse.ProtoReflect.Descriptor instead.
 func (*GetForecastResponse) Descriptor() ([]byte, []int) {
-	return file_weather_provider_v1_forecast_proto_rawDescGZIP(), []int{4}
+	return file_weather_provider_v1_forecast_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetForecastResponse) GetForecast() *Forecast {
@@ -497,13 +577,17 @@ const file_weather_provider_v1_forecast_proto_rawDesc = "" +
 	"locationId\x127\n" +
 	"\tissued_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x12:\n" +
 	"\x06points\x18\x03 \x03(\v2\".weather_provider.v1.ForecastPointR\x06points\x122\n" +
-	"\x06alerts\x18\x04 \x03(\v2\x1a.weather_provider.v1.AlertR\x06alerts\"5\n" +
+	"\x06alerts\x18\x04 \x03(\v2\x1a.weather_provider.v1.AlertR\x06alerts\"\x18\n" +
+	"\x16GetAllForecastsRequest\"V\n" +
+	"\x17GetAllForecastsResponse\x12;\n" +
+	"\tforecasts\x18\x01 \x03(\v2\x1d.weather_provider.v1.ForecastR\tforecasts\"5\n" +
 	"\x12GetForecastRequest\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\tR\n" +
 	"locationId\"P\n" +
 	"\x13GetForecastResponse\x129\n" +
-	"\bforecast\x18\x01 \x01(\v2\x1d.weather_provider.v1.ForecastR\bforecast2s\n" +
-	"\x0fForecastService\x12`\n" +
+	"\bforecast\x18\x01 \x01(\v2\x1d.weather_provider.v1.ForecastR\bforecast2\xe1\x01\n" +
+	"\x0fForecastService\x12l\n" +
+	"\x0fGetAllForecasts\x12+.weather_provider.v1.GetAllForecastsRequest\x1a,.weather_provider.v1.GetAllForecastsResponse\x12`\n" +
 	"\vGetForecast\x12'.weather_provider.v1.GetForecastRequest\x1a(.weather_provider.v1.GetForecastResponseB\xf7\x01\n" +
 	"\x17com.weather_provider.v1B\rForecastProtoP\x01Zdgithub.com/nickfang/personal-dashboard/services/weather-provider/internal/gen/go/weather-provider/v1\xa2\x02\x03WXX\xaa\x02\x12WeatherProvider.V1\xca\x02\x12WeatherProvider\\V1\xe2\x02\x1eWeatherProvider\\V1\\GPBMetadata\xea\x02\x13WeatherProvider::V1b\x06proto3"
 
@@ -519,31 +603,36 @@ func file_weather_provider_v1_forecast_proto_rawDescGZIP() []byte {
 	return file_weather_provider_v1_forecast_proto_rawDescData
 }
 
-var file_weather_provider_v1_forecast_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_weather_provider_v1_forecast_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_weather_provider_v1_forecast_proto_goTypes = []any{
-	(*ForecastPoint)(nil),         // 0: weather_provider.v1.ForecastPoint
-	(*Alert)(nil),                 // 1: weather_provider.v1.Alert
-	(*Forecast)(nil),              // 2: weather_provider.v1.Forecast
-	(*GetForecastRequest)(nil),    // 3: weather_provider.v1.GetForecastRequest
-	(*GetForecastResponse)(nil),   // 4: weather_provider.v1.GetForecastResponse
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*ForecastPoint)(nil),           // 0: weather_provider.v1.ForecastPoint
+	(*Alert)(nil),                   // 1: weather_provider.v1.Alert
+	(*Forecast)(nil),                // 2: weather_provider.v1.Forecast
+	(*GetAllForecastsRequest)(nil),  // 3: weather_provider.v1.GetAllForecastsRequest
+	(*GetAllForecastsResponse)(nil), // 4: weather_provider.v1.GetAllForecastsResponse
+	(*GetForecastRequest)(nil),      // 5: weather_provider.v1.GetForecastRequest
+	(*GetForecastResponse)(nil),     // 6: weather_provider.v1.GetForecastResponse
+	(*timestamppb.Timestamp)(nil),   // 7: google.protobuf.Timestamp
 }
 var file_weather_provider_v1_forecast_proto_depIdxs = []int32{
-	5, // 0: weather_provider.v1.ForecastPoint.valid_time:type_name -> google.protobuf.Timestamp
-	5, // 1: weather_provider.v1.Alert.window_start:type_name -> google.protobuf.Timestamp
-	5, // 2: weather_provider.v1.Alert.window_end:type_name -> google.protobuf.Timestamp
-	5, // 3: weather_provider.v1.Alert.issued_at:type_name -> google.protobuf.Timestamp
-	5, // 4: weather_provider.v1.Forecast.issued_at:type_name -> google.protobuf.Timestamp
-	0, // 5: weather_provider.v1.Forecast.points:type_name -> weather_provider.v1.ForecastPoint
-	1, // 6: weather_provider.v1.Forecast.alerts:type_name -> weather_provider.v1.Alert
-	2, // 7: weather_provider.v1.GetForecastResponse.forecast:type_name -> weather_provider.v1.Forecast
-	3, // 8: weather_provider.v1.ForecastService.GetForecast:input_type -> weather_provider.v1.GetForecastRequest
-	4, // 9: weather_provider.v1.ForecastService.GetForecast:output_type -> weather_provider.v1.GetForecastResponse
-	9, // [9:10] is the sub-list for method output_type
-	8, // [8:9] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	7,  // 0: weather_provider.v1.ForecastPoint.valid_time:type_name -> google.protobuf.Timestamp
+	7,  // 1: weather_provider.v1.Alert.window_start:type_name -> google.protobuf.Timestamp
+	7,  // 2: weather_provider.v1.Alert.window_end:type_name -> google.protobuf.Timestamp
+	7,  // 3: weather_provider.v1.Alert.issued_at:type_name -> google.protobuf.Timestamp
+	7,  // 4: weather_provider.v1.Forecast.issued_at:type_name -> google.protobuf.Timestamp
+	0,  // 5: weather_provider.v1.Forecast.points:type_name -> weather_provider.v1.ForecastPoint
+	1,  // 6: weather_provider.v1.Forecast.alerts:type_name -> weather_provider.v1.Alert
+	2,  // 7: weather_provider.v1.GetAllForecastsResponse.forecasts:type_name -> weather_provider.v1.Forecast
+	2,  // 8: weather_provider.v1.GetForecastResponse.forecast:type_name -> weather_provider.v1.Forecast
+	3,  // 9: weather_provider.v1.ForecastService.GetAllForecasts:input_type -> weather_provider.v1.GetAllForecastsRequest
+	5,  // 10: weather_provider.v1.ForecastService.GetForecast:input_type -> weather_provider.v1.GetForecastRequest
+	4,  // 11: weather_provider.v1.ForecastService.GetAllForecasts:output_type -> weather_provider.v1.GetAllForecastsResponse
+	6,  // 12: weather_provider.v1.ForecastService.GetForecast:output_type -> weather_provider.v1.GetForecastResponse
+	11, // [11:13] is the sub-list for method output_type
+	9,  // [9:11] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_weather_provider_v1_forecast_proto_init() }
@@ -557,7 +646,7 @@ func file_weather_provider_v1_forecast_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_weather_provider_v1_forecast_proto_rawDesc), len(file_weather_provider_v1_forecast_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ForecastService_GetForecast_FullMethodName = "/weather_provider.v1.ForecastService/GetForecast"
+	ForecastService_GetAllForecasts_FullMethodName = "/weather_provider.v1.ForecastService/GetAllForecasts"
+	ForecastService_GetForecast_FullMethodName     = "/weather_provider.v1.ForecastService/GetForecast"
 )
 
 // ForecastServiceClient is the client API for ForecastService service.
@@ -30,6 +31,7 @@ const (
 // Alerts ride inside the forecast response: they live in the same cache
 // document, so a separate RPC would re-read the same data.
 type ForecastServiceClient interface {
+	GetAllForecasts(ctx context.Context, in *GetAllForecastsRequest, opts ...grpc.CallOption) (*GetAllForecastsResponse, error)
 	GetForecast(ctx context.Context, in *GetForecastRequest, opts ...grpc.CallOption) (*GetForecastResponse, error)
 }
 
@@ -39,6 +41,16 @@ type forecastServiceClient struct {
 
 func NewForecastServiceClient(cc grpc.ClientConnInterface) ForecastServiceClient {
 	return &forecastServiceClient{cc}
+}
+
+func (c *forecastServiceClient) GetAllForecasts(ctx context.Context, in *GetAllForecastsRequest, opts ...grpc.CallOption) (*GetAllForecastsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAllForecastsResponse)
+	err := c.cc.Invoke(ctx, ForecastService_GetAllForecasts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *forecastServiceClient) GetForecast(ctx context.Context, in *GetForecastRequest, opts ...grpc.CallOption) (*GetForecastResponse, error) {
@@ -59,6 +71,7 @@ func (c *forecastServiceClient) GetForecast(ctx context.Context, in *GetForecast
 // Alerts ride inside the forecast response: they live in the same cache
 // document, so a separate RPC would re-read the same data.
 type ForecastServiceServer interface {
+	GetAllForecasts(context.Context, *GetAllForecastsRequest) (*GetAllForecastsResponse, error)
 	GetForecast(context.Context, *GetForecastRequest) (*GetForecastResponse, error)
 	mustEmbedUnimplementedForecastServiceServer()
 }
@@ -70,6 +83,9 @@ type ForecastServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedForecastServiceServer struct{}
 
+func (UnimplementedForecastServiceServer) GetAllForecasts(context.Context, *GetAllForecastsRequest) (*GetAllForecastsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAllForecasts not implemented")
+}
 func (UnimplementedForecastServiceServer) GetForecast(context.Context, *GetForecastRequest) (*GetForecastResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetForecast not implemented")
 }
@@ -92,6 +108,24 @@ func RegisterForecastServiceServer(s grpc.ServiceRegistrar, srv ForecastServiceS
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&ForecastService_ServiceDesc, srv)
+}
+
+func _ForecastService_GetAllForecasts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAllForecastsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ForecastServiceServer).GetAllForecasts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ForecastService_GetAllForecasts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ForecastServiceServer).GetAllForecasts(ctx, req.(*GetAllForecastsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ForecastService_GetForecast_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -119,6 +153,10 @@ var ForecastService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "weather_provider.v1.ForecastService",
 	HandlerType: (*ForecastServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetAllForecasts",
+			Handler:    _ForecastService_GetAllForecasts_Handler,
+		},
 		{
 			MethodName: "GetForecast",
 			Handler:    _ForecastService_GetForecast_Handler,

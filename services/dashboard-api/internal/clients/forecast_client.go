@@ -65,3 +65,12 @@ func (c *ForecastClient) GetForecast(ctx context.Context, locationId string) (*p
 	}
 	return resp.Forecast, nil
 }
+
+func (c *ForecastClient) GetAllForecasts(ctx context.Context) ([]*pb.Forecast, error) {
+	resp, err := c.client.GetAllForecasts(ctx, &pb.GetAllForecastsRequest{})
+	if err != nil {
+		slog.Error("Failed to get forecasts", "error", err)
+		return nil, err
+	}
+	return resp.Forecasts, nil
+}

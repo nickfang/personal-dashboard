@@ -29,6 +29,7 @@ type PollenFetcher interface {
 
 type ForecastFetcher interface {
 	GetForecast(ctx context.Context, locationID string) (*pressurePb.Forecast, error)
+	GetAllForecasts(ctx context.Context) ([]*pressurePb.Forecast, error)
 }
 
 type DashboardHandler struct {
@@ -114,21 +115,6 @@ func aggregateForecasts(forecasts []*pressurePb.Forecast) (map[string]json.RawMe
 	return forecastData, alertData, nil
 }
 
-// fetchForecast wraps a single-location forecast RPC for errgroup fan-outs:
-// NotFound means "no forecast collected yet" and is treated as section
-// absent rather than a request failure.
-func (h *DashboardHandler) fetchForecast(ctx context.Context, locationID string) (*pressurePb.Forecast, error) {
-	rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
-	defer cancel()
-	f, err := h.forecastClient.GetForecast(rpcCtx, locationID)
-	if isNotFound(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
-}
 
 func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	// 1. Fetch data from clients
@@ -160,30 +146,18 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		return err
 	})
 
-	// The forecast RPC is per-location, so fan out one call per canonical
-	// location; absent forecasts (NotFound) leave nil holes that are
-	// filtered below.
-	forecastByIdx := make([]*pressurePb.Forecast, len(shared.Locations))
-	for i, loc := range shared.Locations {
-		g.Go(func() error {
-			f, err := h.fetchForecast(ctx, loc.ID)
-			if err != nil {
-				return err
-			}
-			forecastByIdx[i] = f
-			return nil
-		})
-	}
+	var forecasts []*pressurePb.Forecast
+	g.Go(func() error {
+		var err error
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
+		forecasts, err = h.forecastClient.GetAllForecasts(rpcCtx)
+		return err
+	})
 
 	if err := g.Wait(); err != nil {
 		RespondWithGrpcError(w, err, "Failed to fetch dashboard data")
 		return
-	}
-	var forecasts []*pressurePb.Forecast
-	for _, f := range forecastByIdx {
-		if f != nil {
-			forecasts = append(forecasts, f)
-		}
 	}
 
 	// 2. Respond with text/plain if the user agent is curl
@@ -296,7 +270,12 @@ func (h *DashboardHandler) GetDashboardByLocation(w http.ResponseWriter, r *http
 		return nil
 	})
 	g.Go(func() error {
-		f, err := h.fetchForecast(ctx, locationID)
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
+		f, err := h.forecastClient.GetForecast(rpcCtx, locationID)
+		if isNotFound(err) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}

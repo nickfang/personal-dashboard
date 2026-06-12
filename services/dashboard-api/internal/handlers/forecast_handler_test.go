@@ -51,12 +51,33 @@ func (m *mockForecastClient) GetForecast(ctx context.Context, locationID string)
 	}, nil
 }
 
+func (m *mockForecastClient) GetAllForecasts(ctx context.Context) ([]*weatherPb.Forecast, error) {
+	f, _ := m.GetForecast(ctx, "house-nick")
+	return []*weatherPb.Forecast{f}, nil
+}
+
 type errorForecastClient struct {
 	err error
 }
 
 func (m *errorForecastClient) GetForecast(ctx context.Context, locationID string) (*weatherPb.Forecast, error) {
 	return nil, m.err
+}
+
+func (m *errorForecastClient) GetAllForecasts(ctx context.Context) ([]*weatherPb.Forecast, error) {
+	return nil, m.err
+}
+
+// emptyForecastClient simulates a deployment where the forecast collector
+// hasn't run yet: the cache collection scan comes back empty.
+type emptyForecastClient struct{}
+
+func (m *emptyForecastClient) GetForecast(ctx context.Context, locationID string) (*weatherPb.Forecast, error) {
+	return nil, status.Error(codes.NotFound, "no forecast")
+}
+
+func (m *emptyForecastClient) GetAllForecasts(ctx context.Context) ([]*weatherPb.Forecast, error) {
+	return nil, nil
 }
 
 // --- Forecast aggregation tests ---
@@ -123,12 +144,8 @@ func TestDashboardHandler_GetDashboard_IncludesForecastAndAlerts(t *testing.T) {
 	}
 }
 
-func TestDashboardHandler_GetDashboard_ForecastNotFound_Tolerated(t *testing.T) {
-	handler := NewDashboardHandler(
-		&mockWeatherClient{},
-		&mockPollenClient{},
-		&errorForecastClient{err: status.Error(codes.NotFound, "no forecast yet")},
-	)
+func TestDashboardHandler_GetDashboard_NoForecastsYet_Tolerated(t *testing.T) {
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &emptyForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -139,7 +156,7 @@ func TestDashboardHandler_GetDashboard_ForecastNotFound_Tolerated(t *testing.T) 
 	handler.GetDashboard(rr, req)
 
 	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200 when forecast is NotFound, got %d", rr.Code)
+		t.Fatalf("expected 200 when no forecasts exist yet, got %d", rr.Code)
 	}
 
 	var body map[string]json.RawMessage

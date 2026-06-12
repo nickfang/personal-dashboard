@@ -88,6 +88,36 @@ func TestGetForecast_Mapping(t *testing.T) {
 	}
 }
 
+func TestGetAllForecasts(t *testing.T) {
+	now := time.Date(2026, 6, 12, 6, 0, 0, 0, time.UTC)
+	mockRepo := &testutil.MockReader{
+		GetAllForecastsFunc: func(ctx context.Context) ([]repository.ForecastCacheDoc, error) {
+			return []repository.ForecastCacheDoc{
+				{LocationID: "house-nick", IssuedAt: now, Points: []repository.ForecastPoint{{ValidTime: now, PressureMb: 1012.65}}},
+				{LocationID: "house-nita", IssuedAt: now},
+			}, nil
+		},
+	}
+
+	svc := service.NewWeatherService(mockRepo)
+	handler := NewGrpcHandler(svc)
+
+	resp, err := handler.GetAllForecasts(context.Background(), &pb.GetAllForecastsRequest{})
+	if err != nil {
+		t.Fatalf("failed to call handler: %v", err)
+	}
+
+	if len(resp.Forecasts) != 2 {
+		t.Fatalf("len(Forecasts) = %d, want 2", len(resp.Forecasts))
+	}
+	if resp.Forecasts[0].LocationId != "house-nick" || resp.Forecasts[1].LocationId != "house-nita" {
+		t.Errorf("unexpected location IDs in response")
+	}
+	if resp.Forecasts[0].Points[0].PressureMb != 1012.65 {
+		t.Errorf("Points[0].PressureMb = %v, want 1012.65", resp.Forecasts[0].Points[0].PressureMb)
+	}
+}
+
 func TestGetForecast_NotFound(t *testing.T) {
 	mockRepo := &testutil.MockReader{
 		GetForecastFunc: func(ctx context.Context, id string) (*repository.ForecastCacheDoc, error) {

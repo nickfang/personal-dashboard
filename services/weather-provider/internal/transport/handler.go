@@ -70,6 +70,19 @@ func (h *GrpcHandler) GetAllLastWeather(ctx context.Context, req *pb.GetAllLastW
 	return &pb.GetAllLastWeatherResponse{Weather: weathers}, nil
 }
 
+func (h *GrpcHandler) GetAllForecasts(ctx context.Context, req *pb.GetAllForecastsRequest) (*pb.GetAllForecastsResponse, error) {
+	docs, err := h.svc.GetAllForecasts(ctx)
+	if err != nil {
+		slog.Error("Failed to retrieve forecast data.", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to retrieve forecast data: %v", err)
+	}
+	var forecasts []*pb.Forecast
+	for i := range docs {
+		forecasts = append(forecasts, mapToProtoForecast(&docs[i]))
+	}
+	return &pb.GetAllForecastsResponse{Forecasts: forecasts}, nil
+}
+
 func (h *GrpcHandler) GetForecast(ctx context.Context, req *pb.GetForecastRequest) (*pb.GetForecastResponse, error) {
 	if req.LocationId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "location_id is required")

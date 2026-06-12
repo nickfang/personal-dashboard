@@ -16,6 +16,7 @@ type MockReader struct {
 	GetAllLastWeatherFunc func(ctx context.Context) ([]repository.WeatherCacheDoc, error)
 	GetAllRawFunc         func(ctx context.Context) ([]repository.WeatherPoint, error)
 	GetForecastFunc       func(ctx context.Context, id string) (*repository.ForecastCacheDoc, error)
+	GetAllForecastsFunc   func(ctx context.Context) ([]repository.ForecastCacheDoc, error)
 }
 
 func (m *MockReader) GetAll(ctx context.Context) ([]repository.PressureCacheDoc, error) {
@@ -58,4 +59,11 @@ func (m *MockReader) GetForecast(ctx context.Context, id string) (*repository.Fo
 		return nil, fmt.Errorf("GetForecast not mocked")
 	}
 	return m.GetForecastFunc(ctx, id)
+}
+
+func (m *MockReader) GetAllForecasts(ctx context.Context) ([]repository.ForecastCacheDoc, error) {
+	if m.GetAllForecastsFunc == nil {
+		return nil, fmt.Errorf("GetAllForecasts not mocked")
+	}
+	return m.GetAllForecastsFunc(ctx)
 }

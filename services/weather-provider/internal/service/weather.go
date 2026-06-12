@@ -37,3 +37,7 @@ func (s *WeatherService) GetAllRaw(ctx context.Context) ([]repository.WeatherPoi
 func (s *WeatherService) GetForecast(ctx context.Context, id string) (*repository.ForecastCacheDoc, error) {
 	return s.repo.GetForecast(ctx, id)
 }
+
+func (s *WeatherService) GetAllForecasts(ctx context.Context) ([]repository.ForecastCacheDoc, error) {
+	return s.repo.GetAllForecasts(ctx)
+}
