@@ -51,11 +51,18 @@ func main() {
 		slog.Error("Failed to initialize pollen client", "error", err)
 		os.Exit(1)
 	}
+	// The forecast service is served by weather-provider at the same address.
+	forecastClient, err := clients.NewForecastClient(context.Background(), weatherAddr)
+	if err != nil {
+		slog.Error("Failed to initialize forecast client", "error", err)
+		os.Exit(1)
+	}
 	defer weatherClient.Close()
 	defer pollenClient.Close()
+	defer forecastClient.Close()
 
 	// 4. Initialize Handlers
-	dashboardHandler := handlers.NewDashboardHandler(weatherClient, pollenClient)
+	dashboardHandler := handlers.NewDashboardHandler(weatherClient, pollenClient, forecastClient)
 
 	// 5. Initialize Router
 	router := app.NewRouter(dashboardHandler)

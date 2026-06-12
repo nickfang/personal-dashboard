@@ -64,8 +64,9 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	// Register Service
+	// Register Services
 	pb.RegisterPressureStatsServiceServer(grpcServer, handler)
+	pb.RegisterForecastServiceServer(grpcServer, handler)
 
 	// Register Standard Health Check
 	healthServer := health.NewServer()

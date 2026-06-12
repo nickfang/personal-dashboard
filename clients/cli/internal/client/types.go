@@ -2,11 +2,13 @@ package client
 
 // Response is the top-level JSON shape returned by GET /v1/dashboard.
 // Each inner map is keyed by location ID. A location may be absent from
-// any of the three maps if that data type has no reading for it.
+// any of the maps if that data type has no reading for it.
 type Response struct {
 	Weather  map[string]Weather  `json:"weather"`
 	Pressure map[string]Pressure `json:"pressure"`
 	Pollen   map[string]Pollen   `json:"pollen"`
+	Forecast map[string]Forecast `json:"forecast"`
+	Alerts   map[string][]Alert  `json:"alerts"`
 }
 
 // Merge folds the entries from src into r using last-write-wins semantics:
@@ -50,6 +52,34 @@ func (r *Response) Merge(src *Response) {
 	for k, v := range src.Pollen {
 		if existing, ok := r.Pollen[k]; !ok || v.CollectedAt > existing.CollectedAt {
 			r.Pollen[k] = v
+		}
+	}
+	if r.Forecast == nil {
+		r.Forecast = make(map[string]Forecast, len(src.Forecast))
+	}
+	for k, v := range src.Forecast {
+		if existing, ok := r.Forecast[k]; !ok || v.IssuedAt > existing.IssuedAt {
+			r.Forecast[k] = v
+			// Alerts are produced by the same collector run as the forecast
+			// they ride with, so they travel together on a win — including
+			// clearing to empty when the newer run has no alerts.
+			if r.Alerts == nil {
+				r.Alerts = make(map[string][]Alert, len(src.Alerts))
+			}
+			r.Alerts[k] = src.Alerts[k]
+		}
+	}
+	// Alerts for locations without a forecast entry can't be ordered by
+	// IssuedAt, so they only fill gaps.
+	for k, v := range src.Alerts {
+		if _, hasForecast := src.Forecast[k]; hasForecast {
+			continue
+		}
+		if r.Alerts == nil {
+			r.Alerts = make(map[string][]Alert, len(src.Alerts))
+		}
+		if _, ok := r.Alerts[k]; !ok {
+			r.Alerts[k] = v
 		}
 	}
 }
@@ -105,4 +135,36 @@ type Pollen struct {
 	DominantType    string        `json:"dominantType"`
 	Types           []PollenType  `json:"types"`
 	Plants          []PollenPlant `json:"plants"`
+}
+
+// ForecastPoint is one forecast hour within the dashboard-api forecast payload.
+type ForecastPoint struct {
+	ValidTime            string  `json:"validTime"`
+	PressureMb           float64 `json:"pressureMb"`
+	TempC                float64 `json:"tempC"`
+	TempF                float64 `json:"tempF"`
+	HumidityPercent      int     `json:"humidityPercent"`
+	PrecipitationPercent int     `json:"precipitationPercent"`
+}
+
+// Forecast matches the protojson output of the dashboard-api forecast payload.
+type Forecast struct {
+	LocationID string          `json:"locationId"`
+	IssuedAt   string          `json:"issuedAt"`
+	Points     []ForecastPoint `json:"points"`
+}
+
+// Alert matches the protojson output of the dashboard-api alerts payload.
+type Alert struct {
+	ID          string  `json:"id"`
+	LocationID  string  `json:"locationId"`
+	RuleID      string  `json:"ruleId"`
+	Severity    string  `json:"severity"`
+	Value       float64 `json:"value"`
+	Threshold   float64 `json:"threshold"`
+	WindowStart string  `json:"windowStart"`
+	WindowEnd   string  `json:"windowEnd"`
+	Message     string  `json:"message"`
+	Status      string  `json:"status"`
+	IssuedAt    string  `json:"issuedAt"`
 }

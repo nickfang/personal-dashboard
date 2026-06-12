@@ -1,0 +1,284 @@
+{
+  "forecastHours": [
+    {
+      "interval": {
+        "startTime": "2026-06-12T08:00:00Z",
+        "endTime": "2026-06-12T09:00:00Z"
+      },
+      "displayDateTime": {
+        "year": 2026,
+        "month": 6,
+        "day": 12,
+        "hours": 3,
+        "minutes": 0,
+        "seconds": 0,
+        "nanos": 0,
+        "utcOffset": "-18000s"
+      },
+      "weatherCondition": {
+        "iconBaseUri": "https://maps.gstatic.com/weather/v1/cloudy",
+        "description": {
+          "text": "Cloudy",
+          "languageCode": "en"
+        },
+        "type": "CLOUDY"
+      },
+      "temperature": {
+        "unit": "CELSIUS",
+        "degrees": 26.5
+      },
+      "feelsLikeTemperature": {
+        "unit": "CELSIUS",
+        "degrees": 30.2
+      },
+      "dewPoint": {
+        "unit": "CELSIUS",
+        "degrees": 24.3
+      },
+      "heatIndex": {
+        "unit": "CELSIUS",
+        "degrees": 30.2
+      },
+      "windChill": {
+        "unit": "CELSIUS",
+        "degrees": 26.5
+      },
+      "wetBulbTemperature": {
+        "unit": "CELSIUS",
+        "degrees": 24.8
+      },
+      "precipitation": {
+        "probability": {
+          "type": "RAIN",
+          "percent": 10
+        },
+        "snowQpf": {
+          "unit": "MILLIMETERS",
+          "quantity": 0
+        },
+        "qpf": {
+          "unit": "MILLIMETERS",
+          "quantity": 0
+        }
+      },
+      "airPressure": {
+        "meanSeaLevelMillibars": 1013.22
+      },
+      "wind": {
+        "direction": {
+          "cardinal": "SOUTH_SOUTHEAST",
+          "degrees": 163
+        },
+        "speed": {
+          "unit": "KILOMETERS_PER_HOUR",
+          "value": 11
+        },
+        "gust": {
+          "unit": "KILOMETERS_PER_HOUR",
+          "value": 19
+        }
+      },
+      "visibility": {
+        "unit": "KILOMETERS",
+        "distance": 16
+      },
+      "iceThickness": {
+        "unit": "MILLIMETERS",
+        "thickness": 0
+      },
+      "isDaytime": false,
+      "relativeHumidity": 87,
+      "uvIndex": 0,
+      "thunderstormProbability": 0,
+      "cloudCover": 99
+    },
+    {
+      "interval": {
+        "startTime": "2026-06-12T09:00:00Z",
+        "endTime": "2026-06-12T10:00:00Z"
+      },
+      "displayDateTime": {
+        "year": 2026,
+        "month": 6,
+        "day": 12,
+        "hours": 4,
+        "minutes": 0,
+        "seconds": 0,
+        "nanos": 0,
+        "utcOffset": "-18000s"
+      },
+      "weatherCondition": {
+        "iconBaseUri": "https://maps.gstatic.com/weather/v1/drizzle",
+        "description": {
+          "text": "Light rain",
+          "languageCode": "en"
+        },
+        "type": "LIGHT_RAIN"
+      },
+      "temperature": {
+        "unit": "CELSIUS",
+        "degrees": 26.3
+      },
+      "feelsLikeTemperature": {
+        "unit": "CELSIUS",
+        "degrees": 29.9
+      },
+      "dewPoint": {
+        "unit": "CELSIUS",
+        "degrees": 24.3
+      },
+      "heatIndex": {
+        "unit": "CELSIUS",
+        "degrees": 29.9
+      },
+      "windChill": {
+        "unit": "CELSIUS",
+        "degrees": 26.3
+      },
+      "wetBulbTemperature": {
+        "unit": "CELSIUS",
+        "degrees": 24.8
+      },
+      "precipitation": {
+        "probability": {
+          "type": "RAIN",
+          "percent": 20
+        },
+        "snowQpf": {
+          "unit": "MILLIMETERS",
+          "quantity": 0
+        },
+        "qpf": {
+          "unit": "MILLIMETERS",
+          "quantity": 0.04
+        }
+      },
+      "airPressure": {
+        "meanSeaLevelMillibars": 1013.28
+      },
+      "wind": {
+        "direction": {
+          "cardinal": "SOUTH_SOUTHEAST",
+          "degrees": 163
+        },
+        "speed": {
+          "unit": "KILOMETERS_PER_HOUR",
+          "value": 10
+        },
+        "gust": {
+          "unit": "KILOMETERS_PER_HOUR",
+          "value": 14
+        }
+      },
+      "visibility": {
+        "unit": "KILOMETERS",
+        "distance": 16
+      },
+      "iceThickness": {
+        "unit": "MILLIMETERS",
+        "thickness": 0
+      },
+      "isDaytime": false,
+      "relativeHumidity": 89,
+      "uvIndex": 0,
+      "thunderstormProbability": 50,
+      "cloudCover": 99
+    },
+    {
+      "interval": {
+        "startTime": "2026-06-12T10:00:00Z",
+        "endTime": "2026-06-12T11:00:00Z"
+      },
+      "displayDateTime": {
+        "year": 2026,
+        "month": 6,
+        "day": 12,
+        "hours": 5,
+        "minutes": 0,
+        "seconds": 0,
+        "nanos": 0,
+        "utcOffset": "-18000s"
+      },
+      "weatherCondition": {
+        "iconBaseUri": "https://maps.gstatic.com/weather/v1/isolated_tstorms",
+        "description": {
+          "text": "Scattered thunderstorms",
+          "languageCode": "en"
+        },
+        "type": "SCATTERED_THUNDERSTORMS"
+      },
+      "temperature": {
+        "unit": "CELSIUS",
+        "degrees": 26.1
+      },
+      "feelsLikeTemperature": {
+        "unit": "CELSIUS",
+        "degrees": 29.7
+      },
+      "dewPoint": {
+        "unit": "CELSIUS",
+        "degrees": 24.3
+      },
+      "heatIndex": {
+        "unit": "CELSIUS",
+        "degrees": 29.7
+      },
+      "windChill": {
+        "unit": "CELSIUS",
+        "degrees": 26.1
+      },
+      "wetBulbTemperature": {
+        "unit": "CELSIUS",
+        "degrees": 24.8
+      },
+      "precipitation": {
+        "probability": {
+          "type": "RAIN",
+          "percent": 35
+        },
+        "snowQpf": {
+          "unit": "MILLIMETERS",
+          "quantity": 0
+        },
+        "qpf": {
+          "unit": "MILLIMETERS",
+          "quantity": 0.29
+        }
+      },
+      "airPressure": {
+        "meanSeaLevelMillibars": 1013.35
+      },
+      "wind": {
+        "direction": {
+          "cardinal": "SOUTH_SOUTHEAST",
+          "degrees": 163
+        },
+        "speed": {
+          "unit": "KILOMETERS_PER_HOUR",
+          "value": 8
+        },
+        "gust": {
+          "unit": "KILOMETERS_PER_HOUR",
+          "value": 14
+        }
+      },
+      "visibility": {
+        "unit": "KILOMETERS",
+        "distance": 16
+      },
+      "iceThickness": {
+        "unit": "MILLIMETERS",
+        "thickness": 0
+      },
+      "isDaytime": false,
+      "relativeHumidity": 89,
+      "uvIndex": 0,
+      "thunderstormProbability": 50,
+      "cloudCover": 95
+    }
+  ],
+  "timeZone": {
+    "id": "America/Chicago",
+    "version": ""
+  }
+}

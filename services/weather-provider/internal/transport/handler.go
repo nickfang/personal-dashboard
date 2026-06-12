@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/nickfang/personal-dashboard/services/shared"
 	pb "github.com/nickfang/personal-dashboard/services/weather-provider/internal/gen/go/weather-provider/v1"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/weather-provider/internal/service"
@@ -14,6 +15,7 @@ import (
 
 type GrpcHandler struct {
 	pb.UnimplementedPressureStatsServiceServer
+	pb.UnimplementedForecastServiceServer
 	svc *service.WeatherService
 }
 
@@ -68,6 +70,34 @@ func (h *GrpcHandler) GetAllLastWeather(ctx context.Context, req *pb.GetAllLastW
 	return &pb.GetAllLastWeatherResponse{Weather: weathers}, nil
 }
 
+func (h *GrpcHandler) GetAllForecasts(ctx context.Context, req *pb.GetAllForecastsRequest) (*pb.GetAllForecastsResponse, error) {
+	docs, err := h.svc.GetAllForecasts(ctx)
+	if err != nil {
+		slog.Error("Failed to retrieve forecast data.", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to retrieve forecast data: %v", err)
+	}
+	var forecasts []*pb.Forecast
+	for i := range docs {
+		forecasts = append(forecasts, mapToProtoForecast(&docs[i]))
+	}
+	return &pb.GetAllForecastsResponse{Forecasts: forecasts}, nil
+}
+
+func (h *GrpcHandler) GetForecast(ctx context.Context, req *pb.GetForecastRequest) (*pb.GetForecastResponse, error) {
+	if req.LocationId == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "location_id is required")
+	}
+	doc, err := h.svc.GetForecast(ctx, req.LocationId)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, status.Errorf(codes.NotFound, "forecast not found for location: %s", req.LocationId)
+		}
+		slog.Error("Failed to retrieve forecast data.", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to retrieve forecast data: %v", err)
+	}
+	return &pb.GetForecastResponse{Forecast: mapToProtoForecast(doc)}, nil
+}
+
 // mapToProto converts the internal repository model to the gRPC message
 func mapToProtoPressureStat(doc *repository.PressureCacheDoc) *pb.PressureStat {
 	stat := &pb.PressureStat{
@@ -107,5 +137,54 @@ func mapToProtoWeather(doc *repository.WeatherCacheDoc) *pb.Weather {
 		HumidityPercent:      int32(doc.CurrentValue.HumidityPercent),
 		PressureMb:           doc.CurrentValue.PressureMb,
 		PrecipitationPercent: int32(doc.CurrentValue.PrecipitationPercent),
+	}
+}
+
+func mapToProtoForecast(doc *repository.ForecastCacheDoc) *pb.Forecast {
+	forecast := &pb.Forecast{
+		LocationId: doc.LocationID,
+		IssuedAt:   timestamppb.New(doc.IssuedAt),
+	}
+	for i := range doc.Points {
+		forecast.Points = append(forecast.Points, mapToProtoForecastPoint(&doc.Points[i]))
+	}
+	for i := range doc.Alerts {
+		forecast.Alerts = append(forecast.Alerts, mapToProtoAlert(&doc.Alerts[i]))
+	}
+	return forecast
+}
+
+func mapToProtoForecastPoint(p *repository.ForecastPoint) *pb.ForecastPoint {
+	return &pb.ForecastPoint{
+		ValidTime:            timestamppb.New(p.ValidTime),
+		TempC:                p.TempC,
+		TempF:                p.TempF,
+		TempFeelC:            p.TempFeelC,
+		TempFeelF:            p.TempFeelF,
+		DewpointC:            p.DewpointC,
+		DewpointF:            p.DewpointF,
+		HumidityPercent:      int32(p.HumidityPercent),
+		UvIndex:              int32(p.UVIndex),
+		PrecipitationPercent: int32(p.PrecipitationPercent),
+		PressureMb:           p.PressureMb,
+		WindDirDeg:           int32(p.WindDirDeg),
+		WindSpeedKph:         p.WindSpeedKph,
+		WindGustKph:          p.WindGustKph,
+	}
+}
+
+func mapToProtoAlert(a *shared.Alert) *pb.Alert {
+	return &pb.Alert{
+		Id:          a.ID,
+		LocationId:  a.Location,
+		RuleId:      a.RuleID,
+		Severity:    a.Severity,
+		Value:       a.Value,
+		Threshold:   a.Threshold,
+		WindowStart: timestamppb.New(a.WindowStart),
+		WindowEnd:   timestamppb.New(a.WindowEnd),
+		Message:     a.Message,
+		Status:      a.Status,
+		IssuedAt:    timestamppb.New(a.IssuedAt),
 	}
 }

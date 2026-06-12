@@ -49,13 +49,14 @@ func sectionBar(title, timestamp string, innerWidth int) string {
 	return SectionBarStyle.Render(left + fill + right)
 }
 
-// renderLocation renders a single location's full block (border + three sections).
-func renderLocation(id string, w *client.Weather, p *client.Pressure, pol *client.Pollen, innerWidth int) string {
+// renderLocation renders a single location's full block (border + sections),
+// with an alert banner at the top when the location has active alerts.
+func renderLocation(id string, w *client.Weather, p *client.Pressure, pol *client.Pollen, f *client.Forecast, alerts []client.Alert, innerWidth int) string {
 	if innerWidth < 30 {
 		innerWidth = 30
 	}
 
-	var weatherTs, pressureTs, pollenTs string
+	var weatherTs, pressureTs, pollenTs, forecastTs string
 	if w != nil {
 		weatherTs = formatTimestamp(w.LastUpdated)
 	}
@@ -65,6 +66,9 @@ func renderLocation(id string, w *client.Weather, p *client.Pressure, pol *clien
 	if pol != nil {
 		pollenTs = formatTimestamp(pol.CollectedAt)
 	}
+	if f != nil {
+		forecastTs = formatTimestamp(f.IssuedAt)
+	}
 
 	// Title bar across the top with location ID.
 	titleBar := sectionBar(id, "", innerWidth)
@@ -72,6 +76,11 @@ func renderLocation(id string, w *client.Weather, p *client.Pressure, pol *clien
 	var b strings.Builder
 	b.WriteString(titleBar)
 	b.WriteString("\n")
+
+	if banner := alertBanner(alerts); banner != "" {
+		b.WriteString(banner)
+		b.WriteString("\n")
+	}
 
 	b.WriteString(sectionBar("WEATHER", weatherTs, innerWidth))
 	b.WriteString("\n")
@@ -87,6 +96,11 @@ func renderLocation(id string, w *client.Weather, p *client.Pressure, pol *clien
 		haveCurrent = true
 	}
 	b.WriteString(renderPressureWithCurrent(p, currentMb, haveCurrent))
+	b.WriteString("\n")
+
+	b.WriteString(sectionBar("FORECAST", forecastTs, innerWidth))
+	b.WriteString("\n")
+	b.WriteString(renderForecast(f))
 	b.WriteString("\n")
 
 	b.WriteString(sectionBar("POLLEN", pollenTs, innerWidth))

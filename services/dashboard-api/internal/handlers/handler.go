@@ -27,15 +27,22 @@ type PollenFetcher interface {
 	GetPollenReports(ctx context.Context) ([]*pollenPb.PollenReport, error)
 }
 
-type DashboardHandler struct {
-	weatherClient WeatherFetcher
-	pollenClient  PollenFetcher
+type ForecastFetcher interface {
+	GetForecast(ctx context.Context, locationID string) (*pressurePb.Forecast, error)
+	GetAllForecasts(ctx context.Context) ([]*pressurePb.Forecast, error)
 }
 
-func NewDashboardHandler(wc WeatherFetcher, pc PollenFetcher) *DashboardHandler {
+type DashboardHandler struct {
+	weatherClient  WeatherFetcher
+	pollenClient   PollenFetcher
+	forecastClient ForecastFetcher
+}
+
+func NewDashboardHandler(wc WeatherFetcher, pc PollenFetcher, fc ForecastFetcher) *DashboardHandler {
 	return &DashboardHandler{
-		weatherClient: wc,
-		pollenClient:  pc,
+		weatherClient:  wc,
+		pollenClient:   pc,
+		forecastClient: fc,
 	}
 }
 
@@ -80,6 +87,35 @@ func aggregateLastWeather(lastWeathers []*pressurePb.Weather) (map[string]json.R
 	return aggregatedData, nil
 }
 
+// aggregateForecasts splits each forecast into the "forecast" map (points,
+// no alerts) and the "alerts" map (per-location alert array), so alerts
+// aren't shipped twice while still being addressable on their own.
+func aggregateForecasts(forecasts []*pressurePb.Forecast) (map[string]json.RawMessage, map[string][]json.RawMessage, error) {
+	forecastData := make(map[string]json.RawMessage, len(forecasts))
+	alertData := make(map[string][]json.RawMessage, len(forecasts))
+	for _, forecast := range forecasts {
+		alerts := forecast.Alerts
+		forecast.Alerts = nil
+		data, err := protoMarshaler.Marshal(forecast)
+		if err != nil {
+			return nil, nil, err
+		}
+		forecastData[forecast.LocationId] = data
+
+		raws := make([]json.RawMessage, 0, len(alerts))
+		for _, alert := range alerts {
+			raw, err := protoMarshaler.Marshal(alert)
+			if err != nil {
+				return nil, nil, err
+			}
+			raws = append(raws, raw)
+		}
+		alertData[forecast.LocationId] = raws
+	}
+	return forecastData, alertData, nil
+}
+
+
 func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
 	// 1. Fetch data from clients
 	var pressureStats []*pressurePb.PressureStat
@@ -110,13 +146,23 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		return err
 	})
 
+	var forecasts []*pressurePb.Forecast
+	g.Go(func() error {
+		var err error
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
+		forecasts, err = h.forecastClient.GetAllForecasts(rpcCtx)
+		return err
+	})
+
 	if err := g.Wait(); err != nil {
 		RespondWithGrpcError(w, err, "Failed to fetch dashboard data")
 		return
 	}
+
 	// 2. Respond with text/plain if the user agent is curl
 	if strings.Contains(r.Header.Get("User-Agent"), "curl") {
-		body, err := formatDashboardText(pressureStats, pollenReports, allLastWeather)
+		body, err := formatDashboardText(pressureStats, pollenReports, allLastWeather, forecasts)
 		if err != nil {
 			http.Error(w, "Failed to format text dashboard", http.StatusInternalServerError)
 			return
@@ -142,6 +188,11 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Failed to encode last weather response", http.StatusInternalServerError)
 		return
 	}
+	aggregatedForecast, aggregatedAlerts, err := aggregateForecasts(forecasts)
+	if err != nil {
+		http.Error(w, "Failed to encode forecast response", http.StatusInternalServerError)
+		return
+	}
 
 	// 4. Respond with JSON (encoding/json handles json.RawMessage values
 	// by embedding them verbatim, so the protojson output passes through).
@@ -150,6 +201,8 @@ func (h *DashboardHandler) GetDashboard(w http.ResponseWriter, r *http.Request) 
 		"weather":  aggregatedLastWeather,
 		"pressure": aggregatedPressure,
 		"pollen":   aggregatedPollen,
+		"forecast": aggregatedForecast,
+		"alerts":   aggregatedAlerts,
 	})
 	if err != nil {
 		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)
@@ -167,6 +220,7 @@ func (h *DashboardHandler) GetDashboardByLocation(w http.ResponseWriter, r *http
 	var pressureStat *pressurePb.PressureStat
 	var pollenReport *pollenPb.PollenReport
 	var lastWeather *pressurePb.Weather
+	var forecast *pressurePb.Forecast
 
 	g, ctx := errgroup.WithContext(r.Context())
 
@@ -215,16 +269,29 @@ func (h *DashboardHandler) GetDashboardByLocation(w http.ResponseWriter, r *http
 		pollenReport = p
 		return nil
 	})
+	g.Go(func() error {
+		rpcCtx, cancel := context.WithTimeout(ctx, shared.RPCClientTimeout)
+		defer cancel()
+		f, err := h.forecastClient.GetForecast(rpcCtx, locationID)
+		if isNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		forecast = f
+		return nil
+	})
 
 	if err := g.Wait(); err != nil {
 		RespondWithGrpcError(w, err, "Failed to fetch dashboard data for location")
 		return
 	}
 
-	// 404 only when the location is wholly absent across all three sections.
+	// 404 only when the location is wholly absent across all sections.
 	// Partial data (e.g. weather present but pollen NotFound) yields 200
 	// with the corresponding maps left empty for the absent sections.
-	if pressureStat == nil && lastWeather == nil && pollenReport == nil {
+	if pressureStat == nil && lastWeather == nil && pollenReport == nil && forecast == nil {
 		http.Error(w, "Location data not found", http.StatusNotFound)
 		return
 	}
@@ -245,6 +312,10 @@ func (h *DashboardHandler) GetDashboardByLocation(w http.ResponseWriter, r *http
 	if pollenReport != nil {
 		pollenSlice = []*pollenPb.PollenReport{pollenReport}
 	}
+	var forecastSlice []*pressurePb.Forecast
+	if forecast != nil {
+		forecastSlice = []*pressurePb.Forecast{forecast}
+	}
 
 	aggregatedPressure, err := aggregatePressureStats(pressureSlice)
 	if err != nil {
@@ -261,11 +332,18 @@ func (h *DashboardHandler) GetDashboardByLocation(w http.ResponseWriter, r *http
 		http.Error(w, "Failed to encode last weather response", http.StatusInternalServerError)
 		return
 	}
+	aggregatedForecast, aggregatedAlerts, err := aggregateForecasts(forecastSlice)
+	if err != nil {
+		http.Error(w, "Failed to encode forecast response", http.StatusInternalServerError)
+		return
+	}
 
 	buf, err := json.Marshal(map[string]any{
 		"weather":  aggregatedLastWeather,
 		"pressure": aggregatedPressure,
 		"pollen":   aggregatedPollen,
+		"forecast": aggregatedForecast,
+		"alerts":   aggregatedAlerts,
 	})
 	if err != nil {
 		http.Error(w, "Failed to encode JSON", http.StatusInternalServerError)

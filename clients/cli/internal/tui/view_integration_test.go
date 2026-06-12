@@ -217,3 +217,50 @@ func TestModel_InitialLocationMissShowsFlash(t *testing.T) {
 		t.Errorf("expected fallback to all-view hints:\n%s", view)
 	}
 }
+
+func TestModelView_ForecastAndBannerInBothViews(t *testing.T) {
+	base := "2026-06-12T06:00:00Z"
+	resp := &client.Response{
+		Weather: map[string]client.Weather{
+			"house-nick": {LocationID: "house-nick", LastUpdated: base, TempF: 75.4, PressureMb: 1013.58},
+		},
+		Forecast: map[string]client.Forecast{
+			"house-nick": {LocationID: "house-nick", IssuedAt: base, Points: []client.ForecastPoint{
+				{ValidTime: "2026-06-12T06:00:00Z", PressureMb: 1013},
+				{ValidTime: "2026-06-12T07:00:00Z", PressureMb: 1011},
+				{ValidTime: "2026-06-12T08:00:00Z", PressureMb: 1009},
+				{ValidTime: "2026-06-12T09:00:00Z", PressureMb: 1007},
+			}},
+		},
+		Alerts: map[string][]client.Alert{
+			"house-nick": {{
+				LocationID: "house-nick",
+				Severity:   "warning",
+				Status:     "active",
+				Message:    "Fri 1 AM  -6.0 mb/3h",
+			}},
+		},
+	}
+
+	m := NewModel(nil, 60*time.Second, "")
+	var tm tea.Model = m
+	tm, _ = tm.Update(tea.WindowSizeMsg{Width: 110, Height: 60})
+	tm, _ = tm.Update(fetchResultMsg{data: resp, at: time.Now()})
+
+	// viewAll
+	view := tm.View()
+	for _, s := range []string{"FORECAST", "▼ Falling", "⚠ Fri 1 AM  -6.0 mb/3h"} {
+		if !strings.Contains(view, s) {
+			t.Errorf("viewAll missing %q\n---\n%s\n---", s, view)
+		}
+	}
+
+	// viewSingle (focus house-nick)
+	tm, _ = tm.Update(tea.KeyMsg{Type: tea.KeyRight})
+	view = tm.View()
+	for _, s := range []string{"FORECAST", "▼ Falling", "⚠ Fri 1 AM  -6.0 mb/3h"} {
+		if !strings.Contains(view, s) {
+			t.Errorf("viewSingle missing %q\n---\n%s\n---", s, view)
+		}
+	}
+}

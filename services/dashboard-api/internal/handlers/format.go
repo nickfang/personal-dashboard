@@ -5,6 +5,7 @@ import (
 	"maps"
 	"slices"
 	"strings"
+	"time"
 
 	pollenPb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1"
 	pressurePb "github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1"
@@ -94,10 +95,125 @@ func formatPollenText(pollenReports []*pollenPb.PollenReport) map[string]string 
 	return pollenByLocation
 }
 
-func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports []*pollenPb.PollenReport, lastWeathers []*pressurePb.Weather) (string, error) {
+// forecastPressureAt finds the pressure delta from the first point to the
+// point nearest first+hours, within a 45-minute tolerance (resilient to
+// missing forecast hours, like the collector's delta search).
+func forecastDeltaAt(points []*pressurePb.ForecastPoint, hours int) (float64, bool) {
+	if len(points) == 0 {
+		return 0, false
+	}
+	const tolerance = 45 * time.Minute
+	base := points[0]
+	if base.ValidTime == nil {
+		return 0, false
+	}
+	target := base.ValidTime.AsTime().Add(time.Duration(hours) * time.Hour)
+
+	bestIdx := -1
+	minDiff := tolerance + time.Second
+	for i := 1; i < len(points); i++ {
+		if points[i].ValidTime == nil {
+			continue
+		}
+		diff := points[i].ValidTime.AsTime().Sub(target)
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff <= tolerance && diff < minDiff {
+			minDiff = diff
+			bestIdx = i
+		}
+	}
+	if bestIdx < 0 {
+		return 0, false
+	}
+	return points[bestIdx].PressureMb - base.PressureMb, true
+}
+
+// forecastLow returns the lowest pressure within the given horizon from the
+// first point.
+func forecastLow(points []*pressurePb.ForecastPoint, hours int) (float64, bool) {
+	if len(points) == 0 || points[0].ValidTime == nil {
+		return 0, false
+	}
+	cutoff := points[0].ValidTime.AsTime().Add(time.Duration(hours) * time.Hour)
+	low := points[0].PressureMb
+	for _, p := range points[1:] {
+		if p.ValidTime == nil {
+			continue
+		}
+		if p.ValidTime.AsTime().After(cutoff) {
+			break
+		}
+		if p.PressureMb < low {
+			low = p.PressureMb
+		}
+	}
+	return low, true
+}
+
+// forecastTrend mirrors the WMO 3h barometric-tendency bands used by the
+// weather-collector's pressure analysis.
+func forecastTrend(points []*pressurePb.ForecastPoint) string {
+	delta3h, ok := forecastDeltaAt(points, 3)
+	if !ok {
+		return "unknown"
+	}
+	switch {
+	case delta3h > 0.5:
+		return "rising"
+	case delta3h < -0.5:
+		return "falling"
+	default:
+		return "stable"
+	}
+}
+
+func formatForecastText(forecasts []*pressurePb.Forecast) map[string]string {
+	forecastByLocation := make(map[string]string)
+	sortedForecasts := slices.Clone(forecasts)
+	slices.SortFunc(sortedForecasts, func(a, b *pressurePb.Forecast) int {
+		return strings.Compare(a.LocationId, b.LocationId)
+	})
+	for _, forecast := range sortedForecasts {
+		var text strings.Builder
+		issuedAt := "unknown"
+		if forecast.IssuedAt != nil {
+			issuedAt = forecast.IssuedAt.AsTime().Local().Format("2006.01.02 15:04:05")
+		}
+		text.WriteString(fmt.Sprintf("Forecast: %s\n", issuedAt))
+
+		line := "  " + forecastTrend(forecast.Points)
+		if low, ok := forecastLow(forecast.Points, 48); ok {
+			line += fmt.Sprintf(", low %.2f mb (48h)", low)
+		}
+		text.WriteString(line + "\n")
+
+		var deltas []string
+		for _, hours := range []int{3, 6, 12, 24, 48} {
+			if delta, ok := forecastDeltaAt(forecast.Points, hours); ok {
+				deltas = append(deltas, fmt.Sprintf("%+.2f(+%dh)", delta, hours))
+			}
+		}
+		if len(deltas) > 0 {
+			text.WriteString("  Deltas: " + strings.Join(deltas, ", ") + "\n")
+		}
+
+		for _, alert := range forecast.Alerts {
+			if alert.Status == "active" {
+				text.WriteString(fmt.Sprintf("  ⚠ %s\n", alert.Message))
+			}
+		}
+		forecastByLocation[forecast.LocationId] = text.String()
+	}
+	return forecastByLocation
+}
+
+func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports []*pollenPb.PollenReport, lastWeathers []*pressurePb.Weather, forecasts []*pressurePb.Forecast) (string, error) {
 	pressureByLocation := formatPressureText(pressureStats)
 	pollenByLocation := formatPollenText(pollenReports)
 	weatherByLocation := formatWeatherText(lastWeathers)
+	forecastByLocation := formatForecastText(forecasts)
 
 	locations := make(map[string]struct{})
 	for location := range pressureByLocation {
@@ -106,13 +222,16 @@ func formatDashboardText(pressureStats []*pressurePb.PressureStat, pollenReports
 	for location := range pollenByLocation {
 		locations[location] = struct{}{}
 	}
+	for location := range forecastByLocation {
+		locations[location] = struct{}{}
+	}
 
-	fmt.Printf("locations: %v\n", locations)
 	var data strings.Builder
 	for _, location := range slices.Sorted(maps.Keys(locations)) {
 		data.WriteString(fmt.Sprintf("---------------- %s ----------------\n", location))
 		data.WriteString(weatherByLocation[location])
 		data.WriteString(pressureByLocation[location])
+		data.WriteString(forecastByLocation[location])
 		data.WriteString(pollenByLocation[location])
 	}
 	return data.String(), nil

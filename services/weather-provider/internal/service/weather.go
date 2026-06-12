@@ -33,3 +33,11 @@ func (s *WeatherService) GetAllLastWeather(ctx context.Context) ([]repository.We
 func (s *WeatherService) GetAllRaw(ctx context.Context) ([]repository.WeatherPoint, error) {
 	return s.repo.GetAllRaw(ctx)
 }
+
+func (s *WeatherService) GetForecast(ctx context.Context, id string) (*repository.ForecastCacheDoc, error) {
+	return s.repo.GetForecast(ctx, id)
+}
+
+func (s *WeatherService) GetAllForecasts(ctx context.Context) ([]repository.ForecastCacheDoc, error) {
+	return s.repo.GetAllForecasts(ctx)
+}

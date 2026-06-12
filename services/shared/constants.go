@@ -8,10 +8,12 @@ const (
 	PollenDatabaseID  = "pollen-log"
 
 	// Cache collection names shared between each collector/provider pair.
-	WeatherCacheCollection = "weather_cache"
-	WeatherRawCollection   = "weather_raw"
-	PollenCacheCollection  = "pollen_cache"
-	PollenRawCollection    = "pollen_raw"
+	WeatherCacheCollection  = "weather_cache"
+	WeatherRawCollection    = "weather_raw"
+	PollenCacheCollection   = "pollen_cache"
+	PollenRawCollection     = "pollen_raw"
+	ForecastCacheCollection = "forecast_cache"
+	ForecastRawCollection   = "forecast_raw"
 
 	// RPC timeout
 	RPCClientTimeout = 2 * time.Second

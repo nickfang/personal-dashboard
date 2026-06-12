@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package weather_provider.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Each service's buf.gen.yaml overrides this to its own internal/gen path.
+option go_package = "weather_provider/v1";
+
+// ForecastService serves the latest stored forecast snapshot per location.
+// Alerts ride inside the forecast response: they live in the same cache
+// document, so a separate RPC would re-read the same data.
+service ForecastService {
+  rpc GetAllForecasts(GetAllForecastsRequest) returns (GetAllForecastsResponse);
+  rpc GetForecast(GetForecastRequest) returns (GetForecastResponse);
+}
+
+message ForecastPoint {
+  google.protobuf.Timestamp valid_time = 1;
+  double temp_c = 2;
+  double temp_f = 3;
+  double temp_feel_c = 4;
+  double temp_feel_f = 5;
+  double dewpoint_c = 6;
+  double dewpoint_f = 7;
+  int32 humidity_percent = 8;
+  int32 uv_index = 9;
+  int32 precipitation_percent = 10;
+  double pressure_mb = 11;
+  int32 wind_dir_deg = 12;
+  double wind_speed_kph = 13;
+  double wind_gust_kph = 14;
+}
+
+// Alert mirrors the source-agnostic shared.Alert contract.
+message Alert {
+  string id = 1;
+  string location_id = 2;
+  string rule_id = 3;
+  string severity = 4;
+  double value = 5;
+  double threshold = 6;
+  google.protobuf.Timestamp window_start = 7;
+  google.protobuf.Timestamp window_end = 8;
+  string message = 9;
+  string status = 10;
+  google.protobuf.Timestamp issued_at = 11;
+}
+
+message Forecast {
+  string location_id = 1;
+  google.protobuf.Timestamp issued_at = 2;
+  repeated ForecastPoint points = 3;
+  repeated Alert alerts = 4;
+}
+
+message GetAllForecastsRequest {}
+
+message GetAllForecastsResponse {
+  repeated Forecast forecasts = 1;
+}
+
+message GetForecastRequest {
+  string location_id = 1;
+}
+
+message GetForecastResponse {
+  Forecast forecast = 1;
+}

@@ -10,4 +10,6 @@ type WeatherReader interface {
 	GetLastWeather(ctx context.Context, id string) (*WeatherCacheDoc, error)
 	GetAllLastWeather(ctx context.Context) ([]WeatherCacheDoc, error)
 	GetAllRaw(ctx context.Context) ([]WeatherPoint, error)
+	GetForecast(ctx context.Context, id string) (*ForecastCacheDoc, error)
+	GetAllForecasts(ctx context.Context) ([]ForecastCacheDoc, error)
 }

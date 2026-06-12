@@ -12,6 +12,8 @@ var (
 	accentFg = lipgloss.AdaptiveColor{Light: "22", Dark: "42"}
 	// errorFg is for errors.
 	errorFg = lipgloss.AdaptiveColor{Light: "124", Dark: "203"}
+	// warnFg is for warning-severity alerts (orange on light, gold on dark).
+	warnFg = lipgloss.AdaptiveColor{Light: "130", Dark: "214"}
 
 	// BorderStyle is a rounded box-drawing border with a dim foreground.
 	BorderStyle = lipgloss.NewStyle().
@@ -36,8 +38,11 @@ var (
 	// ValueStyle is used for metric values.
 	ValueStyle = lipgloss.NewStyle().Bold(true)
 
-	// ErrorStyle is used for error messages.
+	// ErrorStyle is used for error messages and severe alert banners.
 	ErrorStyle = lipgloss.NewStyle().Foreground(errorFg).Bold(true)
+
+	// WarnStyle is used for warning-severity alert banners.
+	WarnStyle = lipgloss.NewStyle().Foreground(warnFg).Bold(true)
 
 	// StatusBarStyle is used for the bottom status bar.
 	StatusBarStyle = lipgloss.NewStyle().Foreground(dimFg)
