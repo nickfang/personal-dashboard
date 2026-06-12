@@ -1,6 +1,10 @@
 package repository
 
-import "time"
+import (
+	"time"
+
+	"github.com/nickfang/personal-dashboard/services/shared"
+)
 
 // ForecastPoint is one forecast hour in storage form.
 type ForecastPoint struct {
@@ -39,4 +43,5 @@ type ForecastCacheDoc struct {
 	LastUpdated time.Time       `firestore:"last_updated"`
 	IssuedAt    time.Time       `firestore:"issued_at"`
 	Points      []ForecastPoint `firestore:"points"`
+	Alerts      []shared.Alert  `firestore:"alerts"`
 }

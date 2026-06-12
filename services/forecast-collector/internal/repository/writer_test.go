@@ -3,6 +3,8 @@ package repository
 import (
 	"testing"
 	"time"
+
+	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
 func TestBuildCacheDoc(t *testing.T) {
@@ -16,8 +18,11 @@ func TestBuildCacheDoc(t *testing.T) {
 			{ValidTime: issuedAt.Add(time.Hour), PressureMb: 1013.13},
 		},
 	}
+	alerts := []shared.Alert{
+		{ID: "alert-1", Location: "house-nick", Status: shared.AlertStatusActive},
+	}
 
-	doc := buildCacheDoc(run)
+	doc := buildCacheDoc(run, alerts)
 
 	if doc.Location != "house-nick" {
 		t.Errorf("Location = %q, want %q", doc.Location, "house-nick")
@@ -33,5 +38,8 @@ func TestBuildCacheDoc(t *testing.T) {
 	}
 	if doc.Points[1].PressureMb != 1013.13 {
 		t.Errorf("Points[1].PressureMb = %v, want 1013.13", doc.Points[1].PressureMb)
+	}
+	if len(doc.Alerts) != 1 || doc.Alerts[0].ID != "alert-1" {
+		t.Errorf("Alerts = %v, want the merged alert set", doc.Alerts)
 	}
 }

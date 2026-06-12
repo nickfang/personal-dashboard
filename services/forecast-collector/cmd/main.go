@@ -31,6 +31,10 @@ func main() {
 		os.Exit(1)
 	}
 	horizonHours := envInt("FORECAST_HORIZON_HOURS", defaultHorizonHours)
+	alertCfg := service.DefaultAlertConfig()
+	alertCfg.DropThresholdMb = envFloat("PRESSURE_DROP_MB", alertCfg.DropThresholdMb)
+	alertCfg.SevereThresholdMb = envFloat("PRESSURE_SEVERE_MB", alertCfg.SevereThresholdMb)
+	alertCfg.WindowHours = envInt("PRESSURE_WINDOW_HOURS", alertCfg.WindowHours)
 
 	ctx := context.Background()
 	writer, err := repository.NewFirestoreWriter(ctx, projectID)
@@ -42,7 +46,7 @@ func main() {
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	fetcher := api.New(httpClient)
-	collector := service.NewCollectorService(fetcher, writer, horizonHours)
+	collector := service.NewCollectorService(fetcher, writer, horizonHours, alertCfg)
 	if err := collectAll(ctx, apiKey, collector, shared.Locations); err != nil {
 		slog.Error("Collection failed", "error", err)
 		os.Exit(1)
@@ -56,6 +60,20 @@ func envInt(name string, fallback int) int {
 		return fallback
 	}
 	v, err := strconv.Atoi(raw)
+	if err != nil || v <= 0 {
+		slog.Warn("Invalid env var, using default", "name", name, "value", raw, "default", fallback)
+		return fallback
+	}
+	return v
+}
+
+// envFloat reads a float env var, falling back to a default when unset or invalid.
+func envFloat(name string, fallback float64) float64 {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return fallback
+	}
+	v, err := strconv.ParseFloat(raw, 64)
 	if err != nil || v <= 0 {
 		slog.Warn("Invalid env var, using default", "name", name, "value", raw, "default", fallback)
 		return fallback

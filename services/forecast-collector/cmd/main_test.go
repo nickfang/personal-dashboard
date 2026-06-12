@@ -34,7 +34,7 @@ func happyWriter() *testutil.MockWriter {
 		SaveRawFn: func(ctx context.Context, run repository.ForecastRun) error {
 			return nil
 		},
-		UpdateCacheFn: func(ctx context.Context, locationID string, run repository.ForecastRun) error {
+		UpdateCacheFn: func(ctx context.Context, locationID string, run repository.ForecastRun, merge repository.MergeFunc) error {
 			return nil
 		},
 	}
@@ -54,7 +54,7 @@ var testLocations = []shared.Location{
 }
 
 func TestCollectAll_AllLocationsSucceed(t *testing.T) {
-	collector := service.NewCollectorService(happyFetcher(), happyWriter(), 72)
+	collector := service.NewCollectorService(happyFetcher(), happyWriter(), 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err != nil {
@@ -74,7 +74,7 @@ func TestCollectAll_PartialFailure(t *testing.T) {
 		},
 	}
 
-	collector := service.NewCollectorService(fetcher, happyWriter(), 72)
+	collector := service.NewCollectorService(fetcher, happyWriter(), 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err != nil {
@@ -83,7 +83,7 @@ func TestCollectAll_PartialFailure(t *testing.T) {
 }
 
 func TestCollectAll_AllLocationsFail(t *testing.T) {
-	collector := service.NewCollectorService(failingFetcher(), happyWriter(), 72)
+	collector := service.NewCollectorService(failingFetcher(), happyWriter(), 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err == nil {
@@ -92,11 +92,34 @@ func TestCollectAll_AllLocationsFail(t *testing.T) {
 }
 
 func TestCollectAll_EmptyLocations(t *testing.T) {
-	collector := service.NewCollectorService(happyFetcher(), happyWriter(), 72)
+	collector := service.NewCollectorService(happyFetcher(), happyWriter(), 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, []shared.Location{})
 	if err == nil {
 		t.Fatal("collectAll() should return error when no locations are provided")
+	}
+}
+
+func TestEnvFloat(t *testing.T) {
+	tests := []struct {
+		name  string
+		value string
+		want  float64
+	}{
+		{"unset", "", 5.0},
+		{"valid", "7.5", 7.5},
+		{"invalid", "abc", 5.0},
+		{"negative", "-2", 5.0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.value != "" {
+				t.Setenv("TEST_THRESHOLD", tt.value)
+			}
+			if got := envFloat("TEST_THRESHOLD", 5.0); got != tt.want {
+				t.Errorf("envFloat(%q) = %v, want %v", tt.value, got, tt.want)
+			}
+		})
 	}
 }
 
