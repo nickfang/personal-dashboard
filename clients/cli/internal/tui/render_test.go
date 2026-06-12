@@ -238,9 +238,10 @@ func TestRenderLocation(t *testing.T) {
 		&client.Weather{TempF: 85.2, TempFeelF: 89.1, HumidityPercent: 62, PrecipitationPercent: 10, LastUpdated: "2026-04-11T14:30:05Z", PressureMb: 1013.25},
 		&client.Pressure{Trend: "rising", Delta1h: 0.3, LastUpdated: "2026-04-11T14:30:05Z"},
 		&client.Pollen{Plants: []client.PollenPlant{{DisplayName: "Oak", Index: 3, Category: "Moderate", InSeason: true}}, CollectedAt: "2026-04-11T06:00:00Z"},
+		nil, nil,
 		70,
 	)
-	for _, s := range []string{"house-nick", "WEATHER", "PRESSURE", "POLLEN", "85.2°F", "Oak", weatherTs, pollenTs} {
+	for _, s := range []string{"house-nick", "WEATHER", "PRESSURE", "FORECAST", "POLLEN", "85.2°F", "Oak", weatherTs, pollenTs} {
 		if !strings.Contains(got, s) {
 			t.Errorf("missing %q in location render:\n%s", s, got)
 		}

@@ -266,12 +266,12 @@ func (m Model) View() string {
 				idx = len(ids) - 1
 			}
 			id := ids[idx]
-			b.WriteString(renderLocation(id, weatherFor(m.data, id), pressureFor(m.data, id), pollenFor(m.data, id), innerWidth))
+			b.WriteString(renderLocation(id, weatherFor(m.data, id), pressureFor(m.data, id), pollenFor(m.data, id), forecastFor(m.data, id), alertsFor(m.data, id), innerWidth))
 			b.WriteString("\n\n")
 		}
 	default:
 		for _, id := range ids {
-			b.WriteString(renderLocation(id, weatherFor(m.data, id), pressureFor(m.data, id), pollenFor(m.data, id), innerWidth))
+			b.WriteString(renderLocation(id, weatherFor(m.data, id), pressureFor(m.data, id), pollenFor(m.data, id), forecastFor(m.data, id), alertsFor(m.data, id), innerWidth))
 			b.WriteString("\n\n")
 		}
 	}
@@ -328,6 +328,25 @@ func pollenFor(r *client.Response, id string) *client.Pollen {
 	return nil
 }
 
+// forecastFor returns a pointer to the forecast entry for id, or nil if absent.
+func forecastFor(r *client.Response, id string) *client.Forecast {
+	if r == nil {
+		return nil
+	}
+	if v, ok := r.Forecast[id]; ok {
+		return &v
+	}
+	return nil
+}
+
+// alertsFor returns the alerts for id, or nil if absent.
+func alertsFor(r *client.Response, id string) []client.Alert {
+	if r == nil {
+		return nil
+	}
+	return r.Alerts[id]
+}
+
 // locationIDs returns the union of location IDs present in the response,
 // sorted alphabetically for deterministic render order. Returns nil if no data.
 func locationIDs(r *client.Response) []string {
@@ -342,6 +361,9 @@ func locationIDs(r *client.Response) []string {
 		seen[id] = struct{}{}
 	}
 	for id := range r.Pollen {
+		seen[id] = struct{}{}
+	}
+	for id := range r.Forecast {
 		seen[id] = struct{}{}
 	}
 	ids := make([]string, 0, len(seen))

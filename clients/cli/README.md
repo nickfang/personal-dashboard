@@ -1,7 +1,17 @@
 # pd-cli
 
 Terminal UI (TUI) client for the personal-dashboard. Connects to
-`dashboard-api` and renders weather/pollen data, refreshing on an interval.
+`dashboard-api` and renders weather/pollen/forecast data, refreshing on an
+interval.
+
+Each location panel shows WEATHER, PRESSURE, FORECAST, and POLLEN sections.
+The FORECAST section displays the trend, the lowest pressure expected over
+the next 48 hours, and forward-looking deltas (Δ+3h…Δ+48h) relative to the
+first forecast hour. When a pressure-drop alert is active for a location, a
+banner renders at the top of its panel in both views — yellow for `warning`
+severity, red for `severe` — e.g. `⚠ Thu 2 PM  -6.2 mb/3h  -8.1/6h` (the
+drop's start time, the drop over the detection window, and the drop over the
+following 6 hours when the forecast covers it). Resolved alerts never render.
 
 This module is a standalone Go module with its own `go.mod` and a nested
 `go.work` that keeps it out of the repo-root Go workspace.
