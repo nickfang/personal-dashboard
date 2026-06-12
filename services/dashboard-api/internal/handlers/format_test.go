@@ -381,7 +381,7 @@ func TestFormatDashboardText(t *testing.T) {
 		},
 	}
 
-	result, err := formatDashboardText(pressureStats, pollenReports, lastWeathers)
+	result, err := formatDashboardText(pressureStats, pollenReports, lastWeathers, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -421,7 +421,7 @@ func TestFormatDashboardText_MultipleLocations(t *testing.T) {
 		{LocationId: "house-mom", TempC: 18.0, TempF: 64.4, LastUpdated: fixedTime},
 	}
 
-	result, err := formatDashboardText(pressureStats, pollenReports, lastWeathers)
+	result, err := formatDashboardText(pressureStats, pollenReports, lastWeathers, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -443,5 +443,57 @@ func TestFormatDashboardText_MultipleLocations(t *testing.T) {
 	}
 	if !strings.Contains(result, "64.40F") {
 		t.Errorf("expected house-mom weather temp, got:\n%s", result)
+	}
+}
+
+// --- formatForecastText tests ---
+
+func TestFormatForecastText_DeltasLowAndActiveAlertsOnly(t *testing.T) {
+	base := time.Date(2026, 6, 12, 6, 0, 0, 0, time.UTC)
+	points := make([]*weatherPb.ForecastPoint, 0, 49)
+	// 48h of hourly points: down 2 mb/h for 4 hours, then flat.
+	pressure := 1013.0
+	for i := 0; i <= 48; i++ {
+		if i >= 1 && i <= 4 {
+			pressure -= 2
+		}
+		points = append(points, &weatherPb.ForecastPoint{
+			ValidTime:  timestamppb.New(base.Add(time.Duration(i) * time.Hour)),
+			PressureMb: pressure,
+		})
+	}
+
+	forecasts := []*weatherPb.Forecast{
+		{
+			LocationId: "house-nick",
+			IssuedAt:   timestamppb.New(base),
+			Points:     points,
+			Alerts: []*weatherPb.Alert{
+				{Message: "Fri 1 AM  -6.0 mb/3h", Status: "active"},
+				{Message: "stale alert", Status: "resolved"},
+			},
+		},
+	}
+
+	byLocation := formatForecastText(forecasts)
+	text, ok := byLocation["house-nick"]
+	if !ok {
+		t.Fatal("missing house-nick forecast text")
+	}
+
+	if !strings.Contains(text, "falling") {
+		t.Errorf("expected falling trend, got:\n%s", text)
+	}
+	if !strings.Contains(text, "low 1005.00 mb (48h)") {
+		t.Errorf("expected 48h low, got:\n%s", text)
+	}
+	if !strings.Contains(text, "-6.00(+3h)") || !strings.Contains(text, "-8.00(+6h)") || !strings.Contains(text, "-8.00(+48h)") {
+		t.Errorf("expected deltas at +3h/+6h/+48h, got:\n%s", text)
+	}
+	if !strings.Contains(text, "⚠ Fri 1 AM  -6.0 mb/3h") {
+		t.Errorf("expected active alert banner, got:\n%s", text)
+	}
+	if strings.Contains(text, "stale alert") {
+		t.Errorf("resolved alerts must not render, got:\n%s", text)
 	}
 }

@@ -165,7 +165,7 @@ func (m *errorPollenClient) GetPollenReports(ctx context.Context) ([]*pollenPb.P
 // --- Existing weather tests (updated to pass both mocks) ---
 
 func TestDashboardHandler_GetDashboard(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -201,7 +201,7 @@ func TestDashboardHandler_GetDashboard(t *testing.T) {
 }
 
 func TestDashboardHandler_GetDashboard_ProtojsonFormat(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -258,7 +258,7 @@ func TestDashboardHandler_GetDashboard_GrpcError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewDashboardHandler(&errorWeatherClient{err: tt.grpcErr}, &mockPollenClient{})
+			handler := NewDashboardHandler(&errorWeatherClient{err: tt.grpcErr}, &mockPollenClient{}, &mockForecastClient{})
 
 			req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 			if err != nil {
@@ -278,7 +278,7 @@ func TestDashboardHandler_GetDashboard_GrpcError(t *testing.T) {
 // --- Weather (last weather) integration tests ---
 
 func TestDashboardHandler_GetDashboard_IncludesWeather(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -320,7 +320,7 @@ func TestDashboardHandler_GetDashboard_IncludesWeather(t *testing.T) {
 }
 
 func TestDashboardHandler_GetDashboard_WeatherProtojsonFormat(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -353,7 +353,7 @@ func TestDashboardHandler_GetDashboard_WeatherProtojsonFormat(t *testing.T) {
 // --- New pollen integration tests ---
 
 func TestDashboardHandler_GetDashboard_IncludesPollen(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -406,7 +406,7 @@ func TestDashboardHandler_GetDashboard_IncludesPollen(t *testing.T) {
 }
 
 func TestDashboardHandler_GetDashboard_PollenProtojsonFormat(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -466,7 +466,7 @@ func TestDashboardHandler_GetDashboard_PollenGrpcError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewDashboardHandler(&mockWeatherClient{}, &errorPollenClient{err: tt.grpcErr})
+			handler := NewDashboardHandler(&mockWeatherClient{}, &errorPollenClient{err: tt.grpcErr}, &mockForecastClient{})
 
 			req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 			if err != nil {
@@ -487,6 +487,7 @@ func TestDashboardHandler_GetDashboard_BothServicesFail(t *testing.T) {
 	handler := NewDashboardHandler(
 		&errorWeatherClient{err: status.Error(codes.Unavailable, "weather down")},
 		&errorPollenClient{err: status.Error(codes.DeadlineExceeded, "pollen timeout")},
+		&mockForecastClient{},
 	)
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
@@ -584,6 +585,7 @@ func TestDashboardHandler_GetDashboard_SlowWeatherTimesOut(t *testing.T) {
 	handler := NewDashboardHandler(
 		&slowWeatherClient{delay: 10 * time.Second},
 		&mockPollenClient{},
+		&mockForecastClient{},
 	)
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
@@ -608,6 +610,7 @@ func TestDashboardHandler_GetDashboard_SlowPollenTimesOut(t *testing.T) {
 	handler := NewDashboardHandler(
 		&mockWeatherClient{},
 		&slowPollenClient{delay: 10 * time.Second},
+		&mockForecastClient{},
 	)
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
@@ -629,7 +632,7 @@ func TestDashboardHandler_GetDashboard_SlowPollenTimesOut(t *testing.T) {
 }
 
 func TestDashboardHandler_GetDashboard_CurlUserAgent_ReturnsText(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 
 	req, err := http.NewRequest("GET", "/api/v1/dashboard", nil)
 	if err != nil {
@@ -690,7 +693,7 @@ func keys(m map[string]interface{}) []string {
 // --- GetDashboardByLocation tests ---
 
 func TestDashboardHandler_GetDashboardByLocation_Success(t *testing.T) {
-	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&mockWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 	req := requestWithLocationID(t, "house-nick")
 	rr := httptest.NewRecorder()
 
@@ -772,7 +775,7 @@ func TestDashboardHandler_GetDashboardByLocation_GrpcError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewDashboardHandler(&errorWeatherClient{err: tt.grpcErr}, &mockPollenClient{})
+			handler := NewDashboardHandler(&errorWeatherClient{err: tt.grpcErr}, &mockPollenClient{}, &mockForecastClient{})
 			req := requestWithLocationID(t, "house-nick")
 			rr := httptest.NewRecorder()
 
@@ -810,7 +813,7 @@ func (m *nilReturnWeatherClient) GetAllLastWeather(ctx context.Context) ([]*weat
 // present sections populated normally. This is the shape the CLI's
 // Response.Merge depends on (empty src maps are no-ops on the dst).
 func TestDashboardHandler_GetDashboardByLocation_PartialData_WeatherMissingPollenPresent(t *testing.T) {
-	handler := NewDashboardHandler(&nilReturnWeatherClient{}, &mockPollenClient{})
+	handler := NewDashboardHandler(&nilReturnWeatherClient{}, &mockPollenClient{}, &mockForecastClient{})
 	req := requestWithLocationID(t, "house-nick")
 	rr := httptest.NewRecorder()
 
@@ -844,6 +847,7 @@ func TestDashboardHandler_GetDashboardByLocation_AllSectionsAbsent_Returns404(t 
 	handler := NewDashboardHandler(
 		&errorWeatherClient{err: notFound},
 		&errorPollenClient{err: notFound},
+		&errorForecastClient{err: notFound},
 	)
 	req := requestWithLocationID(t, "house-nick")
 	rr := httptest.NewRecorder()
@@ -864,6 +868,7 @@ func TestDashboardHandler_GetDashboardByLocation_PollenNotFound_PartialData(t *t
 	handler := NewDashboardHandler(
 		&mockWeatherClient{},
 		&errorPollenClient{err: status.Error(codes.NotFound, "no pollen for location")},
+		&mockForecastClient{},
 	)
 	req := requestWithLocationID(t, "house-nick")
 	rr := httptest.NewRecorder()
@@ -900,6 +905,7 @@ func TestDashboardHandler_GetDashboardByLocation_PollenUnavailable_Fatal(t *test
 	handler := NewDashboardHandler(
 		&mockWeatherClient{},
 		&errorPollenClient{err: status.Error(codes.Unavailable, "pollen-provider down")},
+		&mockForecastClient{},
 	)
 	req := requestWithLocationID(t, "house-nick")
 	rr := httptest.NewRecorder()
@@ -915,6 +921,7 @@ func TestDashboardHandler_GetDashboardByLocation_SlowProviderTimesOut(t *testing
 	handler := NewDashboardHandler(
 		&slowWeatherClient{delay: 10 * time.Second},
 		&mockPollenClient{},
+		&mockForecastClient{},
 	)
 	req := requestWithLocationID(t, "house-nick")
 	rr := httptest.NewRecorder()

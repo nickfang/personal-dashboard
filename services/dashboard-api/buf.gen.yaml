@@ -7,6 +7,10 @@ managed:
       path: weather-provider/v1/weather_provider.proto
       value: github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1
     - file_option: go_package
+      # forecast stubs
+      path: weather-provider/v1/forecast.proto
+      value: github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/weather-provider/v1
+    - file_option: go_package
       # pollen stubs
       path: pollen-provider/v1/pollen_provider.proto
       value: github.com/nickfang/personal-dashboard/services/dashboard-api/internal/gen/go/pollen-provider/v1

@@ -56,6 +56,32 @@ type WeatherCacheDoc struct {
 	CurrentValue WeatherPoint `firestore:"current"`
 }
 
+// ForecastPoint matches forecast-collector's storage model.
+type ForecastPoint struct {
+	ValidTime            time.Time `firestore:"valid_time"`
+	HumidityPercent      int       `firestore:"humidity_pct"`
+	PrecipitationPercent int       `firestore:"precipitation_pct"`
+	UVIndex              int       `firestore:"uv_index"`
+	PressureMb           float64   `firestore:"pressure_mb"`
+	WindDirDeg           int       `firestore:"wind_dir_deg"`
+	TempC                float64   `firestore:"temp_c"`
+	TempFeelC            float64   `firestore:"temp_feel_c"`
+	DewpointC            float64   `firestore:"dewpoint_c"`
+	WindSpeedKph         float64   `firestore:"wind_speed_kph"`
+	WindGustKph          float64   `firestore:"wind_gust_kph"`
+	TempF                float64   `firestore:"temp_f"`
+	TempFeelF            float64   `firestore:"temp_feel_f"`
+	DewpointF            float64   `firestore:"dewpoint_f"`
+}
+
+type ForecastCacheDoc struct {
+	LocationID  string          `firestore:"-"` // not in doc, but we use doc.ID
+	LastUpdated time.Time       `firestore:"last_updated"`
+	IssuedAt    time.Time       `firestore:"issued_at"`
+	Points      []ForecastPoint `firestore:"points"`
+	Alerts      []shared.Alert  `firestore:"alerts"`
+}
+
 type FirestoreRepository struct {
 	client *firestore.Client
 }
@@ -153,6 +179,20 @@ func (r *FirestoreRepository) GetAllLastWeather(ctx context.Context) ([]WeatherC
 		results = append(results, cache)
 	}
 	return results, nil
+}
+
+func (r *FirestoreRepository) GetForecast(ctx context.Context, id string) (*ForecastCacheDoc, error) {
+	doc, err := r.client.Collection(shared.ForecastCacheCollection).Doc(id).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var cache ForecastCacheDoc
+	if err := doc.DataTo(&cache); err != nil {
+		return nil, err
+	}
+	cache.LocationID = doc.Ref.ID
+	return &cache, nil
 }
 
 func (r *FirestoreRepository) GetAllRaw(ctx context.Context) ([]WeatherPoint, error) {
