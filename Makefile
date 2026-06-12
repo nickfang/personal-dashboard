@@ -2,6 +2,7 @@
 	compose-up compose-down compose-logs \
 	proto-gen proto-clean test-go \
 	wc-dev wc-build wc-run wc-test \
+	fc-dev fc-build fc-run fc-test \
 	wp-dev wp-build wp-test \
 	da-dev da-build da-test \
 	fe-dev fe-test \
@@ -70,6 +71,26 @@ wc-run: wc-build ## Run Weather Collector container (One-off job)
 
 wc-test: ## Run Weather Collector tests
 	cd services/weather-collector && go test ./...
+
+# ==============================================================================
+# Service: Forecast Collector (Job)
+# ==============================================================================
+##@ Forecast Collector
+fc-dev: ## Run Forecast Collector locally (Go)
+	-cd services/forecast-collector && go run cmd/main.go
+
+fc-build: ## Build Forecast Collector image
+	docker build -t forecast-collector -f services/forecast-collector/Dockerfile services
+
+fc-run: fc-build ## Run Forecast Collector container (One-off job)
+	docker run --rm -it \
+		--env-file services/forecast-collector/.env \
+		-v ~/.config/gcloud:/root/.config/gcloud \
+		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		forecast-collector
+
+fc-test: ## Run Forecast Collector tests
+	cd services/forecast-collector && go test ./...
 
 # ==============================================================================
 # Service: Weather Provider (Server)
