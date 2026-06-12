@@ -35,25 +35,22 @@ message ForecastPoint {
 message Alert {
   string id = 1;
   string location_id = 2;
-  string source = 3;
-  string rule_id = 4;
-  string severity = 5;
-  string metric = 6;
-  double value = 7;
-  double threshold = 8;
-  google.protobuf.Timestamp window_start = 9;
-  google.protobuf.Timestamp window_end = 10;
-  string message = 11;
-  string status = 12;
-  google.protobuf.Timestamp issued_at = 13;
+  string rule_id = 3;
+  string severity = 4;
+  double value = 5;
+  double threshold = 6;
+  google.protobuf.Timestamp window_start = 7;
+  google.protobuf.Timestamp window_end = 8;
+  string message = 9;
+  string status = 10;
+  google.protobuf.Timestamp issued_at = 11;
 }
 
 message Forecast {
   string location_id = 1;
   google.protobuf.Timestamp issued_at = 2;
-  google.protobuf.Timestamp last_updated = 3;
-  repeated ForecastPoint points = 4;
-  repeated Alert alerts = 5;
+  repeated ForecastPoint points = 3;
+  repeated Alert alerts = 4;
 }
 
 message GetForecastRequest {

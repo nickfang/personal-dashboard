@@ -49,8 +49,8 @@ func TestDetect_MonotonicDropProducesOneWarning(t *testing.T) {
 	if a.Status != shared.AlertStatusActive {
 		t.Errorf("Status = %q, want active", a.Status)
 	}
-	if a.Location != "house-nick" || a.Source != "pressure" || a.RuleID != "pressure-drop-3h" {
-		t.Errorf("identity fields = %q/%q/%q", a.Location, a.Source, a.RuleID)
+	if a.Location != "house-nick" || a.RuleID != "pressure-drop-3h" {
+		t.Errorf("identity fields = %q/%q", a.Location, a.RuleID)
 	}
 	if !strings.Contains(a.Message, "-6.0 mb/3h") {
 		t.Errorf("Message = %q, want it to contain the 3h drop", a.Message)

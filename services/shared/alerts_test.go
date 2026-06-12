@@ -10,10 +10,8 @@ var baseTime = time.Date(2026, 6, 12, 6, 0, 0, 0, time.UTC)
 func pressureAlert(windowStartHours, windowEndHours int, value float64, status string) Alert {
 	a := Alert{
 		Location:    "house-nick",
-		Source:      "pressure",
 		RuleID:      "pressure-drop-3h",
 		Severity:    AlertSeverityWarning,
-		Metric:      "pressure_mb_delta",
 		Value:       value,
 		Threshold:   5,
 		WindowStart: baseTime.Add(time.Duration(windowStartHours) * time.Hour),

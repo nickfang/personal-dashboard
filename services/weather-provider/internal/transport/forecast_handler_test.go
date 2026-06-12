@@ -21,9 +21,8 @@ func TestGetForecast_Mapping(t *testing.T) {
 	mockRepo := &testutil.MockReader{
 		GetForecastFunc: func(ctx context.Context, id string) (*repository.ForecastCacheDoc, error) {
 			return &repository.ForecastCacheDoc{
-				LocationID:  id,
-				LastUpdated: now,
-				IssuedAt:    now,
+				LocationID: id,
+				IssuedAt:   now,
 				Points: []repository.ForecastPoint{
 					{ValidTime: now, PressureMb: 1012.65, TempF: 81.5, HumidityPercent: 82},
 					{ValidTime: now.Add(time.Hour), PressureMb: 1013.13},
@@ -32,10 +31,8 @@ func TestGetForecast_Mapping(t *testing.T) {
 					{
 						ID:          "alert-1",
 						Location:    id,
-						Source:      "pressure",
 						RuleID:      "pressure-drop-3h",
 						Severity:    shared.AlertSeverityWarning,
-						Metric:      "pressure_mb_delta",
 						Value:       -6.2,
 						Threshold:   5,
 						WindowStart: now,

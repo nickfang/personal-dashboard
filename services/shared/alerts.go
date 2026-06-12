@@ -12,7 +12,6 @@ const (
 	AlertStatusResolved = "resolved"
 	AlertStatusNotified = "notified"
 
-	AlertSeverityInfo    = "info"
 	AlertSeverityWarning = "warning"
 	AlertSeveritySevere  = "severe"
 
@@ -28,10 +27,8 @@ const (
 type Alert struct {
 	ID          string    `firestore:"id"`
 	Location    string    `firestore:"location"`
-	Source      string    `firestore:"source"`
 	RuleID      string    `firestore:"rule_id"`
 	Severity    string    `firestore:"severity"`
-	Metric      string    `firestore:"metric"`
 	Value       float64   `firestore:"value"`
 	Threshold   float64   `firestore:"threshold"`
 	WindowStart time.Time `firestore:"window_start"`

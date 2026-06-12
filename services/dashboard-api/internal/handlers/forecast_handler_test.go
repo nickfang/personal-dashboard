@@ -30,18 +30,15 @@ func (m *mockForecastClient) GetForecast(ctx context.Context, locationID string)
 		})
 	}
 	return &weatherPb.Forecast{
-		LocationId:  locationID,
-		IssuedAt:    timestamppb.New(base),
-		LastUpdated: timestamppb.New(base),
-		Points:      points,
+		LocationId: locationID,
+		IssuedAt:   timestamppb.New(base),
+		Points:     points,
 		Alerts: []*weatherPb.Alert{
 			{
 				Id:          "alert-1",
 				LocationId:  locationID,
-				Source:      "pressure",
 				RuleId:      "pressure-drop-3h",
 				Severity:    "warning",
-				Metric:      "pressure_mb_delta",
 				Value:       -6.0,
 				Threshold:   5,
 				WindowStart: timestamppb.New(base),

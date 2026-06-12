@@ -8,14 +8,9 @@ import (
 	"github.com/nickfang/personal-dashboard/services/shared"
 )
 
-const (
-	alertSource = "pressure"
-	alertMetric = "pressure_mb_delta"
-
-	// windowTolerance allows the end-of-window lookup to survive a missing
-	// or shifted forecast hour, like the weather-collector's delta search.
-	windowTolerance = 30 * time.Minute
-)
+// windowTolerance allows the end-of-window lookup to survive a missing
+// or shifted forecast hour, like the weather-collector's delta search.
+const windowTolerance = 30 * time.Minute
 
 // displayLocation is the timezone used in alert messages. Cloud Run runs in
 // UTC, so the local zone must be loaded explicitly (tzdata in the image).
@@ -128,10 +123,8 @@ func buildAlert(locationID string, points []repository.ForecastPoint, episode []
 
 	alert := shared.Alert{
 		Location:    locationID,
-		Source:      alertSource,
 		RuleID:      cfg.ruleID(),
 		Severity:    severity,
-		Metric:      alertMetric,
 		Value:       steepest.delta,
 		Threshold:   cfg.DropThresholdMb,
 		WindowStart: points[episode[0].startIdx].ValidTime,

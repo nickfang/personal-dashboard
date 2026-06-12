@@ -30,18 +30,16 @@ type ForecastPoint struct {
 // ForecastRun is one append-only audit record in forecast_raw: the full
 // forecast snapshot produced by a single collector run for one location.
 type ForecastRun struct {
-	Location     string          `firestore:"location"`
-	IssuedAt     time.Time       `firestore:"issued_at"`
-	HorizonHours int             `firestore:"horizon_hours"`
-	Points       []ForecastPoint `firestore:"points"`
+	Location string          `firestore:"location"`
+	IssuedAt time.Time       `firestore:"issued_at"`
+	Points   []ForecastPoint `firestore:"points"`
 }
 
 // ForecastCacheDoc is the latest forecast for a location, stored at
 // forecast_cache/{locationID} and fully replaced on each run.
 type ForecastCacheDoc struct {
-	Location    string          `firestore:"location"`
-	LastUpdated time.Time       `firestore:"last_updated"`
-	IssuedAt    time.Time       `firestore:"issued_at"`
-	Points      []ForecastPoint `firestore:"points"`
-	Alerts      []shared.Alert  `firestore:"alerts"`
+	Location string          `firestore:"location"`
+	IssuedAt time.Time       `firestore:"issued_at"`
+	Points   []ForecastPoint `firestore:"points"`
+	Alerts   []shared.Alert  `firestore:"alerts"`
 }

@@ -47,8 +47,5 @@ type ForecastHour struct {
 // forecastHoursResponse is one page of the paginated forecast response.
 type forecastHoursResponse struct {
 	ForecastHours []ForecastHour `json:"forecastHours"`
-	TimeZone      struct {
-		ID string `json:"id"`
-	} `json:"timeZone"`
-	NextPageToken string `json:"nextPageToken"`
+	NextPageToken string         `json:"nextPageToken"`
 }

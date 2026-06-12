@@ -65,10 +65,9 @@ func (fw *FirestoreWriter) UpdateCache(ctx context.Context, locationID string, r
 // merged alert set.
 func buildCacheDoc(run ForecastRun, alerts []shared.Alert) ForecastCacheDoc {
 	return ForecastCacheDoc{
-		Location:    run.Location,
-		LastUpdated: run.IssuedAt,
-		IssuedAt:    run.IssuedAt,
-		Points:      run.Points,
-		Alerts:      alerts,
+		Location: run.Location,
+		IssuedAt: run.IssuedAt,
+		Points:   run.Points,
+		Alerts:   alerts,
 	}
 }

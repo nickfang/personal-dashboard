@@ -34,10 +34,9 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 		return fmt.Errorf("no valid forecast points for %s (%d hours fetched)", location.ID, len(hours))
 	}
 	run := repository.ForecastRun{
-		Location:     location.ID,
-		IssuedAt:     time.Now(),
-		HorizonHours: s.horizonHours,
-		Points:       points,
+		Location: location.ID,
+		IssuedAt: time.Now(),
+		Points:   points,
 	}
 	if err := s.writer.SaveRaw(ctx, run); err != nil {
 		return fmt.Errorf("saving forecast run for %s: %w", location.ID, err)

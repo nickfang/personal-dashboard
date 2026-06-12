@@ -129,9 +129,8 @@ func mapToProtoWeather(doc *repository.WeatherCacheDoc) *pb.Weather {
 
 func mapToProtoForecast(doc *repository.ForecastCacheDoc) *pb.Forecast {
 	forecast := &pb.Forecast{
-		LocationId:  doc.LocationID,
-		IssuedAt:    timestamppb.New(doc.IssuedAt),
-		LastUpdated: timestamppb.New(doc.LastUpdated),
+		LocationId: doc.LocationID,
+		IssuedAt:   timestamppb.New(doc.IssuedAt),
 	}
 	for i := range doc.Points {
 		forecast.Points = append(forecast.Points, mapToProtoForecastPoint(&doc.Points[i]))
@@ -165,10 +164,8 @@ func mapToProtoAlert(a *shared.Alert) *pb.Alert {
 	return &pb.Alert{
 		Id:          a.ID,
 		LocationId:  a.Location,
-		Source:      a.Source,
 		RuleId:      a.RuleID,
 		Severity:    a.Severity,
-		Metric:      a.Metric,
 		Value:       a.Value,
 		Threshold:   a.Threshold,
 		WindowStart: timestamppb.New(a.WindowStart),

@@ -149,20 +149,17 @@ type ForecastPoint struct {
 
 // Forecast matches the protojson output of the dashboard-api forecast payload.
 type Forecast struct {
-	LocationID  string          `json:"locationId"`
-	IssuedAt    string          `json:"issuedAt"`
-	LastUpdated string          `json:"lastUpdated"`
-	Points      []ForecastPoint `json:"points"`
+	LocationID string          `json:"locationId"`
+	IssuedAt   string          `json:"issuedAt"`
+	Points     []ForecastPoint `json:"points"`
 }
 
 // Alert matches the protojson output of the dashboard-api alerts payload.
 type Alert struct {
 	ID          string  `json:"id"`
 	LocationID  string  `json:"locationId"`
-	Source      string  `json:"source"`
 	RuleID      string  `json:"ruleId"`
 	Severity    string  `json:"severity"`
-	Metric      string  `json:"metric"`
 	Value       float64 `json:"value"`
 	Threshold   float64 `json:"threshold"`
 	WindowStart string  `json:"windowStart"`

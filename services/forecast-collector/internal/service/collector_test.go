@@ -51,8 +51,8 @@ func TestCollect_SavesRawThenCache(t *testing.T) {
 	if savedRun == nil {
 		t.Fatal("SaveRaw was not called")
 	}
-	if savedRun.Location != "test-loc" || savedRun.HorizonHours != 72 {
-		t.Errorf("saved run = %q/%d, want test-loc/72", savedRun.Location, savedRun.HorizonHours)
+	if savedRun.Location != "test-loc" {
+		t.Errorf("saved run location = %q, want test-loc", savedRun.Location)
 	}
 	if len(savedRun.Points) != 1 {
 		t.Fatalf("saved run has %d points, want 1", len(savedRun.Points))

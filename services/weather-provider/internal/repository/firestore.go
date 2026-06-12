@@ -75,11 +75,10 @@ type ForecastPoint struct {
 }
 
 type ForecastCacheDoc struct {
-	LocationID  string          `firestore:"-"` // not in doc, but we use doc.ID
-	LastUpdated time.Time       `firestore:"last_updated"`
-	IssuedAt    time.Time       `firestore:"issued_at"`
-	Points      []ForecastPoint `firestore:"points"`
-	Alerts      []shared.Alert  `firestore:"alerts"`
+	LocationID string          `firestore:"-"` // not in doc, but we use doc.ID
+	IssuedAt   time.Time       `firestore:"issued_at"`
+	Points     []ForecastPoint `firestore:"points"`
+	Alerts     []shared.Alert  `firestore:"alerts"`
 }
 
 type FirestoreRepository struct {

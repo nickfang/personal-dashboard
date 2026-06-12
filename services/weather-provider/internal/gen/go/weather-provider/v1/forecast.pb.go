@@ -175,17 +175,15 @@ type Alert struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	LocationId    string                 `protobuf:"bytes,2,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
-	Source        string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
-	RuleId        string                 `protobuf:"bytes,4,opt,name=rule_id,json=ruleId,proto3" json:"rule_id,omitempty"`
-	Severity      string                 `protobuf:"bytes,5,opt,name=severity,proto3" json:"severity,omitempty"`
-	Metric        string                 `protobuf:"bytes,6,opt,name=metric,proto3" json:"metric,omitempty"`
-	Value         float64                `protobuf:"fixed64,7,opt,name=value,proto3" json:"value,omitempty"`
-	Threshold     float64                `protobuf:"fixed64,8,opt,name=threshold,proto3" json:"threshold,omitempty"`
-	WindowStart   *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=window_start,json=windowStart,proto3" json:"window_start,omitempty"`
-	WindowEnd     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=window_end,json=windowEnd,proto3" json:"window_end,omitempty"`
-	Message       string                 `protobuf:"bytes,11,opt,name=message,proto3" json:"message,omitempty"`
-	Status        string                 `protobuf:"bytes,12,opt,name=status,proto3" json:"status,omitempty"`
-	IssuedAt      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
+	RuleId        string                 `protobuf:"bytes,3,opt,name=rule_id,json=ruleId,proto3" json:"rule_id,omitempty"`
+	Severity      string                 `protobuf:"bytes,4,opt,name=severity,proto3" json:"severity,omitempty"`
+	Value         float64                `protobuf:"fixed64,5,opt,name=value,proto3" json:"value,omitempty"`
+	Threshold     float64                `protobuf:"fixed64,6,opt,name=threshold,proto3" json:"threshold,omitempty"`
+	WindowStart   *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=window_start,json=windowStart,proto3" json:"window_start,omitempty"`
+	WindowEnd     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=window_end,json=windowEnd,proto3" json:"window_end,omitempty"`
+	Message       string                 `protobuf:"bytes,9,opt,name=message,proto3" json:"message,omitempty"`
+	Status        string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
+	IssuedAt      *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -234,13 +232,6 @@ func (x *Alert) GetLocationId() string {
 	return ""
 }
 
-func (x *Alert) GetSource() string {
-	if x != nil {
-		return x.Source
-	}
-	return ""
-}
-
 func (x *Alert) GetRuleId() string {
 	if x != nil {
 		return x.RuleId
@@ -251,13 +242,6 @@ func (x *Alert) GetRuleId() string {
 func (x *Alert) GetSeverity() string {
 	if x != nil {
 		return x.Severity
-	}
-	return ""
-}
-
-func (x *Alert) GetMetric() string {
-	if x != nil {
-		return x.Metric
 	}
 	return ""
 }
@@ -315,9 +299,8 @@ type Forecast struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LocationId    string                 `protobuf:"bytes,1,opt,name=location_id,json=locationId,proto3" json:"location_id,omitempty"`
 	IssuedAt      *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=issued_at,json=issuedAt,proto3" json:"issued_at,omitempty"`
-	LastUpdated   *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=last_updated,json=lastUpdated,proto3" json:"last_updated,omitempty"`
-	Points        []*ForecastPoint       `protobuf:"bytes,4,rep,name=points,proto3" json:"points,omitempty"`
-	Alerts        []*Alert               `protobuf:"bytes,5,rep,name=alerts,proto3" json:"alerts,omitempty"`
+	Points        []*ForecastPoint       `protobuf:"bytes,3,rep,name=points,proto3" json:"points,omitempty"`
+	Alerts        []*Alert               `protobuf:"bytes,4,rep,name=alerts,proto3" json:"alerts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -362,13 +345,6 @@ func (x *Forecast) GetLocationId() string {
 func (x *Forecast) GetIssuedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.IssuedAt
-	}
-	return nil
-}
-
-func (x *Forecast) GetLastUpdated() *timestamppb.Timestamp {
-	if x != nil {
-		return x.LastUpdated
 	}
 	return nil
 }
@@ -500,31 +476,28 @@ const file_weather_provider_v1_forecast_proto_rawDesc = "" +
 	"\fwind_dir_deg\x18\f \x01(\x05R\n" +
 	"windDirDeg\x12$\n" +
 	"\x0ewind_speed_kph\x18\r \x01(\x01R\fwindSpeedKph\x12\"\n" +
-	"\rwind_gust_kph\x18\x0e \x01(\x01R\vwindGustKph\"\xb6\x03\n" +
+	"\rwind_gust_kph\x18\x0e \x01(\x01R\vwindGustKph\"\x86\x03\n" +
 	"\x05Alert\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vlocation_id\x18\x02 \x01(\tR\n" +
-	"locationId\x12\x16\n" +
-	"\x06source\x18\x03 \x01(\tR\x06source\x12\x17\n" +
-	"\arule_id\x18\x04 \x01(\tR\x06ruleId\x12\x1a\n" +
-	"\bseverity\x18\x05 \x01(\tR\bseverity\x12\x16\n" +
-	"\x06metric\x18\x06 \x01(\tR\x06metric\x12\x14\n" +
-	"\x05value\x18\a \x01(\x01R\x05value\x12\x1c\n" +
-	"\tthreshold\x18\b \x01(\x01R\tthreshold\x12=\n" +
-	"\fwindow_start\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vwindowStart\x129\n" +
+	"locationId\x12\x17\n" +
+	"\arule_id\x18\x03 \x01(\tR\x06ruleId\x12\x1a\n" +
+	"\bseverity\x18\x04 \x01(\tR\bseverity\x12\x14\n" +
+	"\x05value\x18\x05 \x01(\x01R\x05value\x12\x1c\n" +
+	"\tthreshold\x18\x06 \x01(\x01R\tthreshold\x12=\n" +
+	"\fwindow_start\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vwindowStart\x129\n" +
 	"\n" +
-	"window_end\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\twindowEnd\x12\x18\n" +
-	"\amessage\x18\v \x01(\tR\amessage\x12\x16\n" +
-	"\x06status\x18\f \x01(\tR\x06status\x127\n" +
-	"\tissued_at\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\"\x93\x02\n" +
+	"window_end\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\twindowEnd\x12\x18\n" +
+	"\amessage\x18\t \x01(\tR\amessage\x12\x16\n" +
+	"\x06status\x18\n" +
+	" \x01(\tR\x06status\x127\n" +
+	"\tissued_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\"\xd4\x01\n" +
 	"\bForecast\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\tR\n" +
 	"locationId\x127\n" +
-	"\tissued_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x12=\n" +
-	"\flast_updated\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vlastUpdated\x12:\n" +
-	"\x06points\x18\x04 \x03(\v2\".weather_provider.v1.ForecastPointR\x06points\x122\n" +
-	"\x06alerts\x18\x05 \x03(\v2\x1a.weather_provider.v1.AlertR\x06alerts\"5\n" +
+	"\tissued_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\bissuedAt\x12:\n" +
+	"\x06points\x18\x03 \x03(\v2\".weather_provider.v1.ForecastPointR\x06points\x122\n" +
+	"\x06alerts\x18\x04 \x03(\v2\x1a.weather_provider.v1.AlertR\x06alerts\"5\n" +
 	"\x12GetForecastRequest\x12\x1f\n" +
 	"\vlocation_id\x18\x01 \x01(\tR\n" +
 	"locationId\"P\n" +
@@ -556,22 +529,21 @@ var file_weather_provider_v1_forecast_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_weather_provider_v1_forecast_proto_depIdxs = []int32{
-	5,  // 0: weather_provider.v1.ForecastPoint.valid_time:type_name -> google.protobuf.Timestamp
-	5,  // 1: weather_provider.v1.Alert.window_start:type_name -> google.protobuf.Timestamp
-	5,  // 2: weather_provider.v1.Alert.window_end:type_name -> google.protobuf.Timestamp
-	5,  // 3: weather_provider.v1.Alert.issued_at:type_name -> google.protobuf.Timestamp
-	5,  // 4: weather_provider.v1.Forecast.issued_at:type_name -> google.protobuf.Timestamp
-	5,  // 5: weather_provider.v1.Forecast.last_updated:type_name -> google.protobuf.Timestamp
-	0,  // 6: weather_provider.v1.Forecast.points:type_name -> weather_provider.v1.ForecastPoint
-	1,  // 7: weather_provider.v1.Forecast.alerts:type_name -> weather_provider.v1.Alert
-	2,  // 8: weather_provider.v1.GetForecastResponse.forecast:type_name -> weather_provider.v1.Forecast
-	3,  // 9: weather_provider.v1.ForecastService.GetForecast:input_type -> weather_provider.v1.GetForecastRequest
-	4,  // 10: weather_provider.v1.ForecastService.GetForecast:output_type -> weather_provider.v1.GetForecastResponse
-	10, // [10:11] is the sub-list for method output_type
-	9,  // [9:10] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	5, // 0: weather_provider.v1.ForecastPoint.valid_time:type_name -> google.protobuf.Timestamp
+	5, // 1: weather_provider.v1.Alert.window_start:type_name -> google.protobuf.Timestamp
+	5, // 2: weather_provider.v1.Alert.window_end:type_name -> google.protobuf.Timestamp
+	5, // 3: weather_provider.v1.Alert.issued_at:type_name -> google.protobuf.Timestamp
+	5, // 4: weather_provider.v1.Forecast.issued_at:type_name -> google.protobuf.Timestamp
+	0, // 5: weather_provider.v1.Forecast.points:type_name -> weather_provider.v1.ForecastPoint
+	1, // 6: weather_provider.v1.Forecast.alerts:type_name -> weather_provider.v1.Alert
+	2, // 7: weather_provider.v1.GetForecastResponse.forecast:type_name -> weather_provider.v1.Forecast
+	3, // 8: weather_provider.v1.ForecastService.GetForecast:input_type -> weather_provider.v1.GetForecastRequest
+	4, // 9: weather_provider.v1.ForecastService.GetForecast:output_type -> weather_provider.v1.GetForecastResponse
+	9, // [9:10] is the sub-list for method output_type
+	8, // [8:9] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_weather_provider_v1_forecast_proto_init() }
