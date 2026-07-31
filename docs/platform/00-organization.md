@@ -1,0 +1,305 @@
+# Phase 0 — Create the organization
+
+**No Terraform in this phase.** It's console work, domain-admin work, and a handful of `gcloud`
+commands. It's also the least reversible thing in the tutorial, so read it through once before you
+start clicking.
+
+## 1. Why this comes first
+
+Your account has 0 organizations and 8 projects, all owned directly by a personal Gmail. That
+arrangement can't support what you're building:
+
+- **Project quota.** Personal accounts get a small project quota that grows slowly with billing
+  history. At 8 projects you're near the ceiling, and deleted projects hold their ID for 30 days.
+  A project-per-ephemeral-environment factory needs quota you can actually request — which is an
+  org-level conversation.
+- **No Google Groups.** Without a Cloud Identity domain, "stakeholders can read staging" means
+  individual email addresses in IAM bindings, and every person who joins or leaves is a
+  `terraform apply`. With groups, Terraform binds a role to `gcp-staging-viewers@yourdomain.com`
+  once and membership changes outside Terraform forever.
+- **No folders.** Folders are how "these principals reach this tier and nothing else" gets
+  expressed structurally instead of by repeating bindings in every project.
+- **No org policies.** Constraints enforced from above rather than hoped for.
+
+Cloud Identity Free costs nothing. The only thing with a price tag is the domain, which you already
+own — `infra/modules/cloud-run-domain-mapping` and staging's `api_domain` variable both depend on it.
+
+The real cost is effort: you'll create a new admin identity on your domain, and your existing
+projects have to be moved under the org. Doing that now, with 8 projects, is much easier than doing
+it later with a project factory and folder-inherited IAM built on top.
+
+## 2. Clean up first
+
+Migration is per-project, and dead projects cost quota. Before anything else:
+
+```bash
+gcloud projects list --format="table(projectId, name, lifecycleState, createTime)"
+```
+
+For each one you don't need:
+
+```bash
+gcloud projects delete PROJECT_ID
+```
+
+> **The ID is held for 30 days.** A deleted project sits in `DELETE_REQUESTED` and its ID stays
+> reserved. You can't reuse the name, and it may still count against quota during that window. So
+> delete now, not the day you need the slot.
+
+Note which projects are `fang-gcp` (prod) and `fang-gcp-staging` — those two matter for Phase 2.
+
+## 3. Sign up for Cloud Identity Free
+
+Go to <https://workspace.google.com/gcpidentity/signup> and choose the **free** edition. Watch for
+this — the signup flow steers toward Workspace, which is paid. You want Cloud Identity Free.
+
+You'll provide:
+
+- your domain name
+- a new admin username on that domain, e.g. `nick@yourdomain.com`
+
+**This is a new identity, separate from your Gmail.** Your Gmail owns the projects; this new user
+will own the organization. Getting them connected is section 5, and it's the step people get stuck
+on.
+
+Verify the domain by adding the TXT record Google gives you to your DNS. Propagation is usually
+minutes. Confirm with:
+
+```bash
+dig +short TXT yourdomain.com
+```
+
+## 4. The organization appears on its own
+
+You don't create the organization explicitly. Once the domain is verified, GCP creates the org
+resource the first time a user from that domain signs in to the Cloud Console.
+
+Sign in as `nick@yourdomain.com`, open the Cloud Console, then:
+
+```bash
+gcloud auth login nick@yourdomain.com
+gcloud organizations list
+```
+
+```
+DISPLAY_NAME      ID              DIRECTORY_CUSTOMER_ID
+yourdomain.com    123456789012    C01abcdef
+```
+
+Save that ID — nearly every command from here on needs it.
+
+```bash
+export ORG_ID=123456789012
+```
+
+## 5. Connect your Gmail to the new organization
+
+This is the fiddly part. Your Gmail account owns the 8 projects. Your new domain user owns the org.
+Neither can complete the migration alone: moving a project needs permission on **both** the project
+and the destination org.
+
+Two roles are involved, and it's worth knowing which does what:
+
+| Role | Granted on | Lets you |
+|---|---|---|
+| `roles/resourcemanager.projectCreator` | the org | place a project under it |
+| `roles/resourcemanager.projectMover` | the project (or its parent) | move a project out of where it is |
+
+Your Gmail already effectively has the second, as project owner. It needs the first. As
+`nick@yourdomain.com`:
+
+```bash
+gcloud organizations add-iam-policy-binding "$ORG_ID" \
+  --member="user:fang.nicholas@gmail.com" \
+  --role="roles/resourcemanager.projectCreator"
+
+gcloud organizations add-iam-policy-binding "$ORG_ID" \
+  --member="user:fang.nicholas@gmail.com" \
+  --role="roles/resourcemanager.projectMover"
+```
+
+While you're here, give your domain user the org-admin role so it can manage IAM and policies:
+
+```bash
+gcloud organizations add-iam-policy-binding "$ORG_ID" \
+  --member="user:nick@yourdomain.com" \
+  --role="roles/resourcemanager.organizationAdmin"
+```
+
+> If that last command fails with a permission error, your domain user isn't a Cloud Identity super
+> admin yet. Fix it at <https://admin.google.com> under **Account → Admin roles → Super Admin**,
+> then retry. Super admin is a Cloud Identity role; Organization Administrator is a GCP IAM role.
+> They're different things and having one doesn't give you the other.
+
+## 6. Create the folders
+
+```bash
+for f in platform dev staging prod; do
+  gcloud resource-manager folders create \
+    --display-name="$f" \
+    --organization="$ORG_ID"
+done
+
+gcloud resource-manager folders list --organization="$ORG_ID"
+```
+
+Record the four folder IDs — Phase 1 needs them:
+
+```bash
+export FOLDER_PLATFORM=111111111111
+export FOLDER_DEV=222222222222
+export FOLDER_STAGING=333333333333
+export FOLDER_PROD=444444444444
+```
+
+You're creating these by hand rather than in Terraform for the same reason the state bucket is a
+chicken-and-egg problem: Terraform needs somewhere to put state, and that somewhere lives in the
+platform project, which lives in a folder. Phase 1 imports these into Terraform once there's a
+backend to hold them.
+
+## 7. Move the existing projects in
+
+Switch back to the account that owns the projects:
+
+```bash
+gcloud auth login fang.nicholas@gmail.com
+
+gcloud beta projects move fang-gcp-staging \
+  --folder="$FOLDER_STAGING"
+
+gcloud beta projects move fang-gcp \
+  --folder="$FOLDER_PROD"
+```
+
+Move anything else you kept into whichever folder fits. If nothing fits, leave it at the org root
+for now — you can move it later, and an unsorted project is better than a wrong folder.
+
+Confirm:
+
+```bash
+gcloud projects list --format="table(projectId, parent.type, parent.id)"
+```
+
+### The gotcha: projects inherit policy on arrival
+
+The moment a project lands in a folder, it inherits everything above it. That's the point, and it's
+also how people break production during a migration.
+
+**Do not enable domain-restricted sharing yet.** The constraint
+`constraints/iam.allowedPolicyMemberDomains` blocks `allUsers` and `allAuthenticatedUsers` from IAM
+policies. Your dashboard API depends on exactly that:
+
+```hcl
+# infra/modules/cloud-run-aggregator/main.tf:55-60
+resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
+  role   = "roles/run.invoker"
+  member = "allUsers"        # <-- a domain-restriction policy blocks this
+}
+```
+
+Turn it on org-wide and your public API stops being public, and the next `terraform apply` fails
+trying to restore the binding. Phase 1 sets up org policies with the exemptions this needs. Until
+then, add no constraints.
+
+## 8. Create the groups
+
+At <https://admin.google.com> → **Directory → Groups**, create four:
+
+| Group | Purpose | Gets, eventually |
+|---|---|---|
+| `gcp-platform-admins@yourdomain.com` | you, and anyone who can change the platform | org-level admin |
+| `gcp-developers@yourdomain.com` | engineers who spin up dev environments | project creation in `folders/dev` |
+| `gcp-staging-viewers@yourdomain.com` | stakeholders who need to see staging | read-only on `folders/staging` |
+| `gcp-prod-oncall@yourdomain.com` | whoever can touch prod | scoped access to `folders/prod` |
+
+Add `nick@yourdomain.com` to `gcp-platform-admins` and leave the rest empty. They exist so Phase 3
+can bind roles to them — an empty group with a role attached is fine and is exactly how you want
+this to work. Adding a stakeholder later becomes a click in the admin console, not a Terraform run.
+
+Don't add your Gmail to these. It keeps its project ownership for now and drops out of the picture
+once Phase 2 is verified.
+
+## 9. Break-glass — do this before you depend on the org
+
+You've just made a domain and a single admin identity the root of access to everything. Before the
+org is load-bearing, make sure losing either one isn't terminal.
+
+Three things, none of which take long:
+
+**A second super admin.** Create `nick-breakglass@yourdomain.com` in the admin console, make it a
+super admin, give it a long unique password stored in a password manager, and enrol a separate
+second factor — ideally a hardware key kept somewhere physical. Don't use it day to day. A single
+super admin means one lost phone or one lockout costs you administrative access to eight projects.
+
+**Domain auto-renew.** The entire org hangs off DNS ownership. If the registration lapses, domain
+verification fails and recovery becomes a support conversation. Turn on auto-renew and confirm the
+billing card on the registrar isn't the one that expires next year.
+
+**Recovery codes stored outside GCP.** Generate super-admin recovery codes and keep them somewhere
+that doesn't require a working Google account to reach — a password manager, or printed. Storing
+them in Drive is a circular dependency you'll discover at the worst moment.
+
+Also worth knowing: your personal Gmail keeps `projectCreator` and `projectMover` on the org from
+§5, and remains an owner on the projects it created. That's a second, independent path in. Don't
+remove it until you've verified the break-glass account works.
+
+## 10. Request project quota
+
+The ephemeral environment factory in Phase 4 creates a project per environment. Default quota won't
+support that.
+
+Console → **IAM & Admin → Quotas & System Limits**, filter for the Cloud Resource Manager project
+creation limit, and request an increase. Ask for something defensible — 50 is plenty for per-branch
+environments with a reaper cleaning up.
+
+Approval takes a few days, so file it now and continue. Phases 1 through 3 don't depend on it.
+
+## 11. Move billing under the org (optional, do it now if at all)
+
+Your billing account is still owned by your Gmail. It works as-is — the moved projects keep
+billing normally. But an org-owned billing account means budget alerts, billing exports, and
+`roles/billing.user` can be managed as part of the same IAM story rather than being personal
+settings on your account.
+
+Console → **Billing → Account management → Change organization**. If you're going to do it, doing
+it now avoids a second migration later.
+
+---
+
+## Verification gate
+
+All four must pass before Phase 1.
+
+```bash
+# 1. The organization exists
+gcloud organizations list
+```
+Shows your domain and an org ID.
+
+```bash
+# 2. Four folders exist under it
+gcloud resource-manager folders list --organization="$ORG_ID"
+```
+Shows `platform`, `dev`, `staging`, `prod`.
+
+```bash
+# 3. Both real projects sit in the right folders
+gcloud projects list --format="table(projectId, parent.type, parent.id)"
+```
+`fang-gcp-staging` → `folder` / `$FOLDER_STAGING`; `fang-gcp` → `folder` / `$FOLDER_PROD`.
+
+```bash
+# 4. Nothing broke — the public API still answers
+curl -sS -o /dev/null -w '%{http_code}\n' https://<your-staging-api-domain>/api/v1/dashboard
+```
+Expect `200`. If you get `403`, an inherited policy is blocking `allUsers` — see section 7.
+
+Also worth confirming your existing deploys still work, since the projects moved underneath them:
+re-run one GitHub Actions deploy workflow and check it completes. Workload Identity Federation
+bindings are project-scoped and survive a folder move, but it's a cheap thing to verify while the
+change is fresh.
+
+---
+
+**Next:** [01-bootstrap-and-platform.md](01-bootstrap-and-platform.md) — the first Terraform you
+write, and the state bucket everything else depends on.
