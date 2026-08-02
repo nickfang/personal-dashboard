@@ -334,14 +334,44 @@ remove it until you've verified the break-glass account works.
 
 ## 10. Request project quota
 
-The ephemeral environment factory in Phase 4 creates a project per environment. Default quota won't
-support that.
+The ephemeral environment factory in Phase 4 creates a project per environment — personal-account
+project quotas wouldn't support that, but organizations start much higher.
 
-Console → **IAM & Admin → Quotas & System Limits**, filter for the Cloud Resource Manager project
-creation limit, and request an increase. Ask for something defensible — 50 is plenty for per-branch
-environments with a reaper cleaning up.
+Check what the org already has before requesting anything — organizations start with a per-org
+cap that may already be enough:
 
-Approval takes a few days, so file it now and continue. Phases 1 through 3 don't depend on it.
+```bash
+gcloud beta quotas info list \
+  --organization="$ORG_ID" \
+  --service=cloudresourcemanager.googleapis.com
+```
+
+(If it complains the Cloud Quotas API isn't enabled, enable `cloudquotas.googleapis.com` on the
+project the error names and retry.) In the `projects_count` entry, `dimensionsInfos` holds the
+current limit and `quotaId: ProjectsPerOrg` identifies the quota. **A limit of 50 is plenty** for
+per-branch environments with a reaper cleaning up — if you see that, this step is done.
+
+If yours is lower, request an increase from the CLI:
+
+```bash
+gcloud beta quotas preferences create \
+  --organization="$ORG_ID" \
+  --service=cloudresourcemanager.googleapis.com \
+  --quota-id=ProjectsPerOrg \
+  --preferred-value=50 \
+  --email=nick@yourdomain.com
+```
+
+or in the console: **IAM & Admin → Quotas & System Limits**, select the **organization** in the
+resource picker (the cap lives on the org — with a project selected it isn't listed), filter with
+property **Metric** = `cloudresourcemanager.googleapis.com/projects_count`, then **Edit quota**.
+
+Project creation checks both your user quota and the org quota and succeeds if *either* has
+capacity — the org-level number is the one that matters here, since the Phase 4 factory creates
+projects as a service account under the org.
+
+If you did file a request, approval takes a few days — continue without waiting. Phases 1 through
+3 don't depend on it.
 
 ## 11. Move billing under the org (optional, do it now if at all)
 
