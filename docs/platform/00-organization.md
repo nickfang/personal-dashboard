@@ -165,12 +165,18 @@ gcloud organizations add-iam-policy-binding "$ORG_ID" \
   --role="roles/resourcemanager.projectMover"
 ```
 
-While you're here, give your domain user the org-admin role so it can manage IAM and policies:
+While you're here, give your domain user the org-admin role so it can manage IAM and policies,
+and the folder-creator role for §6 — Organization Administrator manages IAM but does **not**
+include folder creation, which needs its own role at the org level:
 
 ```bash
 gcloud organizations add-iam-policy-binding "$ORG_ID" \
   --member="user:nick@yourdomain.com" \
   --role="roles/resourcemanager.organizationAdmin"
+
+gcloud organizations add-iam-policy-binding "$ORG_ID" \
+  --member="user:nick@yourdomain.com" \
+  --role="roles/resourcemanager.folderCreator"
 ```
 
 Then restore the domain restriction **in the same sitting**:
@@ -191,6 +197,9 @@ gcloud organizations get-iam-policy "$ORG_ID" \
 > keys, and Phase 1 imports these policies into Terraform.
 
 ## 6. Create the folders
+
+Still as your domain user — the Gmail has no business here. If these return `PERMISSION_DENIED`,
+you're missing the `folderCreator` grant from the end of §5.
 
 ```bash
 for f in platform dev staging prod; do
