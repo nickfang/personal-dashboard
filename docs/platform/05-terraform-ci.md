@@ -123,11 +123,11 @@ Per-environment variables:
 All `vars`, no `secrets` — consistent with `_deploy-service.yml`, which already uses Workload
 Identity Federation and holds no service account keys.
 
-> **Your existing deploy workflows use `environment: production`, not `prod`.** Six caller workflows
-> declare it. The WIF principalSets in Phase 1 use `prod`, and the two strings have to match exactly
-> or the deploy identity can't be impersonated. Either rename the GitHub environment to `prod` and
-> update the six callers, or change the principalSet to `production`. Renaming the environment is
-> cleaner, but note it drops any protection rules attached to the old one — re-add them afterwards.
+> **The `production` → `prod` rename should already be done.** Phase 1 §3.4 has you rename the six
+> prod caller workflows from `environment: production` to `environment: prod` (and recreate the
+> protection rules) during the WIF cutover, because the claim string and the principalSet must
+> match exactly. If you skipped it, do it now — a `production` token can't impersonate anything
+> bound to `attribute.environment/prod`.
 
 ## 3. The reusable workflow
 
@@ -465,10 +465,9 @@ through the platform WIF pool from
 +          service_account: ${{ vars.DEPLOYER_SA }}
 ```
 
-The caller workflows already bind to a GitHub environment (`staging` / `production`), which is what
-mints the `environment` claim the new WIF binding requires. One caveat: the prod callers use
-`environment: production` while the runner bindings use `prod`. Either rename the GitHub environment
-to `prod` or change the principalSet to match — they have to be the same string.
+The caller workflows already bind to a GitHub environment (`staging` / `prod` — renamed from
+`production` during Phase 1 §3.4's cutover), which is what mints the `environment` claim the new
+WIF binding requires. The claim string and the principalSet must be the same string, exactly.
 
 **Registry.** Images move to the shared repository in the platform project:
 
