@@ -286,6 +286,21 @@ At <https://admin.google.com> → **Directory → Groups**, create four:
 | `gcp-staging-viewers@yourdomain.com` | stakeholders who need to see staging | read-only on `folders/staging` |
 | `gcp-prod-oncall@yourdomain.com` | whoever can touch prod | scoped access to `folders/prod` |
 
+The create-group wizard's second page ("Group settings") defaults to mailing-list behavior. These
+groups grant cloud permissions to their members, so the deciding rule is: **membership must never
+be self-service** — joining `gcp-platform-admins` would mean granting yourself org-level admin.
+For all four groups:
+
+- **Access type: Restricted** — not the default "Public", which lets anyone in the org join
+  themselves.
+- **Who can join the group: Only invited users** — the setting that actually matters; membership
+  changes stay a deliberate admin action.
+- **Allow external members: both boxes unchecked** — domain-restricted sharing validates the
+  *group's* domain in IAM bindings, not its members', so an external member would ride the
+  group's bindings past that control.
+- The access-settings grid (who can contact owners / view conversations / post) governs the group
+  as a mailing list — irrelevant here; the Restricted presets are fine.
+
 Add `nick@yourdomain.com` to `gcp-platform-admins` and leave the rest empty. They exist so Phase 3
 can bind roles to them — an empty group with a role attached is fine and is exactly how you want
 this to work. Adding a stakeholder later becomes a click in the admin console, not a Terraform run.
