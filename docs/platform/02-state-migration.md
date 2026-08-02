@@ -82,10 +82,13 @@ locks out everyone still on the old version.
 ```hcl
 # add to the existing terraform { } block in infra/staging/main.tf and infra/prod/main.tf
 terraform {
-  required_version = ">= 1.13"
+  required_version = "~> 1.13"   # bounded, matching the Phase 1 roots
   # ... existing required_providers ...
 }
 ```
+
+Both roots already commit `.terraform.lock.hcl`; keep that, and keep the exact CLI release in the
+repo-root `.terraform-version` file from Phase 1 §2.6 so laptops and CI stay in lockstep.
 
 ## 4. Migrate staging
 
