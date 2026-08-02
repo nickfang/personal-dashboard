@@ -105,8 +105,55 @@ Two roles are involved, and it's worth knowing which does what:
 | `roles/resourcemanager.projectCreator` | the org | place a project under it |
 | `roles/resourcemanager.projectMover` | the project (or its parent) | move a project out of where it is |
 
-Your Gmail already effectively has the second, as project owner. It needs the first. As
-`nick@yourdomain.com`:
+> Looking for these in the console role picker? They appear as **Project Creator** and **Project
+> Mover** (filter by "Resource Manager"), on the **organization's** IAM page. Don't reach for
+> Owner/Editor — those are far broader roles that happen to contain similar words.
+
+Your Gmail already effectively has the second, as project owner. It needs the first.
+
+### First, unblock the org — it was born restricted
+
+Organizations created on or after **May 3, 2024** are "secure-by-default": Google enforces a
+bundle of org policies at creation, and one of them is `constraints/iam.allowedPolicyMemberDomains`
+(domain-restricted sharing), pre-restricted to your Cloud Identity domain. Until you deal with it,
+every binding below fails with:
+
+```
+IAM policy update failed
+The 'Domain Restricted Sharing' organization policy (constraints/iam.allowedPolicyMemberDomains)
+is enforced. Only principals in allowed domains can be added as principals in the policy.
+```
+
+You can't allow-list the Gmail, either: the constraint's allowed values are Google Workspace /
+Cloud Identity **customer IDs** and **organization principal sets** — managed identity pools. A
+consumer Gmail account belongs to neither. That's by design; excluding unmanaged identities is
+the constraint's entire job.
+
+The fix is **delete → bind → restore**. Enforcement is not retroactive — bindings that exist when
+the policy comes back remain valid — so the org runs unrestricted for minutes, not until Phase 1.
+
+As `nick@yourdomain.com`:
+
+```bash
+# Organization Administrator (auto-granted to the super admin who created the org) can set
+# org IAM, but org *policies* need a separate role. Grant it to yourself:
+gcloud organizations add-iam-policy-binding "$ORG_ID" \
+  --member="user:nick@yourdomain.com" \
+  --role="roles/orgpolicy.policyAdmin"
+
+# Back up Google's policy exactly as created, then delete it:
+gcloud org-policies describe iam.allowedPolicyMemberDomains \
+  --organization="$ORG_ID" > drs-policy-backup.yaml
+gcloud org-policies delete iam.allowedPolicyMemberDomains --organization="$ORG_ID"
+```
+
+> If the self-grant fails with a permission error, your domain user isn't a Cloud Identity super
+> admin yet (the auto-granted Organization Administrator role goes to the super admin who created
+> the org). Fix it at <https://admin.google.com> under **Account → Admin roles → Super Admin**,
+> then retry. Super admin is a Cloud Identity role; Organization Administrator is a GCP IAM role.
+> They're different things and having one doesn't give you the other.
+
+Give the deletion a minute or two to propagate, then make the bindings:
 
 ```bash
 gcloud organizations add-iam-policy-binding "$ORG_ID" \
@@ -126,10 +173,22 @@ gcloud organizations add-iam-policy-binding "$ORG_ID" \
   --role="roles/resourcemanager.organizationAdmin"
 ```
 
-> If that last command fails with a permission error, your domain user isn't a Cloud Identity super
-> admin yet. Fix it at <https://admin.google.com> under **Account → Admin roles → Super Admin**,
-> then retry. Super admin is a Cloud Identity role; Organization Administrator is a GCP IAM role.
-> They're different things and having one doesn't give you the other.
+Then restore the domain restriction **in the same sitting**:
+
+```bash
+gcloud org-policies set-policy drs-policy-backup.yaml
+
+# Confirm it's back, and the Gmail's bindings survived:
+gcloud org-policies describe iam.allowedPolicyMemberDomains --organization="$ORG_ID"
+gcloud organizations get-iam-policy "$ORG_ID" \
+  --flatten="bindings[].members" --filter="bindings.members:fang.nicholas" \
+  --format="table(bindings.role)"
+```
+
+> If `set-policy` rejects the backup file, strip any `etag:` and `updateTime:` lines and retry.
+> Leave the other secure-by-default policies (`iam.disableServiceAccountKeyCreation` and friends)
+> alone — deploys authenticate with Workload Identity Federation, so nothing needs service account
+> keys, and Phase 1 imports these policies into Terraform.
 
 ## 6. Create the folders
 
@@ -185,9 +244,8 @@ gcloud projects list --format="table(projectId, parent.type, parent.id)"
 The moment a project lands in a folder, it inherits everything above it. That's the point, and it's
 also how people break production during a migration.
 
-**Do not enable domain-restricted sharing yet.** The constraint
-`constraints/iam.allowedPolicyMemberDomains` blocks `allUsers` and `allAuthenticatedUsers` from IAM
-policies. Your dashboard API depends on exactly that:
+Domain-restricted sharing (`constraints/iam.allowedPolicyMemberDomains`) is enforced again — §5
+restored it after the Gmail bindings. Your dashboard API has a binding this constraint forbids:
 
 ```hcl
 # infra/modules/cloud-run-aggregator/main.tf:55-60
@@ -197,9 +255,16 @@ resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
 }
 ```
 
-Turn it on org-wide and your public API stops being public, and the next `terraform apply` fails
-trying to restore the binding. Phase 1 sets up org policies with the exemptions this needs. Until
-then, add no constraints.
+Two facts about how the constraint behaves keep the move safe, and both matter:
+
+- **Enforcement is not retroactive.** The existing `allUsers` binding survives the project move
+  untouched — moving a project changes its parent, not its IAM policy. The public API keeps
+  answering.
+- **New policy writes are what's blocked.** The next `terraform apply` that needs to create or
+  recreate that binding fails until Phase 1 lands the folder exemptions.
+
+So between now and Phase 1: move projects freely, but don't change staging or prod infrastructure
+that touches the public invoker, and don't run an apply that would recreate it.
 
 ## 8. Create the groups
 
@@ -293,6 +358,17 @@ gcloud projects list --format="table(projectId, parent.type, parent.id)"
 curl -sS -o /dev/null -w '%{http_code}\n' https://<your-staging-api-domain>/api/v1/dashboard
 ```
 Expect `200`. If you get `403`, an inherited policy is blocking `allUsers` — see section 7.
+
+```bash
+# 5. Domain restriction is back on, and the Gmail kept its org roles
+gcloud org-policies describe iam.allowedPolicyMemberDomains --organization="$ORG_ID"
+gcloud organizations get-iam-policy "$ORG_ID" \
+  --flatten="bindings[].members" --filter="bindings.members:fang.nicholas" \
+  --format="table(bindings.role)"
+```
+The policy exists, and the roles list includes `projectCreator` and `projectMover`. If you want
+proof the restriction is really enforcing, try adding any Gmail binding — it should fail with the
+same Domain Restricted Sharing error §5 started with.
 
 Also worth confirming your existing deploys still work, since the projects moved underneath them:
 re-run one GitHub Actions deploy workflow and check it completes. Workload Identity Federation

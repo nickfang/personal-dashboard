@@ -325,13 +325,26 @@ resource "google_org_policy_policy" "disable_sa_keys" {
 }
 ```
 
-> **Optional, and verify before you commit to it.** `constraints/iam.allowedPolicyMemberDomains`
-> restricts IAM members to your Cloud Identity customer ID. It's a genuinely good control — it
-> stops anyone binding a role to an arbitrary Gmail address. But it also blocks `allUsers`, and
-> `infra/modules/cloud-run-aggregator/main.tf:55-60` binds `roles/run.invoker` to `allUsers` to make
-> the dashboard API public.
+> **Secure-by-default orgs already have this policy.** Organizations created on or after May 3,
+> 2024 get `iam.disableServiceAccountKeyCreation` (and several other policies) enforced by Google
+> at creation. Terraform can't create what already exists — the first apply fails with "already
+> exists". Import it first:
 >
-> If you want it, you enforce at the org and relax it on the folders that host public services:
+> ```bash
+> terraform import google_org_policy_policy.disable_sa_keys \
+>   "organizations/${ORG_ID}/policies/iam.disableServiceAccountKeyCreation"
+> ```
+
+> **Already enforced — your job here is exemptions, not adoption.** On a secure-by-default org,
+> `constraints/iam.allowedPolicyMemberDomains` has been on since the org was created (Phase 0 §5
+> dropped it briefly to bind your Gmail, then restored it). It's a genuinely good control — it
+> stops anyone binding a role to an arbitrary Gmail address. But it also blocks new `allUsers`
+> bindings, and `infra/modules/cloud-run-aggregator/main.tf:55-60` binds `roles/run.invoker` to
+> `allUsers` to make the dashboard API public. The existing binding survives (enforcement is not
+> retroactive), but Terraform can't recreate it until the folder exemptions below exist.
+>
+> Keep enforcing at the org — importing the policy that's already there — and relax it on the
+> folders that host public services:
 >
 > ```hcl
 > resource "google_org_policy_policy" "domain_restricted_sharing" {
@@ -357,6 +370,19 @@ resource "google_org_policy_policy" "disable_sa_keys" {
 >   }
 > }
 > ```
+>
+> The org-level policy already exists, so import it — only the folder exemptions are genuinely
+> new resources:
+>
+> ```bash
+> terraform import google_org_policy_policy.domain_restricted_sharing \
+>   "organizations/${ORG_ID}/policies/iam.allowedPolicyMemberDomains"
+> ```
+>
+> After the import, check `terraform plan` before applying: if Google's original policy expresses
+> the restriction differently than the HCL above (for example an organization principal set
+> instead of `is:C0xxxxxxx`), align the HCL to what's actually there rather than letting Terraform
+> rewrite the policy.
 >
 > Apply it, then immediately `curl` your staging API and re-run `terraform plan` in `infra/staging`.
 > If the plan wants to recreate `public_invoker`, the exemption isn't taking effect. Roll the policy
