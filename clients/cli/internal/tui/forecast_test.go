@@ -82,7 +82,7 @@ func TestAlertBanner_ActiveOnly(t *testing.T) {
 	alerts := []client.Alert{
 		{Message: "Thu 2 PM  -6.2 mb/3h  -8.1/6h", Severity: "warning", Status: "active"},
 		{Message: "old drop", Severity: "warning", Status: "resolved"},
-		{Message: "already pinged", Severity: "warning", Status: "notified"},
+		{Message: "unknown status", Severity: "warning", Status: "something-else"},
 	}
 
 	got := alertBanner(alerts)
@@ -90,7 +90,7 @@ func TestAlertBanner_ActiveOnly(t *testing.T) {
 	if !strings.Contains(got, "⚠ Thu 2 PM  -6.2 mb/3h  -8.1/6h") {
 		t.Errorf("active alert missing from banner: %q", got)
 	}
-	if strings.Contains(got, "old drop") || strings.Contains(got, "already pinged") {
+	if strings.Contains(got, "old drop") || strings.Contains(got, "unknown status") {
 		t.Errorf("non-active alerts must not render: %q", got)
 	}
 }

@@ -10,13 +10,12 @@ import (
 const (
 	AlertStatusActive   = "active"
 	AlertStatusResolved = "resolved"
-	AlertStatusNotified = "notified"
 
 	AlertSeverityWarning = "warning"
 	AlertSeveritySevere  = "severe"
 
-	// AlertEscalationStepMb guards re-notification against forecast noise: a
-	// previously notified alert only returns to "active" when its predicted
+	// AlertEscalationStepMb guards re-notification against forecast noise: an
+	// already-delivered alert is only re-armed for delivery when its predicted
 	// magnitude worsens by at least this much (or its severity upgrades).
 	AlertEscalationStepMb = 1.0
 )
@@ -24,6 +23,13 @@ const (
 // Alert is a source-agnostic record of a detected condition (pressure drop,
 // pollen spike, ...). Detectors create them at write time; providers and
 // clients only read them. Future sources reuse this struct unchanged.
+//
+// Status and NotifiedAt track two independent facts. Status says whether the
+// condition is currently in the forecast; NotifiedAt says whether the user has
+// been told about it. Collapsing them into one field would mean a delivered
+// alert disappears from the dashboard while the drop is still hours away, and
+// would lose the delivery record whenever forecast noise briefly resolves an
+// alert that is still building.
 type Alert struct {
 	ID          string    `firestore:"id"`
 	Location    string    `firestore:"location"`
@@ -36,6 +42,11 @@ type Alert struct {
 	Message     string    `firestore:"message"`
 	Status      string    `firestore:"status"`
 	IssuedAt    time.Time `firestore:"issued_at"`
+
+	// NotifiedAt is when this alert was delivered to the user; the zero value
+	// means it never was. Delivery is gated on Status == AlertStatusActive and
+	// a zero NotifiedAt, so clearing it re-arms delivery.
+	NotifiedAt time.Time `firestore:"notified_at"`
 }
 
 // ComputeID derives a stable identity for a new alert from its location,
@@ -71,11 +82,13 @@ func overlapDuration(a, b Alert) time.Duration {
 //
 //   - alerts whose window has fully passed are pruned,
 //   - a detected alert overlapping a stored one keeps the stored ID and
-//     updates its numbers; it only re-escalates to "active" from "notified"
-//     when the prediction worsens (escalate-if-worse),
-//   - a stored "resolved" alert that is detected again re-activates,
-//   - stored alerts no longer detected are marked "resolved",
-//   - brand-new alerts come through as "active".
+//     delivery record, and updates its numbers,
+//   - a delivered alert has its NotifiedAt cleared — re-arming delivery —
+//     only when the prediction worsens or its severity upgrades,
+//   - every detected alert is "active", whether or not it was previously
+//     resolved,
+//   - stored alerts no longer detected are marked "resolved" but keep their
+//     delivery record, so forecast noise cannot cause a re-notification.
 func MergeAlerts(prev, detected []Alert, now time.Time) []Alert {
 	var live []Alert
 	for _, p := range prev {
@@ -110,7 +123,8 @@ func MergeAlerts(prev, detected []Alert, now time.Time) []Alert {
 		consumed[bestIdx] = true
 		merged := d
 		merged.ID = live[bestIdx].ID
-		merged.Status = mergedStatus(live[bestIdx], d)
+		merged.Status = AlertStatusActive
+		merged.NotifiedAt = mergedNotifiedAt(live[bestIdx], d)
 		result = append(result, merged)
 	}
 
@@ -125,16 +139,23 @@ func MergeAlerts(prev, detected []Alert, now time.Time) []Alert {
 	return result
 }
 
-func mergedStatus(prev, detected Alert) string {
-	if prev.Status == AlertStatusNotified {
-		// Values are negative deltas; "worse" means more negative.
-		worsened := detected.Value <= prev.Value-AlertEscalationStepMb
-		upgraded := prev.Severity != AlertSeveritySevere && detected.Severity == AlertSeveritySevere
-		if worsened || upgraded {
-			return AlertStatusActive
-		}
-		return AlertStatusNotified
+// mergedNotifiedAt carries the stored delivery record onto a re-detected
+// alert, clearing it — and so re-arming delivery — when the prediction has
+// meaningfully worsened.
+//
+// This keys off the stored NotifiedAt rather than a status value so that an
+// escalation is still caught when forecast noise has briefly resolved the
+// alert in between. Keying off status would miss exactly that case, silently
+// dropping a warning that has since upgraded to severe.
+func mergedNotifiedAt(prev, detected Alert) time.Time {
+	if prev.NotifiedAt.IsZero() {
+		return time.Time{}
 	}
-	// "resolved" re-detected means the condition is back; "active" stays active.
-	return AlertStatusActive
+	// Values are negative deltas; "worse" means more negative.
+	worsened := detected.Value <= prev.Value-AlertEscalationStepMb
+	upgraded := prev.Severity != AlertSeveritySevere && detected.Severity == AlertSeveritySevere
+	if worsened || upgraded {
+		return time.Time{}
+	}
+	return prev.NotifiedAt
 }
