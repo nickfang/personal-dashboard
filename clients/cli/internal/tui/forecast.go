@@ -134,8 +134,9 @@ func renderForecast(f *client.Forecast) string {
 }
 
 // alertBanner renders one line per active alert, styled by severity. Returns
-// an empty string when there is nothing to show — resolved and notified
-// alerts never render.
+// an empty string when there is nothing to show — resolved alerts never
+// render. An alert stays active, and so keeps rendering, after the user has
+// been notified about it; delivery is tracked separately server-side.
 func alertBanner(alerts []client.Alert) string {
 	var lines []string
 	for _, a := range alerts {

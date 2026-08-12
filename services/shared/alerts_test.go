@@ -23,6 +23,12 @@ func pressureAlert(windowStartHours, windowEndHours int, value float64, status s
 	return a
 }
 
+// notified marks an alert as already delivered.
+func notified(a Alert) Alert {
+	a.NotifiedAt = baseTime.Add(-time.Hour)
+	return a
+}
+
 func TestComputeID_Stable(t *testing.T) {
 	a := pressureAlert(2, 5, -6.0, AlertStatusActive)
 	b := pressureAlert(2, 5, -8.5, AlertStatusResolved)
@@ -101,37 +107,43 @@ func TestMergeAlerts_OverlapKeepsOriginalIDAndUpdatesNumbers(t *testing.T) {
 	}
 }
 
-func TestMergeAlerts_NotifiedStaysNotifiedWhenUnchanged(t *testing.T) {
-	prev := pressureAlert(2, 5, -6.0, AlertStatusNotified)
+func TestMergeAlerts_DeliveryRecordSurvivesUnchangedRedetection(t *testing.T) {
+	prev := notified(pressureAlert(2, 5, -6.0, AlertStatusActive))
 	detected := pressureAlert(2, 5, -6.4, AlertStatusActive) // within the 1 mb step
 
 	got := MergeAlerts([]Alert{prev}, []Alert{detected}, baseTime)
 
-	if len(got) != 1 || got[0].Status != AlertStatusNotified {
-		t.Fatalf("Status = %v, want notified (no meaningful worsening)", got)
+	if len(got) != 1 {
+		t.Fatalf("len = %d, want 1", len(got))
+	}
+	if !got[0].NotifiedAt.Equal(prev.NotifiedAt) {
+		t.Errorf("NotifiedAt = %v, want preserved %v (no meaningful worsening)", got[0].NotifiedAt, prev.NotifiedAt)
+	}
+	if got[0].Status != AlertStatusActive {
+		t.Errorf("Status = %q, want active (condition is still present)", got[0].Status)
 	}
 }
 
-func TestMergeAlerts_NotifiedReactivatesWhenWorsened(t *testing.T) {
-	prev := pressureAlert(2, 5, -6.0, AlertStatusNotified)
+func TestMergeAlerts_WorseningRearmsDelivery(t *testing.T) {
+	prev := notified(pressureAlert(2, 5, -6.0, AlertStatusActive))
 	detected := pressureAlert(2, 5, -7.2, AlertStatusActive) // worsened ≥1 mb
 
 	got := MergeAlerts([]Alert{prev}, []Alert{detected}, baseTime)
 
-	if len(got) != 1 || got[0].Status != AlertStatusActive {
-		t.Fatalf("Status = %v, want active (worsened past escalation step)", got)
+	if len(got) != 1 || !got[0].NotifiedAt.IsZero() {
+		t.Fatalf("NotifiedAt = %v, want cleared (worsened past escalation step)", got)
 	}
 }
 
-func TestMergeAlerts_NotifiedReactivatesOnSeverityUpgrade(t *testing.T) {
-	prev := pressureAlert(2, 5, -9.5, AlertStatusNotified)
+func TestMergeAlerts_SeverityUpgradeRearmsDelivery(t *testing.T) {
+	prev := notified(pressureAlert(2, 5, -9.5, AlertStatusActive))
 	detected := pressureAlert(2, 5, -10.2, AlertStatusActive)
 	detected.Severity = AlertSeveritySevere
 
 	got := MergeAlerts([]Alert{prev}, []Alert{detected}, baseTime)
 
-	if len(got) != 1 || got[0].Status != AlertStatusActive {
-		t.Fatalf("Status = %v, want active (warning→severe upgrade)", got)
+	if len(got) != 1 || !got[0].NotifiedAt.IsZero() {
+		t.Fatalf("NotifiedAt = %v, want cleared (warning→severe upgrade)", got)
 	}
 }
 
@@ -149,6 +161,52 @@ func TestMergeAlerts_ResolvedReactivatesOnRedetection(t *testing.T) {
 	}
 }
 
+// A flap — delivered, briefly undetected, then detected again — must not
+// re-deliver. This is the case a status-only model gets wrong, because
+// "resolved" overwrites the record that the user was already told.
+func TestMergeAlerts_FlapDoesNotRedeliver(t *testing.T) {
+	delivered := notified(pressureAlert(2, 5, -6.0, AlertStatusActive))
+
+	resolved := MergeAlerts([]Alert{delivered}, nil, baseTime)
+	if len(resolved) != 1 || resolved[0].Status != AlertStatusResolved {
+		t.Fatalf("after a missed detection: got %v, want resolved", resolved)
+	}
+	if resolved[0].NotifiedAt.IsZero() {
+		t.Fatal("resolving an alert must not discard its delivery record")
+	}
+
+	redetected := MergeAlerts(resolved, []Alert{pressureAlert(2, 5, -6.2, AlertStatusActive)}, baseTime)
+	if len(redetected) != 1 {
+		t.Fatalf("len = %d, want 1", len(redetected))
+	}
+	if redetected[0].Status != AlertStatusActive {
+		t.Errorf("Status = %q, want active", redetected[0].Status)
+	}
+	if redetected[0].NotifiedAt.IsZero() {
+		t.Error("NotifiedAt cleared by a flap — this would re-notify for one episode")
+	}
+}
+
+// The inverse of the above: an escalation that happens to follow a flap must
+// still re-arm delivery. Keying escalation off status rather than the delivery
+// record would silently drop this.
+func TestMergeAlerts_EscalationAfterFlapRearmsDelivery(t *testing.T) {
+	delivered := notified(pressureAlert(2, 5, -6.0, AlertStatusActive))
+
+	resolved := MergeAlerts([]Alert{delivered}, nil, baseTime)
+
+	worse := pressureAlert(2, 5, -10.5, AlertStatusActive)
+	worse.Severity = AlertSeveritySevere
+	got := MergeAlerts(resolved, []Alert{worse}, baseTime)
+
+	if len(got) != 1 {
+		t.Fatalf("len = %d, want 1", len(got))
+	}
+	if !got[0].NotifiedAt.IsZero() {
+		t.Error("NotifiedAt = set, want cleared — a severe escalation after a flap must still notify")
+	}
+}
+
 func TestMergeAlerts_UndetectedFutureAlertResolves(t *testing.T) {
 	prev := pressureAlert(2, 5, -6.0, AlertStatusActive)
 
@@ -156,6 +214,14 @@ func TestMergeAlerts_UndetectedFutureAlertResolves(t *testing.T) {
 
 	if len(got) != 1 || got[0].Status != AlertStatusResolved {
 		t.Fatalf("got %v, want the alert kept as resolved", got)
+	}
+}
+
+func TestMergeAlerts_NewAlertHasNoDeliveryRecord(t *testing.T) {
+	got := MergeAlerts(nil, []Alert{pressureAlert(2, 5, -6.0, AlertStatusActive)}, baseTime)
+
+	if len(got) != 1 || !got[0].NotifiedAt.IsZero() {
+		t.Fatalf("NotifiedAt = %v, want zero for a brand-new alert", got)
 	}
 }
 
@@ -174,7 +240,7 @@ func TestMergeAlerts_PastWindowPruned(t *testing.T) {
 }
 
 func TestMergeAlerts_GreatestOverlapWins(t *testing.T) {
-	early := pressureAlert(0, 4, -5.5, AlertStatusNotified)
+	early := notified(pressureAlert(0, 4, -5.5, AlertStatusActive))
 	late := pressureAlert(4, 9, -6.0, AlertStatusActive)
 	// One detected episode overlapping both: 1h of `early`, 5h of `late`.
 	detected := pressureAlert(3, 9, -7.0, AlertStatusActive)
@@ -194,7 +260,7 @@ func TestMergeAlerts_GreatestOverlapWins(t *testing.T) {
 }
 
 func TestMergeAlerts_DifferentRuleOrLocationNeverMatches(t *testing.T) {
-	prev := pressureAlert(2, 5, -6.0, AlertStatusNotified)
+	prev := notified(pressureAlert(2, 5, -6.0, AlertStatusActive))
 	otherLocation := pressureAlert(2, 5, -6.0, AlertStatusActive)
 	otherLocation.Location = "house-nita"
 	otherLocation.ID = otherLocation.ComputeID()
