@@ -4,9 +4,10 @@
 
 ```mermaid
 flowchart TD
-    subgraph Frontend ["Frontend (Svelte)"]
+    subgraph Clients ["Clients"]
         direction TB
-        UI_Dash[Dashboard Page]
+        UI_Dash["Dashboard Page<br/>(SvelteKit)"]:::future
+        UI_CLI["Kiosk CLI<br/>(Go, Bubbletea)"]:::done
     end
 
     subgraph Aggregator ["The Gateway (Public URL)"]
@@ -25,34 +26,54 @@ flowchart TD
         direction TB
         J_Weath["Weather Collector<br/>(Cloud Run Job)"]:::done
         J_Poll["Pollen Collector<br/>(Cloud Run Job)"]:::done
+        J_Fore["Forecast Collector<br/>(Cloud Run Job)"]:::done
     end
 
     subgraph Data ["Google Firestore"]
         direction TB
         DB_Weath[("weather_cache<br/>(Collection)")]:::done
         DB_Raw[("weather_raw<br/>(Collection)")]:::done
+        DB_ForCache[("forecast_cache<br/>(Collection)")]:::done
+        DB_ForRaw[("forecast_raw<br/>(Collection)")]:::done
         DB_PolCache[("pollen_cache<br/>(Collection)")]:::done
         DB_PolRaw[("pollen_raw<br/>(Collection)")]:::done
     end
 
+    subgraph Notify ["Alert Delivery (Issue #68)"]
+        direction TB
+        N_Notif["Notifier<br/>(text / email)"]:::future
+    end
+
     %% Data Flow (arrows follow data direction)
     DB_Weath -- "3. Read" --> S_Weath
+    DB_ForCache -- "3. Read" --> S_Weath
     DB_PolCache -- "3. Read" --> S_Poll
 
-    S_Weath -- "2. GetPressureStats()<br/>(gRPC)" --> S_Dash
+    S_Weath -- "2. GetPressureStats()<br/>GetAllForecasts()<br/>(gRPC)" --> S_Dash
     S_Poll -- "2. GetAllPollenReports()<br/>(gRPC)" --> S_Dash
 
-    S_Dash -- "1. GET /api/v1/dashboard" --> UI_Dash
+    S_Dash -- "1. GET /api/v1/dashboard" --> UI_CLI
+    S_Dash -.-> UI_Dash
 
     J_Weath -- "Writes" --> DB_Weath
     J_Weath -- "Writes" --> DB_Raw
+    J_Fore -- "Writes" --> DB_ForCache
+    J_Fore -- "Writes" --> DB_ForRaw
     J_Poll -- "Writes" --> DB_PolCache
     J_Poll -- "Writes" --> DB_PolRaw
+
+    J_Fore -.-> N_Notif
 
     %% Styling
     classDef done fill:#bbf,stroke:#333,stroke-width:2px,color:black;
     classDef future fill:#fff,stroke:#ccc,stroke-width:1px,color:#999,stroke-dasharray: 5 5;
 ```
+
+Solid nodes and arrows are built and deployed. Dashed nodes and arrows are not yet implemented:
+
+- **SAT Word Service** — not started.
+- **Notifier** — alert delivery, deferred ([Issue #68](https://github.com/nickfang/personal-dashboard/issues/68)). Alerts are detected, stored, and served today; nothing delivers them.
+- **Dashboard Page → Dashboard API** — the SvelteKit frontend does not consume `dashboard-api`; it still calls a weather API directly from its own route handler. The frontend half of [Issue #66](https://github.com/nickfang/personal-dashboard/issues/66) was deferred, so forecasts and alerts appear only in the CLI.
 
 ## 2. Overview
 The Personal Dashboard platform runs on **Google Cloud Platform (GCP)**, managed by Terraform with a modular structure supporting staging and production environments.
@@ -110,6 +131,7 @@ Defined in `infra/modules/firestore/`.
 
 *   **Firestore (Native Mode):** The primary database.
 *   **Databases:** `weather-log` and `pollen-log` (Note: separate from the `(default)` database).
+*   **Collections:** `weather-log` holds `weather_raw`, `weather_cache`, `forecast_raw`, and `forecast_cache`; `pollen-log` holds `pollen_raw` and `pollen_cache`. Names are centralized in `services/shared/constants.go`.
 *   **Access Pattern:** Services connect using the Google Cloud Go SDK, authenticated via their runtime Service Account.
 
 ## 7. Development Workflow

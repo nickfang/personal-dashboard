@@ -24,7 +24,7 @@ The backend is built as a set of decoupled services communicating via Firestore 
 
 ### 2. Weather Provider (`services/weather-provider`)
 **Type:** Cloud Run Service (gRPC)
-**Role:** Serves analyzed weather/pressure statistics from Firestore.
+**Role:** Serves analyzed weather/pressure statistics, plus forecasts and alerts, from Firestore.
 *   **Architecture:** [ARCHITECTURE_SERVICE_WEATHER_PROVIDER.md](../docs/ARCHITECTURE_SERVICE_WEATHER_PROVIDER.md)
 
 ### 3. Weather Collector (`services/weather-collector`)
@@ -41,6 +41,11 @@ The backend is built as a set of decoupled services communicating via Firestore 
 **Type:** Cloud Run Job (Batch)
 **Role:** Fetches pollen data from the Google Pollen API twice daily.
 *   **Architecture:** [ARCHITECTURE_SERVICE_POLLEN.md](../docs/ARCHITECTURE_SERVICE_POLLEN.md)
+
+### 6. Forecast Collector (`services/forecast-collector`)
+**Type:** Cloud Run Job (Batch)
+**Role:** Fetches the hourly forecast every 6 hours and detects pressure-drop alerts. The only producer of `Alert` records.
+*   **Architecture:** [ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md](../docs/ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md)
 
 ---
 
@@ -75,6 +80,7 @@ Use the root `Makefile` targets:
 | **Weather Collector** | `make wc-dev` | `make wc-build` |
 | **Pollen Provider** | `make pp-dev` | `make pp-build` |
 | **Pollen Collector** | `make pc-dev` | `make pc-build` |
+| **Forecast Collector** | `make fc-dev` | `make fc-build` |
 
 ### 4. Port Reference
 | Service | Port | Protocol |
