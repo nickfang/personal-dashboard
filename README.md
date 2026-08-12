@@ -5,12 +5,17 @@ This repository contains the frontend dashboard and backend services for the Per
 ## Project Structure
 
 - **`frontend/`**: The primary user interface built with **SvelteKit**.
+- **`clients/`**: Non-web clients.
+  - **`cli`**: A Bubbletea kiosk dashboard that renders the `dashboard-api` payload in the terminal.
 - **`services/`**: Backend microservices and jobs (primarily **Go**).
   - **`weather-collector`**: A Cloud Run Job that fetches weather data.
-  - **`weather-provider`**: A gRPC Service that serves weather data.
+  - **`forecast-collector`**: A Cloud Run Job that fetches the hourly forecast and detects pressure-drop alerts.
+  - **`weather-provider`**: A gRPC Service that serves weather, forecast, and alert data.
   - **`pollen-collector`**: A Cloud Run Job that fetches pollen data from the Google Pollen API.
   - **`pollen-provider`**: A gRPC Service that serves pollen/allergy risk data.
   - **`dashboard-api`**: An HTTP Aggregator (BFF) that talks to internal gRPC services.
+  - **`shared`**: Shared Go module (logging, config, locations, Firestore constants, the `Alert` contract).
+  - **`protos`**: Protobuf definitions for the internal gRPC services.
 - **`infra/`**: Terraform configuration for GCP infrastructure (modules + per-environment roots).
 
 ## Getting Started
