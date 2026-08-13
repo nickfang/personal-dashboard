@@ -16,8 +16,8 @@ import (
 // depends on so the constructor's parameter list distinguishes what the
 // service talks to from how it is configured.
 type Config struct {
-	HorizonHours int         // FORECAST_HORIZON_HOURS: how many forecast hours to request
-	Alert        AlertConfig // Pressure-drop detection thresholds
+	HorizonHours int             // FORECAST_HORIZON_HOURS: how many forecast hours to request
+	Detection    DetectionConfig // Pressure-drop detection thresholds
 }
 
 // CollectorService orchestrates the forecast collection flow.
@@ -53,7 +53,7 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 	}
 	// Detection is pure and runs once; the merge against stored alerts runs
 	// inside the repository's transaction (it may retry on contention).
-	detected := DetectPressureAlerts(location.ID, points, s.cfg.Alert, run.IssuedAt)
+	detected := DetectPressureAlerts(location.ID, points, s.cfg.Detection, run.IssuedAt)
 	merge := func(prev []shared.Alert) []shared.Alert {
 		return shared.MergeAlerts(prev, detected, run.IssuedAt)
 	}

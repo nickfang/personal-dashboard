@@ -16,7 +16,7 @@ import (
 var testLocation = shared.Location{ID: "test-loc", Lat: 30.0, Long: -97.0}
 
 func testConfig() Config {
-	return Config{HorizonHours: 72, Alert: DefaultAlertConfig()}
+	return Config{HorizonHours: 72, Detection: DefaultDetectionConfig()}
 }
 
 func happyHours() []api.ForecastHour {

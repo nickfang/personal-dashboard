@@ -42,7 +42,7 @@ func failingFetcher() *testutil.MockFetcher {
 }
 
 func testConfig() service.Config {
-	return service.Config{HorizonHours: 72, Alert: service.DefaultAlertConfig()}
+	return service.Config{HorizonHours: 72, Detection: service.DefaultDetectionConfig()}
 }
 
 var testLocations = []shared.Location{

@@ -32,7 +32,7 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
         │   │   ├── collector_test.go    # Orchestration, alert-wiring, delivery-gate, failure-path tests
         │   │   ├── convert.go           # CtoF(), MapToForecastPoint(), MapRun()
         │   │   ├── convert_test.go      # Mapping + invalid-hour rejection tests
-        │   │   ├── detect.go            # AlertConfig + DetectPressureAlerts()
+        │   │   ├── detect.go            # DetectionConfig + DetectPressureAlerts()
         │   │   └── detect_test.go       # Window sliding, episode coalescing, severity, tolerance
         │   ├── repository/
         │   │   ├── writer.go            # Writer interface + MergeFunc + MarkNotified + Firestore implementation
@@ -110,7 +110,7 @@ Detection is inline in the collector — the analog of the Weather Collector's p
 
 ### Configuration
 
-Thresholds are environment-tunable so they can be adjusted without a code change. Defaults come from `DefaultAlertConfig()` and are set explicitly in Terraform (`infra/staging/main.tf`, `infra/prod/main.tf`); an unset or invalid value falls back to the default with a warning.
+Thresholds are environment-tunable so they can be adjusted without a code change. Defaults come from `DefaultDetectionConfig()` and are set explicitly in Terraform (`infra/staging/main.tf`, `infra/prod/main.tf`); an unset or invalid value falls back to the default with a warning.
 
 | Env Var | Default | Meaning |
 |---------|---------|---------|

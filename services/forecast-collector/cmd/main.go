@@ -31,13 +31,13 @@ func main() {
 		slog.Error("Missing required env vars", "vars", "GOOGLE_MAPS_API_KEY, GCP_PROJECT_ID")
 		os.Exit(1)
 	}
-	alertCfg := service.DefaultAlertConfig()
-	alertCfg.DropThresholdMb = envFloat("PRESSURE_DROP_MB", alertCfg.DropThresholdMb)
-	alertCfg.SevereThresholdMb = envFloat("PRESSURE_SEVERE_MB", alertCfg.SevereThresholdMb)
-	alertCfg.WindowHours = envInt("PRESSURE_WINDOW_HOURS", alertCfg.WindowHours)
+	detectionCfg := service.DefaultDetectionConfig()
+	detectionCfg.DropThresholdMb = envFloat("PRESSURE_DROP_MB", detectionCfg.DropThresholdMb)
+	detectionCfg.SevereThresholdMb = envFloat("PRESSURE_SEVERE_MB", detectionCfg.SevereThresholdMb)
+	detectionCfg.WindowHours = envInt("PRESSURE_WINDOW_HOURS", detectionCfg.WindowHours)
 	cfg := service.Config{
 		HorizonHours: envInt("FORECAST_HORIZON_HOURS", defaultHorizonHours),
-		Alert:        alertCfg,
+		Detection:    detectionCfg,
 	}
 
 	ctx := context.Background()
