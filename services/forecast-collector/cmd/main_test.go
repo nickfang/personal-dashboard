@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/api"
-	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/service"
 	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/testutil"
 	"github.com/nickfang/personal-dashboard/services/shared"
+	"github.com/nickfang/personal-dashboard/services/shared/notify"
 )
 
 func happyHour() api.ForecastHour {
@@ -30,14 +30,7 @@ func happyFetcher() *testutil.MockFetcher {
 }
 
 func happyWriter() *testutil.MockWriter {
-	return &testutil.MockWriter{
-		SaveRawFn: func(ctx context.Context, run repository.ForecastRun) error {
-			return nil
-		},
-		UpdateCacheFn: func(ctx context.Context, locationID string, run repository.ForecastRun, merge repository.MergeFunc) error {
-			return nil
-		},
-	}
+	return &testutil.MockWriter{}
 }
 
 func failingFetcher() *testutil.MockFetcher {
@@ -54,7 +47,7 @@ var testLocations = []shared.Location{
 }
 
 func TestCollectAll_AllLocationsSucceed(t *testing.T) {
-	collector := service.NewCollectorService(happyFetcher(), happyWriter(), 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(happyFetcher(), happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err != nil {
@@ -74,7 +67,7 @@ func TestCollectAll_PartialFailure(t *testing.T) {
 		},
 	}
 
-	collector := service.NewCollectorService(fetcher, happyWriter(), 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(fetcher, happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err != nil {
@@ -83,7 +76,7 @@ func TestCollectAll_PartialFailure(t *testing.T) {
 }
 
 func TestCollectAll_AllLocationsFail(t *testing.T) {
-	collector := service.NewCollectorService(failingFetcher(), happyWriter(), 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(failingFetcher(), happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err == nil {
@@ -92,7 +85,7 @@ func TestCollectAll_AllLocationsFail(t *testing.T) {
 }
 
 func TestCollectAll_EmptyLocations(t *testing.T) {
-	collector := service.NewCollectorService(happyFetcher(), happyWriter(), 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(happyFetcher(), happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, []shared.Location{})
 	if err == nil {
@@ -141,6 +134,41 @@ func TestEnvInt(t *testing.T) {
 			}
 			if got := envInt("TEST_HORIZON", 72); got != tt.want {
 				t.Errorf("envInt(%q) = %d, want %d", tt.value, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewSender(t *testing.T) {
+	const (
+		user     = "me@gmail.com"
+		password = "app-password"
+		to       = "you@gmail.com"
+	)
+	tests := []struct {
+		name                    string
+		enabled, user, pass, to string
+		wantSMTP                bool
+	}{
+		{name: "unset defaults to no delivery"},
+		{name: "disabled", enabled: "false", user: user, pass: password, to: to},
+		{name: "enabled and configured", enabled: "true", user: user, pass: password, to: to, wantSMTP: true},
+		{name: "missing password", enabled: "true", user: user, to: to},
+		{name: "missing user", enabled: "true", pass: password, to: to},
+		{name: "missing recipient", enabled: "true", user: user, pass: password},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("NOTIFY_ENABLED", tt.enabled)
+			t.Setenv("NOTIFY_SMTP_USER", tt.user)
+			t.Setenv("NOTIFY_SMTP_PASSWORD", tt.pass)
+			t.Setenv("NOTIFY_EMAIL_TO", tt.to)
+
+			// Anything short of fully configured must degrade to a no-op
+			// sender, not an error: the job still has to collect.
+			_, isSMTP := newSender().(*notify.SMTPSender)
+			if isSMTP != tt.wantSMTP {
+				t.Errorf("newSender() SMTP = %v, want %v", isSMTP, tt.wantSMTP)
 			}
 		})
 	}

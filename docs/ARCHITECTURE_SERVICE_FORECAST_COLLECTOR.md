@@ -28,18 +28,18 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
         │   │   ├── types.go             # Google Weather API forecast response types
         │   │   └── testdata/            # Recorded forecast_hours responses (2 pages)
         │   ├── service/
-        │   │   ├── collector.go         # CollectorService orchestration
-        │   │   ├── collector_test.go    # Orchestration, alert-wiring, failure-path tests
+        │   │   ├── collector.go         # CollectorService orchestration + alert delivery
+        │   │   ├── collector_test.go    # Orchestration, alert-wiring, delivery-gate, failure-path tests
         │   │   ├── convert.go           # CtoF(), MapToForecastPoint(), MapRun()
         │   │   ├── convert_test.go      # Mapping + invalid-hour rejection tests
         │   │   ├── detect.go            # AlertConfig + DetectPressureAlerts()
         │   │   └── detect_test.go       # Window sliding, episode coalescing, severity, tolerance
         │   ├── repository/
-        │   │   ├── writer.go            # Writer interface + MergeFunc + Firestore implementation
-        │   │   ├── writer_test.go       # buildCacheDoc() tests
+        │   │   ├── writer.go            # Writer interface + MergeFunc + MarkNotified + Firestore implementation
+        │   │   ├── writer_test.go       # buildCacheDoc() + applyNotifiedAt() tests
         │   │   └── types.go             # ForecastPoint, ForecastRun, ForecastCacheDoc
         │   └── testutil/
-        │       └── mocks.go             # MockFetcher, MockWriter
+        │       └── mocks.go             # MockFetcher, MockWriter, MockSender
         ├── Dockerfile
         └── go.mod
         ```
@@ -47,6 +47,7 @@ For platform-level details (Deployment, Terraform, Identity), see **[ARCHITECTUR
         *   Fetch the hourly forecast (default 72h horizon) from the Google Weather API.
         *   Detect pressure-drop alerts over the forecast.
         *   Perform "Dual-Write" to Firestore (Archive + Cache), merging alerts transactionally.
+        *   Deliver undelivered active alerts by email and record the delivery (section 5).
 
 2.  **Weather Provider (`services/weather-provider`)**
     *   **Role**: API Service (Reader).
@@ -120,6 +121,17 @@ Thresholds are environment-tunable so they can be adjusted without a code change
 
 Required (no default): `GOOGLE_MAPS_API_KEY`, `GCP_PROJECT_ID`.
 
+Alert delivery (section 5) is configured separately. `NOTIFY_ENABLED` is a plain env var so delivery can be killed per environment without touching secrets; the password is the only value that goes through Secret Manager, since anything in `env_vars` lands in Terraform state and the Cloud Run config in plaintext. A disabled switch, or any of the three values empty, yields a no-op sender rather than an error — the job has to keep collecting when delivery is unconfigured.
+
+| Env Var | Source | Default | Meaning |
+|---------|--------|---------|---------|
+| `NOTIFY_ENABLED` | `env_vars` | `false` | Master switch; delivery runs only when set to `true` |
+| `NOTIFY_SMTP_USER` | `env_vars` | *(unset)* | Gmail address; also the `From` |
+| `NOTIFY_SMTP_PASSWORD` | Secret Manager (`notify-smtp-password`) | *(unset)* | Google app password — requires 2-Step Verification on the account |
+| `NOTIFY_EMAIL_TO` | `env_vars` | *(unset)* | Recipient |
+
+Host and port are constants, not configuration: there is no second SMTP server to point at, and a wrong value would fail at delivery rather than at startup. Delivery is enabled in **both** environments — staging is separated by a `+staging` tagged recipient rather than by being switched off, so the delivery path is exercised before production.
+
 ## 5. Alert Lifecycle
 
 The `Alert` contract lives in `services/shared/alerts.go` and is deliberately **source-agnostic** — a future pollen-spike detector reuses the struct unchanged.
@@ -128,20 +140,47 @@ The `Alert` contract lives in `services/shared/alerts.go` and is deliberately **
 *   **Transactional merge**: Detection is pure and runs once in the service layer; the merge against stored alerts runs inside the repository's Firestore transaction via a `MergeFunc` closure, so it sees prior alert state atomically with the write that replaces it. This mirrors the Weather Collector's `AnalyzeFunc`. The merge *logic* is unit-tested in `services/shared/alerts_test.go`; the transaction wrapper itself is not covered, as it requires a live Firestore.
 *   **`MergeAlerts` rules**:
     *   Alerts whose window has fully passed are pruned.
-    *   A detected alert overlapping a stored one keeps the stored ID and updates its numbers. Matching picks the **greatest window overlap**.
-    *   A stored `resolved` alert that is detected again re-activates.
-    *   Stored alerts no longer detected become `resolved`.
+    *   A detected alert overlapping a stored one keeps the stored ID and delivery record, and updates its numbers. Matching picks the **greatest window overlap**.
+    *   A stored `resolved` alert that is detected again re-activates, keeping its delivery record.
+    *   Stored alerts no longer detected become `resolved`, keeping their delivery record.
     *   Brand-new alerts come through as `active`.
 
-### Status model
+### Status and delivery are two separate facts
 
-| Status | Meaning | Rendered by clients |
-|--------|---------|---------------------|
-| `active` | Condition detected and not yet delivered | Yes |
-| `resolved` | Previously detected, no longer in the forecast | No |
-| `notified` | Delivered to the user | No |
+`Status` says whether the condition is in the forecast. `NotifiedAt` says whether the user has been told. Collapsing them into a single field would make a delivered alert vanish from the dashboard while the drop is still hours away, and would lose the delivery record whenever forecast noise briefly resolved an alert that was still building.
 
-> **Note:** `notified` currently has **no producer**. It — along with the escalate-if-worse guard (`AlertEscalationStepMb = 1.0`), which only returns a `notified` alert to `active` when the predicted drop worsens by at least 1 mb or the severity upgrades to `severe` — is scaffolding for the deferred notification delivery work in [Issue #68](https://github.com/nickfang/personal-dashboard/issues/68). Until a notifier exists, no alert reaches the `notified` state at runtime and that branch of `mergedStatus` is unreachable in production.
+| Field | Values | Meaning |
+|-------|--------|---------|
+| `status` | `active` | Condition is in the current forecast — clients render these |
+| | `resolved` | Previously detected, no longer in the forecast — not rendered |
+| `notified_at` | timestamp | When the alert was delivered |
+| | zero | Never delivered |
+
+**Delivery gate:** `Status == active && NotifiedAt.IsZero()`.
+
+**Escalate-if-worse** (`mergedNotifiedAt`): a delivered alert has its `NotifiedAt` **cleared** — re-arming delivery through that same single gate — when the predicted drop worsens by at least `AlertEscalationStepMb` (1.0 mb) or its severity upgrades to `severe`. Otherwise the stored `NotifiedAt` carries forward, so re-forecasting the same episode does not re-notify.
+
+This keys off the timestamp rather than a status value on purpose. An alert can flap — delivered, resolved by one noisy run near the threshold, then detected again. Keying escalation off the status string would miss an escalation that follows a flap, silently dropping a warning that had since upgraded to `severe`. `TestMergeAlerts_FlapDoesNotRedeliver` and `TestMergeAlerts_EscalationAfterFlapRearmsDelivery` pin the pair.
+
+### Delivery
+
+Alerts are delivered **inline from this collector**, immediately after the cache write commits — no Pub/Sub, no separate notifier service. Issue [#68](https://github.com/nickfang/personal-dashboard/issues/68) originally specified a Pub/Sub → notifier design; for a 6-hour cron over 3 locations delivering to one person, a new service, module, and CI pipeline (written twice across staging and prod) was not worth the decoupling. The seam that would allow it later is `notify.Sender`.
+
+*   **Channel**: email over Gmail SMTP (`smtp.gmail.com:587`), authenticating with a Google app password held in Secret Manager. Chosen because it needs no new vendor account and `net/smtp` is stdlib, so `services/shared/go.mod` stays dependency-free.
+*   **Package**: `services/shared/notify` — not `forecast-collector/internal/`, because Go's `internal` rule would block a pollen detector ([#69](https://github.com/nickfang/personal-dashboard/issues/69)) from reusing it. `Sender` is a one-method interface; adding SMS for `severe` alerts later is a new file plus a routing decision.
+*   **Message shape**: the subject *is* the notification — a phone lock screen shows little else — so it carries severity, location, and the formatted delta: `Pressure drop (severe) - house-nick: Thu 2 PM  -6.2 mb/3h  -8.1/6h`. The body carries the full record. The subject is kept ASCII; non-ASCII would require RFC 2047 encoded-word wrapping.
+*   **One email per alert.** A run can emit several (3 locations × possibly multiple episodes). Batching would be quieter but makes "which IDs delivered" ambiguous on partial failure, which is exactly what marking needs.
+*   **Not `smtp.SendMail`**: `net/smtp` is frozen and context-unaware — `SendMail` sets no deadline and dials bare, so a hung connection would block the job until Cloud Run's task timeout. The client is built explicitly with the connection deadline derived from `ctx`, and the dialer is a struct field so tests can substitute a fake listener.
+
+**Ordering: deliver, then mark.** `UpdateCache` returns the merged alert set it committed (returned explicitly rather than captured through the `MergeFunc` closure, because Firestore retries transactions and the closure can run more than once). `Collect` sends every alert matching the gate, then calls `MarkNotified` with the IDs that delivered. If marking fails, the alert simply re-delivers next run; the inverse ordering would risk recording a delivery that never happened, which is the worse failure for an alerting system.
+
+`MarkNotified` runs its own transaction, matches alerts by ID so a concurrent run cannot be clobbered, and updates only the `alerts` field — `points` carries 72 forecast hours and there is no reason to rewrite it. It never touches `Status`.
+
+**No in-process retry.** A failed send leaves `NotifiedAt` zero, so the 6-hour cron *is* the retry — and unlike an in-process loop it survives the job being killed. A delivery failure for one location is logged at `slog.Error` and does not fail the run.
+
+> **Accepted limitation:** a persistently unreachable SMTP endpoint degrades silently — the job keeps reporting success while no alert arrives. There is no alerting on the alerter. Deliberate for a personal project.
+
+> **No quiet hours.** Nothing defers an overnight alert; a 3 AM `severe` drop sends a 3 AM email. Phone-level Do Not Disturb is the mitigation.
 
 ## 6. External API
 

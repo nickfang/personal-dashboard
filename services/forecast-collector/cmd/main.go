@@ -14,6 +14,7 @@ import (
 	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/service"
 	"github.com/nickfang/personal-dashboard/services/shared"
+	"github.com/nickfang/personal-dashboard/services/shared/notify"
 )
 
 const defaultHorizonHours = 72
@@ -46,11 +47,33 @@ func main() {
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	fetcher := api.New(httpClient)
-	collector := service.NewCollectorService(fetcher, writer, horizonHours, alertCfg)
+	collector := service.NewCollectorService(fetcher, writer, newSender(), horizonHours, alertCfg)
 	if err := collectAll(ctx, apiKey, collector, shared.Locations); err != nil {
 		slog.Error("Collection failed", "error", err)
 		os.Exit(1)
 	}
+}
+
+// newSender builds the alert delivery sender from the environment.
+//
+// A disabled switch or any missing value yields a NopSender rather than an
+// error: the job has to keep collecting when delivery is unconfigured, which
+// is the normal case in local development.
+func newSender() notify.Sender {
+	if os.Getenv("NOTIFY_ENABLED") != "true" {
+		slog.Info("Alert delivery disabled", "reason", "NOTIFY_ENABLED not true")
+		return notify.NopSender{}
+	}
+	user := os.Getenv("NOTIFY_SMTP_USER")
+	password := os.Getenv("NOTIFY_SMTP_PASSWORD")
+	to := os.Getenv("NOTIFY_EMAIL_TO")
+	if user == "" || password == "" || to == "" {
+		slog.Warn("Alert delivery enabled but not configured, dropping notifications",
+			"vars", "NOTIFY_SMTP_USER, NOTIFY_SMTP_PASSWORD, NOTIFY_EMAIL_TO")
+		return notify.NopSender{}
+	}
+	slog.Info("Alert delivery enabled", "from", user, "to", to)
+	return notify.NewSMTPSender(user, password, to)
 }
 
 // envInt reads an integer env var, falling back to a default when unset or invalid.

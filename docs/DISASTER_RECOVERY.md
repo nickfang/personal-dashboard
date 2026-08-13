@@ -48,7 +48,15 @@ terraform apply
 echo -n "YOUR_API_KEY" | gcloud secrets versions add google-maps-api-key --data-file=- --project=<project_id>
 ```
 
-The key is used by the weather-collector (`weather.googleapis.com`) and pollen-collector (`pollen.googleapis.com`) Cloud Run jobs.
+The key is used by the weather-collector (`weather.googleapis.com`), pollen-collector (`pollen.googleapis.com`), and forecast-collector Cloud Run jobs.
+
+3. Add the alert-delivery app password:
+
+```bash
+echo -n "YOUR_APP_PASSWORD" | gcloud secrets versions add notify-smtp-password --data-file=- --project=<project_id>
+```
+
+Generate it at **Google Account → Security → App passwords**; this requires 2-Step Verification, and Gmail SMTP rejects ordinary account passwords. Until it is set, the forecast-collector still collects and stores alerts — only delivery fails, logged per run.
 
 ### 5. Complete Terraform Apply
 

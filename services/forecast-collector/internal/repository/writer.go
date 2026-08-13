@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/nickfang/personal-dashboard/services/shared"
@@ -18,7 +19,8 @@ type MergeFunc func(prev []shared.Alert) []shared.Alert
 // Writer defines the interface for writing forecast data to storage.
 type Writer interface {
 	SaveRaw(ctx context.Context, run ForecastRun) error
-	UpdateCache(ctx context.Context, locationID string, run ForecastRun, merge MergeFunc) error
+	UpdateCache(ctx context.Context, locationID string, run ForecastRun, merge MergeFunc) ([]shared.Alert, error)
+	MarkNotified(ctx context.Context, locationID string, alertIDs []string, at time.Time) error
 }
 
 type FirestoreWriter struct {
@@ -42,12 +44,19 @@ func (fw *FirestoreWriter) SaveRaw(ctx context.Context, run ForecastRun) error {
 	return err
 }
 
-// UpdateCache replaces the location's cache doc with the latest forecast run.
-// The prior doc is read inside the transaction so alert merging sees the
-// stored alert state atomically with the write that replaces it.
-func (fw *FirestoreWriter) UpdateCache(ctx context.Context, locationID string, run ForecastRun, merge MergeFunc) error {
+// UpdateCache replaces the location's cache doc with the latest forecast run
+// and returns the merged alert set that was committed. The prior doc is read
+// inside the transaction so alert merging sees the stored alert state
+// atomically with the write that replaces it.
+//
+// The committed set is returned explicitly rather than captured through the
+// MergeFunc closure: Firestore retries transactions, so the closure can run
+// more than once and relying on last-write-wins there would be subtle in a
+// way this is not.
+func (fw *FirestoreWriter) UpdateCache(ctx context.Context, locationID string, run ForecastRun, merge MergeFunc) ([]shared.Alert, error) {
 	cacheRef := fw.client.Collection(shared.ForecastCacheCollection).Doc(locationID)
-	return fw.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+	var committed []shared.Alert
+	err := fw.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		var prev ForecastCacheDoc
 		doc, err := tx.Get(cacheRef)
 		if status.Code(err) == codes.NotFound {
@@ -57,8 +66,65 @@ func (fw *FirestoreWriter) UpdateCache(ctx context.Context, locationID string, r
 		} else if err := doc.DataTo(&prev); err != nil {
 			return err
 		}
-		return tx.Set(cacheRef, buildCacheDoc(run, merge(prev.Alerts)))
+		merged := merge(prev.Alerts)
+		if err := tx.Set(cacheRef, buildCacheDoc(run, merged)); err != nil {
+			return err
+		}
+		committed = merged
+		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+	return committed, nil
+}
+
+// MarkNotified records delivery against the listed alert IDs.
+//
+// It re-reads the cache doc inside a transaction and matches by ID rather
+// than by position, so a concurrent collection run that reordered or replaced
+// the alert set cannot be clobbered. Status is untouched: it tracks whether
+// the condition is present, which delivery does not change.
+//
+// Only the alerts field is written — points carries 72 forecast hours and
+// there is no reason to rewrite it.
+func (fw *FirestoreWriter) MarkNotified(ctx context.Context, locationID string, alertIDs []string, at time.Time) error {
+	if len(alertIDs) == 0 {
+		return nil
+	}
+	cacheRef := fw.client.Collection(shared.ForecastCacheCollection).Doc(locationID)
+	return fw.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		doc, err := tx.Get(cacheRef)
+		if status.Code(err) == codes.NotFound {
+			return fmt.Errorf("forecast cache doc for %s not found", locationID)
+		} else if err != nil {
+			return fmt.Errorf("reading forecast cache doc: %w", err)
+		}
+		var cached ForecastCacheDoc
+		if err := doc.DataTo(&cached); err != nil {
+			return err
+		}
+		return tx.Update(cacheRef, []firestore.Update{
+			{Path: "alerts", Value: applyNotifiedAt(cached.Alerts, alertIDs, at)},
+		})
+	})
+}
+
+// applyNotifiedAt stamps at onto the alerts whose IDs are listed, leaving
+// every other alert as stored.
+func applyNotifiedAt(alerts []shared.Alert, alertIDs []string, at time.Time) []shared.Alert {
+	wanted := make(map[string]bool, len(alertIDs))
+	for _, id := range alertIDs {
+		wanted[id] = true
+	}
+	updated := make([]shared.Alert, len(alerts))
+	copy(updated, alerts)
+	for i := range updated {
+		if wanted[updated[i].ID] {
+			updated[i].NotifiedAt = at
+		}
+	}
+	return updated
 }
 
 // buildCacheDoc derives the cache document from a forecast run and the

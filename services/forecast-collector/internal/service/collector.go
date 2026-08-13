@@ -3,24 +3,33 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/api"
 	"github.com/nickfang/personal-dashboard/services/forecast-collector/internal/repository"
 	"github.com/nickfang/personal-dashboard/services/shared"
+	"github.com/nickfang/personal-dashboard/services/shared/notify"
 )
 
 // CollectorService orchestrates the forecast collection flow.
 type CollectorService struct {
 	fetcher      api.Fetcher
 	writer       repository.Writer
+	sender       notify.Sender
 	horizonHours int
 	alertCfg     AlertConfig
 }
 
 // NewCollectorService creates a new CollectorService with injected dependencies.
-func NewCollectorService(fetcher api.Fetcher, writer repository.Writer, horizonHours int, alertCfg AlertConfig) *CollectorService {
-	return &CollectorService{fetcher: fetcher, writer: writer, horizonHours: horizonHours, alertCfg: alertCfg}
+func NewCollectorService(fetcher api.Fetcher, writer repository.Writer, sender notify.Sender, horizonHours int, alertCfg AlertConfig) *CollectorService {
+	return &CollectorService{
+		fetcher:      fetcher,
+		writer:       writer,
+		sender:       sender,
+		horizonHours: horizonHours,
+		alertCfg:     alertCfg,
+	}
 }
 
 // Collect fetches the forecast for a location, maps it, and writes to storage.
@@ -47,8 +56,41 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 	merge := func(prev []shared.Alert) []shared.Alert {
 		return shared.MergeAlerts(prev, detected, run.IssuedAt)
 	}
-	if err := s.writer.UpdateCache(ctx, location.ID, run, merge); err != nil {
+	committed, err := s.writer.UpdateCache(ctx, location.ID, run, merge)
+	if err != nil {
 		return fmt.Errorf("updating forecast cache for %s: %w", location.ID, err)
 	}
+	// Delivery runs after the cache write commits, and its failures are
+	// logged rather than returned: a notification problem should not make a
+	// successful collection look like a failed one.
+	s.deliver(ctx, location.ID, committed, run.IssuedAt)
 	return nil
+}
+
+// deliver sends every alert that is currently in the forecast and has not
+// been delivered, then records which ones went out.
+//
+// Order matters: deliver, then mark. If marking fails the alert re-delivers
+// on the next run, whereas marking first risks recording a delivery that
+// never happened — the worse failure for an alerting system.
+func (s *CollectorService) deliver(ctx context.Context, locationID string, alerts []shared.Alert, at time.Time) {
+	var delivered []string
+	for _, a := range alerts {
+		if a.Status != shared.AlertStatusActive || !a.NotifiedAt.IsZero() {
+			continue
+		}
+		if err := s.sender.Send(ctx, notify.FromAlert(a)); err != nil {
+			slog.Error("Failed to deliver alert", "location", locationID, "alert", a.ID, "error", err)
+			continue
+		}
+		slog.Info("Delivered alert", "location", locationID, "alert", a.ID, "severity", a.Severity)
+		delivered = append(delivered, a.ID)
+	}
+	if len(delivered) == 0 {
+		return
+	}
+	if err := s.writer.MarkNotified(ctx, locationID, delivered, at); err != nil {
+		// The alerts will re-deliver on the next run.
+		slog.Error("Failed to mark alerts as notified", "location", locationID, "alerts", delivered, "error", err)
+	}
 }
