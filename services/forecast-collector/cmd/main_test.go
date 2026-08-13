@@ -41,13 +41,17 @@ func failingFetcher() *testutil.MockFetcher {
 	}
 }
 
+func testConfig() service.Config {
+	return service.Config{HorizonHours: 72, Alert: service.DefaultAlertConfig()}
+}
+
 var testLocations = []shared.Location{
 	{ID: "house-nick", Lat: 30.0, Long: -97.0},
 	{ID: "house-nita", Lat: 31.0, Long: -98.0},
 }
 
 func TestCollectAll_AllLocationsSucceed(t *testing.T) {
-	collector := service.NewCollectorService(happyFetcher(), happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(happyFetcher(), happyWriter(), notify.NopSender{}, testConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err != nil {
@@ -67,7 +71,7 @@ func TestCollectAll_PartialFailure(t *testing.T) {
 		},
 	}
 
-	collector := service.NewCollectorService(fetcher, happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(fetcher, happyWriter(), notify.NopSender{}, testConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err != nil {
@@ -76,7 +80,7 @@ func TestCollectAll_PartialFailure(t *testing.T) {
 }
 
 func TestCollectAll_AllLocationsFail(t *testing.T) {
-	collector := service.NewCollectorService(failingFetcher(), happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(failingFetcher(), happyWriter(), notify.NopSender{}, testConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, testLocations)
 	if err == nil {
@@ -85,7 +89,7 @@ func TestCollectAll_AllLocationsFail(t *testing.T) {
 }
 
 func TestCollectAll_EmptyLocations(t *testing.T) {
-	collector := service.NewCollectorService(happyFetcher(), happyWriter(), notify.NopSender{}, 72, service.DefaultAlertConfig())
+	collector := service.NewCollectorService(happyFetcher(), happyWriter(), notify.NopSender{}, testConfig())
 
 	err := collectAll(context.Background(), "test-key", collector, []shared.Location{})
 	if err == nil {

@@ -31,11 +31,14 @@ func main() {
 		slog.Error("Missing required env vars", "vars", "GOOGLE_MAPS_API_KEY, GCP_PROJECT_ID")
 		os.Exit(1)
 	}
-	horizonHours := envInt("FORECAST_HORIZON_HOURS", defaultHorizonHours)
 	alertCfg := service.DefaultAlertConfig()
 	alertCfg.DropThresholdMb = envFloat("PRESSURE_DROP_MB", alertCfg.DropThresholdMb)
 	alertCfg.SevereThresholdMb = envFloat("PRESSURE_SEVERE_MB", alertCfg.SevereThresholdMb)
 	alertCfg.WindowHours = envInt("PRESSURE_WINDOW_HOURS", alertCfg.WindowHours)
+	cfg := service.Config{
+		HorizonHours: envInt("FORECAST_HORIZON_HOURS", defaultHorizonHours),
+		Alert:        alertCfg,
+	}
 
 	ctx := context.Background()
 	writer, err := repository.NewFirestoreWriter(ctx, projectID)
@@ -47,7 +50,7 @@ func main() {
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	fetcher := api.New(httpClient)
-	collector := service.NewCollectorService(fetcher, writer, newSender(), horizonHours, alertCfg)
+	collector := service.NewCollectorService(fetcher, writer, newSender(), cfg)
 	if err := collectAll(ctx, apiKey, collector, shared.Locations); err != nil {
 		slog.Error("Collection failed", "error", err)
 		os.Exit(1)

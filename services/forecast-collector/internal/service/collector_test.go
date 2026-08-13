@@ -15,6 +15,10 @@ import (
 
 var testLocation = shared.Location{ID: "test-loc", Lat: 30.0, Long: -97.0}
 
+func testConfig() Config {
+	return Config{HorizonHours: 72, Alert: DefaultAlertConfig()}
+}
+
 func happyHours() []api.ForecastHour {
 	return []api.ForecastHour{validHour()}
 }
@@ -44,7 +48,7 @@ func TestCollect_SavesRawThenCache(t *testing.T) {
 		},
 	}
 
-	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, 72, DefaultAlertConfig())
+	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err != nil {
 		t.Fatalf("Collect() returned error: %v", err)
 	}
@@ -93,7 +97,7 @@ func TestCollect_WiresDetectedAlertsIntoMerge(t *testing.T) {
 		},
 	}
 
-	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, 72, DefaultAlertConfig())
+	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err != nil {
 		t.Fatalf("Collect() returned error: %v", err)
 	}
@@ -129,7 +133,7 @@ func TestCollect_FetchErrorPropagates(t *testing.T) {
 		},
 	}
 
-	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, 72, DefaultAlertConfig())
+	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err == nil {
 		t.Fatal("Collect() should propagate fetch errors")
 	}
@@ -153,7 +157,7 @@ func TestCollect_AllPointsInvalidFails(t *testing.T) {
 		},
 	}
 
-	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, 72, DefaultAlertConfig())
+	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err == nil {
 		t.Fatal("Collect() should fail when every forecast hour is invalid")
 	}
@@ -175,7 +179,7 @@ func TestCollect_SaveRawErrorPropagates(t *testing.T) {
 		},
 	}
 
-	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, 72, DefaultAlertConfig())
+	collector := NewCollectorService(fetcher, writer, &testutil.MockSender{}, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err == nil {
 		t.Fatal("Collect() should propagate SaveRaw errors")
 	}
@@ -225,7 +229,7 @@ func TestCollect_DeliversOnlyUndeliveredActiveAlerts(t *testing.T) {
 	var marked []string
 	sender := &testutil.MockSender{}
 
-	collector := NewCollectorService(happyFetcherFor(t), deliveryWriter(committed, &marked, nil), sender, 72, DefaultAlertConfig())
+	collector := NewCollectorService(happyFetcherFor(t), deliveryWriter(committed, &marked, nil), sender, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err != nil {
 		t.Fatalf("Collect() returned error: %v", err)
 	}
@@ -282,7 +286,7 @@ func TestCollect_EscalationClearingNotifiedAtRedelivers(t *testing.T) {
 		},
 	}
 
-	collector := NewCollectorService(fetcher, writer, sender, 72, DefaultAlertConfig())
+	collector := NewCollectorService(fetcher, writer, sender, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err != nil {
 		t.Fatalf("Collect() returned error: %v", err)
 	}
@@ -300,7 +304,7 @@ func TestCollect_SendFailureDoesNotFailRun(t *testing.T) {
 	var marked []string
 	sender := &testutil.MockSender{Err: fmt.Errorf("smtp unavailable")}
 
-	collector := NewCollectorService(happyFetcherFor(t), deliveryWriter(committed, &marked, nil), sender, 72, DefaultAlertConfig())
+	collector := NewCollectorService(happyFetcherFor(t), deliveryWriter(committed, &marked, nil), sender, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err != nil {
 		t.Fatalf("Collect() should not fail when delivery fails, got: %v", err)
 	}
@@ -315,7 +319,7 @@ func TestCollect_MarkNotifiedFailureDoesNotFailRun(t *testing.T) {
 	sender := &testutil.MockSender{}
 
 	writer := deliveryWriter(committed, &marked, fmt.Errorf("firestore unavailable"))
-	collector := NewCollectorService(happyFetcherFor(t), writer, sender, 72, DefaultAlertConfig())
+	collector := NewCollectorService(happyFetcherFor(t), writer, sender, testConfig())
 	if err := collector.Collect(context.Background(), "test-key", testLocation); err != nil {
 		t.Fatalf("Collect() should not fail when marking fails, got: %v", err)
 	}

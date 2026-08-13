@@ -12,29 +12,30 @@ import (
 	"github.com/nickfang/personal-dashboard/services/shared/notify"
 )
 
+// Config holds the collector's tuning, kept separate from the interfaces it
+// depends on so the constructor's parameter list distinguishes what the
+// service talks to from how it is configured.
+type Config struct {
+	HorizonHours int         // FORECAST_HORIZON_HOURS: how many forecast hours to request
+	Alert        AlertConfig // Pressure-drop detection thresholds
+}
+
 // CollectorService orchestrates the forecast collection flow.
 type CollectorService struct {
-	fetcher      api.Fetcher
-	writer       repository.Writer
-	sender       notify.Sender
-	horizonHours int
-	alertCfg     AlertConfig
+	fetcher api.Fetcher
+	writer  repository.Writer
+	sender  notify.Sender
+	cfg     Config
 }
 
 // NewCollectorService creates a new CollectorService with injected dependencies.
-func NewCollectorService(fetcher api.Fetcher, writer repository.Writer, sender notify.Sender, horizonHours int, alertCfg AlertConfig) *CollectorService {
-	return &CollectorService{
-		fetcher:      fetcher,
-		writer:       writer,
-		sender:       sender,
-		horizonHours: horizonHours,
-		alertCfg:     alertCfg,
-	}
+func NewCollectorService(fetcher api.Fetcher, writer repository.Writer, sender notify.Sender, cfg Config) *CollectorService {
+	return &CollectorService{fetcher: fetcher, writer: writer, sender: sender, cfg: cfg}
 }
 
 // Collect fetches the forecast for a location, maps it, and writes to storage.
 func (s *CollectorService) Collect(ctx context.Context, apiKey string, location shared.Location) error {
-	hours, err := s.fetcher.Fetch(apiKey, location, s.horizonHours)
+	hours, err := s.fetcher.Fetch(apiKey, location, s.cfg.HorizonHours)
 	if err != nil {
 		return fmt.Errorf("fetching forecast for %s: %w", location.ID, err)
 	}
@@ -52,7 +53,7 @@ func (s *CollectorService) Collect(ctx context.Context, apiKey string, location 
 	}
 	// Detection is pure and runs once; the merge against stored alerts runs
 	// inside the repository's transaction (it may retry on contention).
-	detected := DetectPressureAlerts(location.ID, points, s.alertCfg, run.IssuedAt)
+	detected := DetectPressureAlerts(location.ID, points, s.cfg.Alert, run.IssuedAt)
 	merge := func(prev []shared.Alert) []shared.Alert {
 		return shared.MergeAlerts(prev, detected, run.IssuedAt)
 	}
