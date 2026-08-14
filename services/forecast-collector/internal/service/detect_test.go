@@ -24,7 +24,7 @@ func hourlyPoints(pressures ...float64) []repository.ForecastPoint {
 }
 
 func detect(points []repository.ForecastPoint) []shared.Alert {
-	return DetectPressureAlerts("house-nick", points, DefaultAlertConfig(), detectStart)
+	return DetectPressureAlerts("house-nick", points, DefaultDetectionConfig(), detectStart)
 }
 
 func TestDetect_MonotonicDropProducesOneWarning(t *testing.T) {

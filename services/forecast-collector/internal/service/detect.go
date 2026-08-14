@@ -22,20 +22,20 @@ var displayLocation = func() *time.Location {
 	return loc
 }()
 
-// AlertConfig holds the pressure-drop detection thresholds, sourced from env
+// DetectionConfig holds the pressure-drop detection thresholds, sourced from env
 // so they can be tuned without a code change.
-type AlertConfig struct {
+type DetectionConfig struct {
 	DropThresholdMb   float64 // PRESSURE_DROP_MB: warning at this drop per window
 	SevereThresholdMb float64 // PRESSURE_SEVERE_MB: severe at this drop per window
 	WindowHours       int     // PRESSURE_WINDOW_HOURS: detection window length
 }
 
-// DefaultAlertConfig matches the values deployed via Terraform.
-func DefaultAlertConfig() AlertConfig {
-	return AlertConfig{DropThresholdMb: 5, SevereThresholdMb: 10, WindowHours: 3}
+// DefaultDetectionConfig matches the values deployed via Terraform.
+func DefaultDetectionConfig() DetectionConfig {
+	return DetectionConfig{DropThresholdMb: 5, SevereThresholdMb: 10, WindowHours: 3}
 }
 
-func (c AlertConfig) ruleID() string {
+func (c DetectionConfig) ruleID() string {
 	return fmt.Sprintf("pressure-drop-%dh", c.WindowHours)
 }
 
@@ -50,7 +50,7 @@ type qualifyingWindow struct {
 // coalesces overlapping qualifying windows into one alert per continuous
 // drop episode. The alert's Value is the steepest single-window delta and
 // its window spans the whole episode.
-func DetectPressureAlerts(locationID string, points []repository.ForecastPoint, cfg AlertConfig, now time.Time) []shared.Alert {
+func DetectPressureAlerts(locationID string, points []repository.ForecastPoint, cfg DetectionConfig, now time.Time) []shared.Alert {
 	if len(points) < 2 || cfg.WindowHours <= 0 || cfg.DropThresholdMb <= 0 {
 		return nil
 	}
@@ -108,7 +108,7 @@ func pointNearOffset(points []repository.ForecastPoint, i int, offset time.Durat
 }
 
 // buildAlert collapses one episode's qualifying windows into a single Alert.
-func buildAlert(locationID string, points []repository.ForecastPoint, episode []qualifyingWindow, cfg AlertConfig, now time.Time) shared.Alert {
+func buildAlert(locationID string, points []repository.ForecastPoint, episode []qualifyingWindow, cfg DetectionConfig, now time.Time) shared.Alert {
 	steepest := episode[0]
 	for _, w := range episode[1:] {
 		if w.delta < steepest.delta {
@@ -141,7 +141,7 @@ func buildAlert(locationID string, points []repository.ForecastPoint, episode []
 // where the steepest drop begins: "Thu 2 PM  -6.2 mb/3h  -8.1/6h". The
 // extended part covers twice the window and is omitted when the forecast
 // horizon doesn't reach that far.
-func buildMessage(points []repository.ForecastPoint, steepest qualifyingWindow, cfg AlertConfig) string {
+func buildMessage(points []repository.ForecastPoint, steepest qualifyingWindow, cfg DetectionConfig) string {
 	anchor := points[steepest.startIdx]
 	msg := fmt.Sprintf("%s  %+.1f mb/%dh",
 		anchor.ValidTime.In(displayLocation).Format("Mon 3 PM"), steepest.delta, cfg.WindowHours)

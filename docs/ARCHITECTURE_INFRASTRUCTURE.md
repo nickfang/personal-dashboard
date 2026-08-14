@@ -39,9 +39,9 @@ flowchart TD
         DB_PolRaw[("pollen_raw<br/>(Collection)")]:::done
     end
 
-    subgraph Notify ["Alert Delivery (Issue #68)"]
+    subgraph Notify ["Alert Delivery"]
         direction TB
-        N_Notif["Notifier<br/>(text / email)"]:::future
+        N_Mail["Gmail SMTP<br/>(smtp.gmail.com:587)"]:::external
     end
 
     %% Data Flow (arrows follow data direction)
@@ -62,18 +62,20 @@ flowchart TD
     J_Poll -- "Writes" --> DB_PolCache
     J_Poll -- "Writes" --> DB_PolRaw
 
-    J_Fore -.-> N_Notif
+    J_Fore -- "Sends alert email<br/>(inline, after cache write)" --> N_Mail
 
     %% Styling
     classDef done fill:#bbf,stroke:#333,stroke-width:2px,color:black;
     classDef future fill:#fff,stroke:#ccc,stroke-width:1px,color:#999,stroke-dasharray: 5 5;
+    classDef external fill:#efe,stroke:#333,stroke-width:2px,color:black;
 ```
 
-Solid nodes and arrows are built and deployed. Dashed nodes and arrows are not yet implemented:
+Solid blue nodes and arrows are built and deployed; green is an external dependency rather than a deployed component. Dashed nodes and arrows are not yet implemented:
 
 - **SAT Word Service** — not started.
-- **Notifier** — alert delivery, deferred ([Issue #68](https://github.com/nickfang/personal-dashboard/issues/68)). Alerts are detected, stored, and served today; nothing delivers them.
 - **Dashboard Page → Dashboard API** — the SvelteKit frontend does not consume `dashboard-api`; it still calls a weather API directly from its own route handler. The frontend half of [Issue #66](https://github.com/nickfang/personal-dashboard/issues/66) was deferred, so forecasts and alerts appear only in the CLI.
+
+Alert delivery ([Issue #68](https://github.com/nickfang/personal-dashboard/issues/68)) runs **inline in the Forecast Collector** — there is no separate notifier service and no Pub/Sub hop. The collector sends alert email over Gmail SMTP directly after its cache write commits, authenticating with an app password from Secret Manager. See [ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md](./ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md) section 5.
 
 ## 2. Overview
 The Personal Dashboard platform runs on **Google Cloud Platform (GCP)**, managed by Terraform with a modular structure supporting staging and production environments.

@@ -47,7 +47,7 @@ module "firestore" {
 module "secrets" {
   source     = "../modules/secrets"
   project_id = var.project_id
-  secret_ids = ["google-maps-api-key"]
+  secret_ids = ["google-maps-api-key", "notify-smtp-password"]
 
   depends_on = [module.foundation]
 }
@@ -125,6 +125,14 @@ module "forecast_collector" {
     PRESSURE_DROP_MB       = "5"
     PRESSURE_SEVERE_MB     = "10"
     PRESSURE_WINDOW_HOURS  = "3"
+
+    # Alert delivery. Off in prod until delivery is gated on imminence (#79):
+    # alerts are detected across a 72-hour horizon and sent on first
+    # detection, so arming this today would mail a drop three days early.
+    # Staging stays on, against a tagged recipient, so the path is exercised.
+    NOTIFY_ENABLED   = "false"
+    NOTIFY_SMTP_USER = "fang.nicholas@gmail.com"
+    NOTIFY_EMAIL_TO  = "fang.nicholas@gmail.com"
   }
 
   secret_env_vars = {
@@ -132,9 +140,13 @@ module "forecast_collector" {
       secret_id = "google-maps-api-key"
       version   = "latest"
     }
+    NOTIFY_SMTP_PASSWORD = {
+      secret_id = "notify-smtp-password"
+      version   = "latest"
+    }
   }
 
-  secret_refs = ["google-maps-api-key"]
+  secret_refs = ["google-maps-api-key", "notify-smtp-password"]
 
   depends_on = [module.foundation, module.secrets]
 }
