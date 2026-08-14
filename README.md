@@ -10,6 +10,7 @@ This repository contains the frontend dashboard and backend services for the Per
 - **`services/`**: Backend microservices and jobs (primarily **Go**).
   - **`weather-collector`**: A Cloud Run Job that fetches weather data.
   - **`forecast-collector`**: A Cloud Run Job that fetches the hourly forecast and detects pressure-drop alerts.
+  - **`notifier`**: A Cloud Run Job that runs hourly and records how far observed pressure has diverged from the forecast. Observes only; delivers nothing.
   - **`weather-provider`**: A gRPC Service that serves weather, forecast, and alert data.
   - **`pollen-collector`**: A Cloud Run Job that fetches pollen data from the Google Pollen API.
   - **`pollen-provider`**: A gRPC Service that serves pollen/allergy risk data.

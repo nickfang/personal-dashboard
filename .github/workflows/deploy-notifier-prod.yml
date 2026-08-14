@@ -1,0 +1,19 @@
+name: Deploy Notifier (Prod)
+
+on:
+  release:
+    types: [created]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: notifier-job
+      image_name: notifier
+      dockerfile_path: services/notifier/Dockerfile
+      deploy_type: jobs
+      environment: production

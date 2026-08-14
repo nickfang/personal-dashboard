@@ -3,6 +3,7 @@ go 1.25.6
 use (
 	./services/dashboard-api
 	./services/forecast-collector
+	./services/notifier
 	./services/pollen-collector
 	./services/pollen-provider
 	./services/shared

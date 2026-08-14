@@ -27,6 +27,7 @@ flowchart TD
         J_Weath["Weather Collector<br/>(Cloud Run Job)"]:::done
         J_Poll["Pollen Collector<br/>(Cloud Run Job)"]:::done
         J_Fore["Forecast Collector<br/>(Cloud Run Job)"]:::done
+        J_Notif["Notifier<br/>(Cloud Run Job, hourly)"]:::done
     end
 
     subgraph Data ["Google Firestore"]
@@ -64,6 +65,9 @@ flowchart TD
 
     J_Fore -- "Sends alert email<br/>(inline, after cache write)" --> N_Mail
 
+    DB_ForCache -- "Reads" --> J_Notif
+    DB_Weath -- "Reads" --> J_Notif
+
     %% Styling
     classDef done fill:#bbf,stroke:#333,stroke-width:2px,color:black;
     classDef future fill:#fff,stroke:#ccc,stroke-width:1px,color:#999,stroke-dasharray: 5 5;
@@ -75,7 +79,9 @@ Solid blue nodes and arrows are built and deployed; green is an external depende
 - **SAT Word Service** — not started.
 - **Dashboard Page → Dashboard API** — the SvelteKit frontend does not consume `dashboard-api`; it still calls a weather API directly from its own route handler. The frontend half of [Issue #66](https://github.com/nickfang/personal-dashboard/issues/66) was deferred, so forecasts and alerts appear only in the CLI.
 
-Alert delivery ([Issue #68](https://github.com/nickfang/personal-dashboard/issues/68)) runs **inline in the Forecast Collector** — there is no separate notifier service and no Pub/Sub hop. The collector sends alert email over Gmail SMTP directly after its cache write commits, authenticating with an app password from Secret Manager. See [ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md](./ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md) section 5.
+Alert **delivery** ([Issue #68](https://github.com/nickfang/personal-dashboard/issues/68)) runs **inline in the Forecast Collector** — no Pub/Sub hop. The collector sends alert email over Gmail SMTP directly after its cache write commits, authenticating with an app password from Secret Manager. It is on in staging and off in production until delivery is gated on imminence ([#79](https://github.com/nickfang/personal-dashboard/issues/79)). See [ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md](./ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md) section 5.
+
+The **Notifier** is a separate hourly job that **observes and does not deliver**. It reads `forecast_cache` and `weather_cache` and records how far observed pressure has diverged from the forecast, so that the delivery gate ([#79](https://github.com/nickfang/personal-dashboard/issues/79)) and triggering logic ([#80](https://github.com/nickfang/personal-dashboard/issues/80)) can be designed from measurements. It holds no credentials, so it cannot send. See [ARCHITECTURE_SERVICE_NOTIFIER.md](./ARCHITECTURE_SERVICE_NOTIFIER.md).
 
 ## 2. Overview
 The Personal Dashboard platform runs on **Google Cloud Platform (GCP)**, managed by Terraform with a modular structure supporting staging and production environments.

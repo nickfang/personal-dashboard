@@ -47,6 +47,11 @@ The backend is built as a set of decoupled services communicating via Firestore 
 **Role:** Fetches the hourly forecast every 6 hours and detects pressure-drop alerts. The only producer of `Alert` records.
 *   **Architecture:** [ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md](../docs/ARCHITECTURE_SERVICE_FORECAST_COLLECTOR.md)
 
+### 7. Notifier (`services/notifier`)
+**Type:** Cloud Run Job (Batch)
+**Role:** Runs hourly and records how far observed pressure has diverged from the forecast. Observes only — it delivers nothing and holds no credentials.
+*   **Architecture:** [ARCHITECTURE_SERVICE_NOTIFIER.md](../docs/ARCHITECTURE_SERVICE_NOTIFIER.md)
+
 ---
 
 ## gRPC Contracts (Buf)
@@ -81,6 +86,7 @@ Use the root `Makefile` targets:
 | **Pollen Provider** | `make pp-dev` | `make pp-build` |
 | **Pollen Collector** | `make pc-dev` | `make pc-build` |
 | **Forecast Collector** | `make fc-dev` | `make fc-build` |
+| **Notifier** | `make nt-dev` | `make nt-build` |
 
 ### 4. Port Reference
 | Service | Port | Protocol |
