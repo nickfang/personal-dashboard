@@ -126,9 +126,9 @@ module "forecast_collector" {
     PRESSURE_SEVERE_MB     = "10"
     PRESSURE_WINDOW_HOURS  = "3"
 
-    # Alert delivery. Enabled in both environments so the delivery path is
-    # exercised before prod; staging is separated by a tagged recipient
-    # rather than by being switched off.
+    # Alert delivery. On in staging against a tagged recipient so the path is
+    # exercised end to end. Prod stays off until delivery is gated on
+    # imminence (#79).
     NOTIFY_ENABLED   = "true"
     NOTIFY_SMTP_USER = "fang.nicholas@gmail.com"
     NOTIFY_EMAIL_TO  = "fang.nicholas+staging@gmail.com"

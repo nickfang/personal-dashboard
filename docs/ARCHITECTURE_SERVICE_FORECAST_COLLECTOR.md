@@ -130,7 +130,9 @@ Alert delivery (section 5) is configured separately. `NOTIFY_ENABLED` is a plain
 | `NOTIFY_SMTP_PASSWORD` | Secret Manager (`notify-smtp-password`) | *(unset)* | Google app password — requires 2-Step Verification on the account |
 | `NOTIFY_EMAIL_TO` | `env_vars` | *(unset)* | Recipient |
 
-Host and port are constants, not configuration: there is no second SMTP server to point at, and a wrong value would fail at delivery rather than at startup. Delivery is enabled in **both** environments — staging is separated by a `+staging` tagged recipient rather than by being switched off, so the delivery path is exercised before production.
+Host and port are constants, not configuration: there is no second SMTP server to point at, and a wrong value would fail at delivery rather than at startup.
+
+Delivery is **on in staging and off in production**. Alerts are detected across the full 72-hour horizon and delivered on first detection, so an episode forecast for Thursday is mailed on Monday — actionable information arriving when it is least actionable. Production is armed once delivery is gated on imminence ([Issue #79](https://github.com/nickfang/personal-dashboard/issues/79)). Staging delivers to a `+staging` tagged recipient in the meantime, so the path stays exercised.
 
 ## 5. Alert Lifecycle
 
