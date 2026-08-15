@@ -71,12 +71,6 @@ func logObservation(o Observation) {
 	} else {
 		attrs = append(attrs, "observed_missing", true)
 	}
-	if o.ForecastAtObservedMb != nil {
-		attrs = append(attrs, "forecast_at_observed_mb", *o.ForecastAtObservedMb)
-	}
-	if o.ErrorMb != nil {
-		attrs = append(attrs, "error_mb", *o.ErrorMb)
-	}
 	for _, d := range o.Forward {
 		key := fmt.Sprintf("fwd_%02dh", int(d.Offset.Hours()))
 		if d.DeltaMb != nil {

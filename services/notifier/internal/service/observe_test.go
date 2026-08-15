@@ -64,19 +64,14 @@ func TestBuildObservation_ForwardDeltasAnchorOnObserved(t *testing.T) {
 	}
 }
 
-func TestBuildObservation_RecordsForecastError(t *testing.T) {
+func TestBuildObservation_RecordsForecastAge(t *testing.T) {
+	// How stale the forecast was matters for reading everything else in the
+	// record: forecast-collector runs every 6 hours, so this ranges 0-360
+	// minutes in normal operation and higher when a run was missed.
 	forecast := &repository.ForecastCacheDoc{IssuedAt: testNow.Add(-4 * time.Hour), Points: forecastPoints(1013, 1012, 1011)}
 
 	o := BuildObservation("house-nick", observedAt(1009.5, 5*time.Minute), forecast, testNow)
 
-	if o.ForecastAtObservedMb == nil || *o.ForecastAtObservedMb != 1013 {
-		t.Fatalf("ForecastAtObservedMb = %v, want 1013", o.ForecastAtObservedMb)
-	}
-	// The barometer is 3.5 mb below where the forecast said it would be —
-	// this is the number that decides whether the anchor is worth building.
-	if o.ErrorMb == nil || *o.ErrorMb != -3.5 {
-		t.Errorf("ErrorMb = %v, want -3.5", o.ErrorMb)
-	}
 	if o.ForecastAgeMin != 240 {
 		t.Errorf("ForecastAgeMin = %d, want 240", o.ForecastAgeMin)
 	}
@@ -134,14 +129,6 @@ func TestBuildObservation_MissingObservationIsRecordedNotFatal(t *testing.T) {
 	if o.Observed != nil {
 		t.Error("Observed should be nil when weather_cache has no document")
 	}
-	if o.ErrorMb != nil {
-		t.Error("ErrorMb needs an observation to be meaningful")
-	}
-	// Without a reading there is no forecast error to measure, and the
-	// forecast's own value is already retained in forecast_raw.
-	if o.ForecastAtObservedMb != nil {
-		t.Errorf("ForecastAtObservedMb = %v, want nil without an observation", *o.ForecastAtObservedMb)
-	}
 	if got := deltaAt(t, o, 3*time.Hour); got != nil {
 		t.Errorf("fwd_03h = %v, want nil — there is nothing to anchor on", *got)
 	}
@@ -191,34 +178,5 @@ func TestBuildObservation_MapsAlertsWithLeadTime(t *testing.T) {
 	}
 	if !o.Alerts[1].NotifiedAt.Equal(notified) {
 		t.Errorf("a2 NotifiedAt = %v, want %v", o.Alerts[1].NotifiedAt, notified)
-	}
-}
-
-func TestBuildObservation_ErrorUsesTheObservationsOwnHour(t *testing.T) {
-	// weather-collector is partial-failure tolerant: when it skips a
-	// location, weather_cache keeps the previous document. Sampling the
-	// forecast at now rather than at the reading's timestamp would fold that
-	// gap's real pressure change into what this field calls forecast error —
-	// here it would flip the sign.
-	var points []repository.ForecastPoint
-	for i, mb := range []float64{1020, 1018, 1016, 1014, 1012, 1010, 1008} {
-		points = append(points, repository.ForecastPoint{
-			ValidTime:  testNow.Add(time.Duration(i-3) * time.Hour),
-			PressureMb: mb,
-		})
-	}
-	forecast := &repository.ForecastCacheDoc{IssuedAt: testNow.Add(-3 * time.Hour), Points: points}
-
-	// Read two hours ago at 1017, against a forecast of 1018 for that hour.
-	o := BuildObservation("house-nick", observedAt(1017, 2*time.Hour), forecast, testNow)
-
-	if o.ForecastAtObservedMb == nil || *o.ForecastAtObservedMb != 1018 {
-		t.Fatalf("ForecastAtObservedMb = %v, want 1018 (the forecast for the reading's hour, not for now)", o.ForecastAtObservedMb)
-	}
-	if o.ErrorMb == nil || *o.ErrorMb != -1 {
-		t.Errorf("ErrorMb = %v, want -1; sampling the forecast at now would give +3", o.ErrorMb)
-	}
-	if o.Observed.AgeMin != 120 {
-		t.Errorf("ObservedAgeMin = %d, want 120 — the caveat this measurement carries", o.Observed.AgeMin)
 	}
 }
