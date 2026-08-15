@@ -125,13 +125,6 @@ module "forecast_collector" {
     PRESSURE_DROP_MB       = "5"
     PRESSURE_SEVERE_MB     = "10"
     PRESSURE_WINDOW_HOURS  = "3"
-
-    # Alert delivery. On in staging against a tagged recipient so the path is
-    # exercised end to end. Prod stays off until delivery is gated on
-    # imminence (#79).
-    NOTIFY_ENABLED   = "true"
-    NOTIFY_SMTP_USER = "fang.nicholas@gmail.com"
-    NOTIFY_EMAIL_TO  = "fang.nicholas+staging@gmail.com"
   }
 
   secret_env_vars = {
@@ -156,19 +149,11 @@ module "notifier" {
   region                = var.region
   name                  = "notifier"
   sa_display_name       = "Service Account for Notifier Job"
-  schedule              = "15 * * * *"
+  schedule              = "5 * * * *"
   scheduler_description = "Triggers the notifier job hourly, offset past the weather collector"
   artifact_registry_url = module.foundation.artifact_registry_url
   services_path         = local.services_path
 
-  # Observes only: reads forecast_cache and weather_cache and records what it
-  # sees. It delivers nothing, so it holds no SMTP credentials and needs no
-  # external API key. Delivery stays in forecast-collector until the gate is
-  # designed (#79, #80).
-  #
-  # Note the SA is still granted project-wide roles/datastore.user by the
-  # module, which includes write. The read-only property is enforced by the
-  # Store interface, not by IAM.
   env_vars = {
     GCP_PROJECT_ID = var.project_id
   }
