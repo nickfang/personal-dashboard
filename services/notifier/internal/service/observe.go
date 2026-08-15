@@ -21,8 +21,12 @@ const matchTolerance = 45 * time.Minute
 // reads now, what the forecast expects, and how far apart they are.
 //
 // It records facts, not verdicts. Deciding what is worth sending is issue
-// #80, and the point of this job is to gather the evidence that decision
-// needs rather than to bake in a rule that has not been validated.
+// #80, and the point of this job is to gather evidence for that decision
+// rather than to bake in a rule that has not been validated.
+//
+// It deliberately does not record forecast error. Observations and forecasts
+// both come from weather.googleapis.com and agree to ~0.01 mb for the same
+// hour, so that measurement is zero by construction — see #80.
 type Observation struct {
 	Location string
 	Now      time.Time
@@ -32,17 +36,6 @@ type Observation struct {
 
 	ForecastIssuedAt time.Time
 	ForecastAgeMin   int
-
-	// ForecastAtObservedMb is what the forecast predicted for the moment the
-	// barometer was actually read, and ErrorMb is how far the reading is from
-	// it. That difference is the forecast error accumulated since the
-	// forecast was issued — the number that decides whether anchoring alerts
-	// on observed pressure is worth building at all (#80).
-	//
-	// Both are nil without an observation: there is no forecast error to
-	// measure, and the forecast's own value is already in forecast_raw.
-	ForecastAtObservedMb *float64
-	ErrorMb              *float64
 
 	// Forward holds the change from the observed reading to the forecast at
 	// each offset. Nil deltas mean no forecast point fell within tolerance.
@@ -100,20 +93,6 @@ func BuildObservation(locationID string, observed *repository.WeatherCacheDoc, f
 			PressureMb: observed.Current.PressureMb,
 			At:         observed.Current.Timestamp,
 			AgeMin:     minutesSince(observed.Current.Timestamp, now),
-		}
-	}
-
-	// Forecast error compares a prediction and a measurement of the *same*
-	// instant, so the forecast is sampled at the observation's timestamp
-	// rather than at now. weather-collector is partial-failure tolerant and
-	// leaves the previous document in place when it skips a location, so an
-	// observation can be hours old; sampling at now would fold that much real
-	// pressure change into what this field calls forecast error.
-	if obs.Observed != nil {
-		if mb, ok := forecastAt(forecast.Points, obs.Observed.At); ok {
-			obs.ForecastAtObservedMb = &mb
-			err := obs.Observed.PressureMb - mb
-			obs.ErrorMb = &err
 		}
 	}
 
