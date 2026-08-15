@@ -18,6 +18,7 @@ This repository contains the frontend dashboard and backend services for the Per
   - **`shared`**: Shared Go module (logging, config, locations, Firestore constants, the `Alert` contract).
   - **`protos`**: Protobuf definitions for the internal gRPC services.
 - **`infra/`**: Terraform configuration for GCP infrastructure (modules + per-environment roots).
+- **`scripts/`**: Standalone analysis tools. Read-only, run by hand, not part of any deployment.
 
 ## Getting Started
 
