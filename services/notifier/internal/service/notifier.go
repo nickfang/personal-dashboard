@@ -36,6 +36,14 @@ func (s *NotifierService) Observe(ctx context.Context, location shared.Location,
 	if err != nil {
 		return Observation{}, err
 	}
+	// The two Store reads have deliberately opposite nil conventions —
+	// ReadObservation returns (nil, nil) for a missing document, ReadForecast
+	// returns an error — and only a doc comment enforces the difference. Turn
+	// a violation into this location's failure rather than a panic, which
+	// would take down the other locations with it.
+	if forecast == nil {
+		return Observation{}, fmt.Errorf("store returned no forecast and no error for %s", location.ID)
+	}
 	// A missing observation is recorded, not fatal: weather-collector may not
 	// have run for this location, and knowing that is itself a finding.
 	observed, err := s.store.ReadObservation(ctx, location.ID)
@@ -63,8 +71,8 @@ func logObservation(o Observation) {
 	} else {
 		attrs = append(attrs, "observed_missing", true)
 	}
-	if o.ForecastNowMb != nil {
-		attrs = append(attrs, "forecast_now_mb", *o.ForecastNowMb)
+	if o.ForecastAtObservedMb != nil {
+		attrs = append(attrs, "forecast_at_observed_mb", *o.ForecastAtObservedMb)
 	}
 	if o.ErrorMb != nil {
 		attrs = append(attrs, "error_mb", *o.ErrorMb)

@@ -69,8 +69,8 @@ func TestBuildObservation_RecordsForecastError(t *testing.T) {
 
 	o := BuildObservation("house-nick", observedAt(1009.5, 5*time.Minute), forecast, testNow)
 
-	if o.ForecastNowMb == nil || *o.ForecastNowMb != 1013 {
-		t.Fatalf("ForecastNowMb = %v, want 1013", o.ForecastNowMb)
+	if o.ForecastAtObservedMb == nil || *o.ForecastAtObservedMb != 1013 {
+		t.Fatalf("ForecastAtObservedMb = %v, want 1013", o.ForecastAtObservedMb)
 	}
 	// The barometer is 3.5 mb below where the forecast said it would be —
 	// this is the number that decides whether the anchor is worth building.
@@ -137,9 +137,10 @@ func TestBuildObservation_MissingObservationIsRecordedNotFatal(t *testing.T) {
 	if o.ErrorMb != nil {
 		t.Error("ErrorMb needs an observation to be meaningful")
 	}
-	// The forecast's own view is still worth recording.
-	if o.ForecastNowMb == nil || *o.ForecastNowMb != 1013 {
-		t.Errorf("ForecastNowMb = %v, want 1013 even without an observation", o.ForecastNowMb)
+	// Without a reading there is no forecast error to measure, and the
+	// forecast's own value is already retained in forecast_raw.
+	if o.ForecastAtObservedMb != nil {
+		t.Errorf("ForecastAtObservedMb = %v, want nil without an observation", *o.ForecastAtObservedMb)
 	}
 	if got := deltaAt(t, o, 3*time.Hour); got != nil {
 		t.Errorf("fwd_03h = %v, want nil — there is nothing to anchor on", *got)
@@ -190,5 +191,34 @@ func TestBuildObservation_MapsAlertsWithLeadTime(t *testing.T) {
 	}
 	if !o.Alerts[1].NotifiedAt.Equal(notified) {
 		t.Errorf("a2 NotifiedAt = %v, want %v", o.Alerts[1].NotifiedAt, notified)
+	}
+}
+
+func TestBuildObservation_ErrorUsesTheObservationsOwnHour(t *testing.T) {
+	// weather-collector is partial-failure tolerant: when it skips a
+	// location, weather_cache keeps the previous document. Sampling the
+	// forecast at now rather than at the reading's timestamp would fold that
+	// gap's real pressure change into what this field calls forecast error —
+	// here it would flip the sign.
+	var points []repository.ForecastPoint
+	for i, mb := range []float64{1020, 1018, 1016, 1014, 1012, 1010, 1008} {
+		points = append(points, repository.ForecastPoint{
+			ValidTime:  testNow.Add(time.Duration(i-3) * time.Hour),
+			PressureMb: mb,
+		})
+	}
+	forecast := &repository.ForecastCacheDoc{IssuedAt: testNow.Add(-3 * time.Hour), Points: points}
+
+	// Read two hours ago at 1017, against a forecast of 1018 for that hour.
+	o := BuildObservation("house-nick", observedAt(1017, 2*time.Hour), forecast, testNow)
+
+	if o.ForecastAtObservedMb == nil || *o.ForecastAtObservedMb != 1018 {
+		t.Fatalf("ForecastAtObservedMb = %v, want 1018 (the forecast for the reading's hour, not for now)", o.ForecastAtObservedMb)
+	}
+	if o.ErrorMb == nil || *o.ErrorMb != -1 {
+		t.Errorf("ErrorMb = %v, want -1; sampling the forecast at now would give +3", o.ErrorMb)
+	}
+	if o.Observed.AgeMin != 120 {
+		t.Errorf("ObservedAgeMin = %d, want 120 — the caveat this measurement carries", o.Observed.AgeMin)
 	}
 }

@@ -33,13 +33,16 @@ type Observation struct {
 	ForecastIssuedAt time.Time
 	ForecastAgeMin   int
 
-	// ForecastNowMb is what the forecast predicts for the current hour, and
-	// ErrorMb is how far the barometer actually is from it. That difference
-	// is the forecast error accumulated since the forecast was issued — the
-	// number that decides whether anchoring alerts on observed pressure is
-	// worth building at all (#80). Both are nil when either side is missing.
-	ForecastNowMb *float64
-	ErrorMb       *float64
+	// ForecastAtObservedMb is what the forecast predicted for the moment the
+	// barometer was actually read, and ErrorMb is how far the reading is from
+	// it. That difference is the forecast error accumulated since the
+	// forecast was issued — the number that decides whether anchoring alerts
+	// on observed pressure is worth building at all (#80).
+	//
+	// Both are nil without an observation: there is no forecast error to
+	// measure, and the forecast's own value is already in forecast_raw.
+	ForecastAtObservedMb *float64
+	ErrorMb              *float64
 
 	// Forward holds the change from the observed reading to the forecast at
 	// each offset. Nil deltas mean no forecast point fell within tolerance.
@@ -100,14 +103,24 @@ func BuildObservation(locationID string, observed *repository.WeatherCacheDoc, f
 		}
 	}
 
-	if mb, ok := forecastAt(forecast.Points, now); ok {
-		obs.ForecastNowMb = &mb
-		if obs.Observed != nil {
+	// Forecast error compares a prediction and a measurement of the *same*
+	// instant, so the forecast is sampled at the observation's timestamp
+	// rather than at now. weather-collector is partial-failure tolerant and
+	// leaves the previous document in place when it skips a location, so an
+	// observation can be hours old; sampling at now would fold that much real
+	// pressure change into what this field calls forecast error.
+	if obs.Observed != nil {
+		if mb, ok := forecastAt(forecast.Points, obs.Observed.At); ok {
+			obs.ForecastAtObservedMb = &mb
 			err := obs.Observed.PressureMb - mb
 			obs.ErrorMb = &err
 		}
 	}
 
+	// Forward targets are anchored on now, not on the observation: the
+	// question is what happens over the next N hours from here. A stale
+	// observation therefore widens the true interval, which is what
+	// ObservedAgeMin is for.
 	for _, offset := range Offsets {
 		d := ForwardDelta{Offset: offset}
 		target := now.Add(offset)

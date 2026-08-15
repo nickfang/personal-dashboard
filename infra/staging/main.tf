@@ -165,6 +165,10 @@ module "notifier" {
   # sees. It delivers nothing, so it holds no SMTP credentials and needs no
   # external API key. Delivery stays in forecast-collector until the gate is
   # designed (#79, #80).
+  #
+  # Note the SA is still granted project-wide roles/datastore.user by the
+  # module, which includes write. The read-only property is enforced by the
+  # Store interface, not by IAM.
   env_vars = {
     GCP_PROJECT_ID = var.project_id
   }

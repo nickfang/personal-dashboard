@@ -10,9 +10,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Store reads the cache documents this job observes. It is read-only by
-// design: this job records what it sees and delivers nothing (see issues #79
-// and #80).
+// Store reads the cache documents this job observes. The interface exposes no
+// writes: this job records what it sees and delivers nothing (see #79, #80).
+//
+// That is a code-level guarantee, not an IAM one. The shared cloud-run-job
+// module grants every job service account project-wide roles/datastore.user,
+// which includes write, so nothing at the infrastructure layer stops this job
+// from modifying documents owned by the collectors. Narrowing it to
+// roles/datastore.viewer needs a variable on that module.
 type Store interface {
 	// ReadObservation returns the latest observed conditions, or nil when
 	// the location has no cache document yet. A missing observation is a

@@ -29,7 +29,7 @@ services/notifier/
 │   │   ├── notifier.go         # NotifierService orchestration + logging
 │   │   └── notifier_test.go
 │   ├── repository/
-│   │   ├── store.go            # Store interface + read-only FirestoreStore
+│   │   ├── store.go            # Store interface (no writes) + FirestoreStore
 │   │   └── types.go            # Mirror structs for the two cache documents
 │   └── testutil/
 │       └── mocks.go            # MockStore
@@ -50,6 +50,8 @@ Both collections live in the `weather-log` database, so a single Firestore clien
 
 `internal/repository/types.go` declares **mirror structs** carrying only these fields — Firestore ignores document fields absent from the destination struct. The Weather Provider does the same thing for the same reason. The cost is that an upstream shape change fails at decode time rather than compile time, which is why the mirrors are kept minimal.
 
+> **The read-only property is enforced in code, not in IAM.** The `Store` interface exposes no writes, but the shared `cloud-run-job` module grants every job service account project-wide `roles/datastore.user`, which includes write. Nothing at the infrastructure layer stops this job from modifying documents owned by the collectors. Narrowing it to `roles/datastore.viewer` needs a variable on that shared module.
+
 A **missing observation is recorded, not fatal**: the Weather Collector may simply not have run for that location, and knowing that is itself a finding. A missing *forecast* is an error, since there is nothing to observe against. A read *failure* is distinct from an absent document and always fails the location.
 
 ## 4. What it records
@@ -59,7 +61,7 @@ One `observation` log line per location per hour, plus one `alert seen` line per
 ```
 observation  location=house-nick observed_mb=1015.4 observed_age_min=12
              forecast_issued_at=... forecast_age_min=214
-             forecast_now_mb=1017.9 error_mb=-2.5
+             forecast_at_observed_mb=1017.9 error_mb=-2.5
              fwd_03h=-5.8 fwd_03h_matched=... fwd_06h=-8.1 fwd_12h=-8.4 fwd_24h=-4.2
 
 alert seen   location=house-nick alert=abc123 rule=pressure-drop-3h
@@ -67,10 +69,11 @@ alert seen   location=house-nick alert=abc123 rule=pressure-drop-3h
              hours_to_window=11.75
 ```
 
-Four choices worth knowing:
+Five choices worth knowing:
 
-*   **Forward deltas anchor on the observed reading**, not on the forecast's own first point. The existing display paths (`dashboard-api/internal/handlers/format.go`, the CLI TUI) compute forecast-to-forecast deltas; these are observed-to-forecast, which is the quantity a person actually experiences.
-*   **`error_mb` is the headline number.** It is the observed pressure minus what the forecast predicts for the current hour — the forecast error accumulated since issue. Whether it is routinely large is precisely what decides if an observed-anchored gate is worth building at all (#80).
+*   **Deltas anchor on the observed reading**, not on the forecast's own first point. The existing display paths (`dashboard-api/internal/handlers/format.go`, the CLI TUI) compute forecast-to-forecast deltas; these are observed-to-forecast, which is the quantity a person actually experiences.
+*   **`error_mb` is the headline number.** It is the observed pressure minus what the forecast predicted **for the moment the barometer was read** — the forecast error accumulated since issue. Sampling the forecast at *now* instead would be wrong whenever the Weather Collector has skipped a location, since `weather_cache` retains the previous document and the gap's real pressure change would be folded into a field labelled forecast error. Whether that error is routinely large is precisely what decides if an observed-anchored gate is worth building at all (#80).
+*   **Forward deltas anchor their target on `now`**, not on the observation — the question is what happens over the next N hours from here. A stale observation therefore widens the true interval, which is what `observed_age_min` is for.
 *   **`fwd_NNh_matched` records which point was used.** Tolerance matching accepts a point up to 45 minutes from the requested offset, so a delta labelled "+3h" may be measured over 2h15m. Nothing downstream could recover that.
 *   **It records facts, not verdicts.** There is deliberately no `would_send` field. Computing one would bake in the predicate this service exists to defer.
 
