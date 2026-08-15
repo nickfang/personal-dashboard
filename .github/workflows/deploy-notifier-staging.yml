@@ -1,0 +1,22 @@
+name: Deploy Notifier (Staging)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/notifier/**'
+      - 'services/shared/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_deploy-service.yml
+    with:
+      service_name: notifier-job
+      image_name: notifier
+      dockerfile_path: services/notifier/Dockerfile
+      deploy_type: jobs
+      environment: staging

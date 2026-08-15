@@ -3,6 +3,7 @@
 	proto-gen proto-clean test-go \
 	wc-dev wc-build wc-run wc-test \
 	fc-dev fc-build fc-run fc-test \
+	nt-dev nt-build nt-run nt-test \
 	wp-dev wp-build wp-test \
 	da-dev da-build da-test \
 	fe-dev fe-test \
@@ -91,6 +92,25 @@ fc-run: fc-build ## Run Forecast Collector container (One-off job)
 
 fc-test: ## Run Forecast Collector tests
 	cd services/forecast-collector && go test ./...
+
+# ==============================================================================
+
+##@ Notifier
+nt-dev: ## Run Notifier locally (Go)
+	-cd services/notifier && go run cmd/main.go
+
+nt-build: ## Build Notifier image
+	docker build -t notifier -f services/notifier/Dockerfile services
+
+nt-run: nt-build ## Run Notifier container (One-off job)
+	docker run --rm -it \
+		--env-file services/notifier/.env \
+		-v ~/.config/gcloud:/root/.config/gcloud \
+		-e GOOGLE_APPLICATION_CREDENTIALS=/root/.config/gcloud/application_default_credentials.json \
+		notifier
+
+nt-test: ## Run Notifier tests
+	cd services/notifier && go test ./...
 
 # ==============================================================================
 # Service: Weather Provider (Server)

@@ -151,6 +151,32 @@ module "forecast_collector" {
   depends_on = [module.foundation, module.secrets]
 }
 
+module "notifier" {
+  source                = "../modules/cloud-run-job"
+  project_id            = var.project_id
+  region                = var.region
+  name                  = "notifier"
+  sa_display_name       = "Service Account for Notifier Job"
+  schedule              = "15 * * * *"
+  scheduler_description = "Triggers the notifier job hourly, offset past the weather collector"
+  artifact_registry_url = module.foundation.artifact_registry_url
+  services_path         = local.services_path
+
+  # Observes only: reads forecast_cache and weather_cache and records what it
+  # sees. It delivers nothing, so it holds no SMTP credentials and needs no
+  # external API key. Delivery stays in forecast-collector until the gate is
+  # designed (#79, #80).
+  #
+  # Note the SA is still granted project-wide roles/datastore.user by the
+  # module, which includes write. The read-only property is enforced by the
+  # Store interface, not by IAM.
+  env_vars = {
+    GCP_PROJECT_ID = var.project_id
+  }
+
+  depends_on = [module.foundation]
+}
+
 # --- Providers (Internal gRPC Services) ---
 
 module "weather_provider" {
@@ -225,10 +251,15 @@ module "github_oidc" {
   project_id        = var.project_id
   github_repository = var.github_repository
 
+  # Every new cloud-run-* module MUST be listed here or its first CD deploy
+  # fails: github-actions-sa needs iam.serviceAccounts.actAs on the job's SA
+  # to run `gcloud run jobs update`. Terraform applies cleanly without it, so
+  # the omission surfaces as "my code changes aren't taking effect".
   service_account_ids = [
     module.weather_collector.service_account_id,
     module.pollen_collector.service_account_id,
     module.forecast_collector.service_account_id,
+    module.notifier.service_account_id,
     module.weather_provider.service_account_id,
     module.pollen_provider.service_account_id,
     module.dashboard_api.service_account_id,
