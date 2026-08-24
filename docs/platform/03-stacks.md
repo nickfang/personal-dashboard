@@ -111,6 +111,16 @@ So Terraform sets the image once at create time and GitHub Actions owns it from 
 as it does today. The only change is that Terraform now takes the tag as input rather than causing
 it to exist.
 
+**Keep the `:latest` push in `_deploy-service.yml`.** Deleting `null_resource.bootstrap` removes one
+consumer of `:latest`, but not the last one. §2.2 has staging tracking `image_tag = "latest"`, and
+the stack turns that into `image = <registry_url>/<name>:latest` at create time — so the tag still
+has to exist in the shared registry, and `.github/workflows/_deploy-service.yml:55-56` is what puts
+it there.
+
+This is only true because the registry keeps mutable tags (Phase 1 §3.3, "Why not immutable tags").
+If that decision is ever revisited, `:latest` goes and staging moves to pinned SHAs — the two are
+one change, not two.
+
 ### 2.2 What actually differs between tiers
 
 Sizing is the obvious difference and the least interesting one. Before writing any code, it's worth
