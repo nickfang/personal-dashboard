@@ -507,14 +507,12 @@ resource "google_artifact_registry_repository" "shared" {
   description   = "Shared container images for all environments"
   format        = "DOCKER"
 
-  # A shared registry with mutable tags quietly bypasses every tier boundary
-  # this document builds: all three deployers hold writer here, so a compromised
-  # dev workflow could re-push the tag prod runs. Immutable tags close that —
-  # a tag, once pushed, can never point at different bytes. The deploy workflows
-  # already push :${git sha}, which is unique per commit, so nothing breaks.
-  docker_config {
-    immutable_tags = true
-  }
+  # Tags here are mutable. Know what that costs: all three deployers hold
+  # writer on this one registry, so nothing at the registry level stops a
+  # compromised dev workflow from re-pushing the tag prod runs. What does
+  # constrain it is §3.4's WIF attribute conditions and the fact that one
+  # repo drives all three deployers — the attack needs push access to main.
+  # See "Why not immutable tags" below.
 
   depends_on = [google_project_service.platform]
 }
@@ -527,6 +525,31 @@ output "registry_url" {
 
 This replaces the per-project registry in `infra/modules/foundation/main.tf`. Phase 3 rewires the
 environments to pull from here and grants their runtime service accounts cross-project read access.
+
+#### Why not immutable tags
+
+`immutable_tags = true` looks like the obvious hardening here, and it's the wrong trade for this
+setup today. Three reasons, in increasing order of how much they'd cost to work around.
+
+**The pipeline pushes a mutable tag.** `.github/workflows/_deploy-service.yml:55-56` tags and
+pushes `:latest` on every deploy, alongside `:${git sha}`. With immutable tags the second push of
+`:latest` fails, so enabling this breaks every service deploy the moment Phase 3 repoints the
+workflows at this registry.
+
+**Staging is designed around that tag.** The tier table in `README.md` §2 and the validation in
+Phase 3 (`tier != "prod" || !contains(["", "latest"], image_tag)`) both have staging tracking
+`latest`, with only prod pinned to a SHA. So `:latest` isn't just pushed, it's *read* — the staging
+stack resolves `image` to `<registry_url>/<name>:latest` at create time. Immutable tags would force
+staging onto pinned SHAs, which means CD passes `-var image_tag=<sha>` through Terraform instead of
+calling `gcloud run update`. That's a change to how staging deploys, not a config tweak.
+
+**Retries stop being free.** Immutable applies to *every* tag, `:${git sha}` included. Builds here
+aren't reproducible, so re-running a deploy on the same commit produces a different digest and the
+push fails. Recovering a flaky deploy would need a new commit.
+
+Revisit this once staging runs on pinned SHAs. Until then the tier boundary rests on §3.4's WIF
+attribute conditions, which is where it belongs — a registry setting was never going to be the
+thing that kept a compromised workflow out.
 
 ### 3.4 Workload Identity Federation, scoped per tier
 
