@@ -143,6 +143,8 @@ module "forecast_collector" {
   depends_on = [module.foundation, module.secrets]
 }
 
+# --- Notifier (Cloud Run Job) ---
+
 module "notifier" {
   source                = "../modules/cloud-run-job"
   project_id            = var.project_id
