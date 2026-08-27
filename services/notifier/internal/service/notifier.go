@@ -74,7 +74,8 @@ func logObservation(o Observation) {
 	for _, d := range o.Forward {
 		key := fmt.Sprintf("fwd_%02dh", int(d.Offset.Hours()))
 		if d.DeltaMb != nil {
-			attrs = append(attrs, key, *d.DeltaMb, key+"_matched", d.MatchedAt)
+			deltaMb := shared.RoundFloat64(*d.DeltaMb, 2)
+			attrs = append(attrs, key, deltaMb, key+"_matched", d.MatchedAt)
 		} else {
 			attrs = append(attrs, key, nil)
 		}
