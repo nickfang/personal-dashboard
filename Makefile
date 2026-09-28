@@ -94,7 +94,8 @@ fc-test: ## Run Forecast Collector tests
 	cd services/forecast-collector && go test ./...
 
 # ==============================================================================
-
+# Service: Notifier
+# ==============================================================================
 ##@ Notifier
 nt-dev: ## Run Notifier locally (Go)
 	-cd services/notifier && go run cmd/main.go
